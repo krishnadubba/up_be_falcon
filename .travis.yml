@@ -1,0 +1,29 @@
+language:
+  - python
+python:
+  - '2.7'
+
+env:
+- BENRI_SECRET="Bacon ipsum dolor amet shank kevin ribeye ground round prosciutto ham porchetta tail salami"
+
+install:
+  - python setup.py test
+  - pip install python-coveralls
+  - touch logs/snakebite.log
+
+services:
+  - mongodb
+
+script:
+  - coverage run --source=snakebite setup.py nosetests
+  - python setup.py flake8
+
+after_success:
+  coveralls
+
+after_script:
+    - rm logs/snakebite.log
+
+notifications:
+  email:
+  - kelvintaywl@gmail.com

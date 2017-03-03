@@ -1,0 +1,21 @@
+# ---------- Python
+__pycache__/
+*.swp
+*.pyc
+*.egg
+*.egg-info
+*.dist-info
+*#
+.#*
+.coverage
+.project
+.pydevproject
+.settings/
+.DS_Store
+
+# Pycharm
+.idea/
+
+# log, pid, etc..
+run/
+*.log
