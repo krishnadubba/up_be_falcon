@@ -31,11 +31,10 @@ def deserialize(req, res, resource, schema=None):
 
         req.params['body'] = {}
 
-        stream = req.stream.read()
+        stream = req.stream.read().decode('utf8')
         if not stream:
             return
 
-        print (stream)   
         json_body = json_util.loads(stream)
 
         if schema:
