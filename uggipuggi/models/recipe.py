@@ -6,7 +6,7 @@ from uggipuggi.constants import TWEET_CHAR_LENGTH
 
 class Recipe(mongo.DynamicDocument):
     name = mongo.StringField(required=True)
-    author = mongo.StringField(required=True)
+    #author = mongo.StringField(required=True)
     description = mongo.StringField(max_length=TWEET_CHAR_LENGTH)
     images = mongo.ListField(mongo.URLField())  # list of urls
     tags = mongo.ListField()
