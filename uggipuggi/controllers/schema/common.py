@@ -8,6 +8,9 @@ class Images(colander.SequenceSchema):
 
 class Ingredients(colander.SequenceSchema):
     ingredient = colander.SchemaNode(colander.String())
+
+class IngredientsQuant(colander.SequenceSchema):
+    ingredient_quant = colander.SchemaNode(colander.Float())
     
 class RecipeSteps(colander.SequenceSchema):
     step = colander.SchemaNode(colander.String())

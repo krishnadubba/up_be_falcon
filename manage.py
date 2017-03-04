@@ -5,7 +5,7 @@ from conf import get_config
 import os
 
 # load config via env
-env = os.environ.get('UGGIPUGGI_BACKEND_ENV', 'live')
+env = os.environ.get('UGGIPUGGI_BACKEND_ENV', 'dolive')
 config = get_config(env)
 uggipuggi = create_uggipuggi(**config)
 
