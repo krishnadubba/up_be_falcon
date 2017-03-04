@@ -4,7 +4,7 @@ from __future__ import absolute_import
 import colander
 import decimal
 from uggipuggi.constants import TWEET_CHAR_LENGTH
-from uggipuggi.controllers.schema.common import Images, Tags, Ingredients, RecipeSteps
+from uggipuggi.controllers.schema.common import Images, Tags, Ingredients, RecipeSteps, IngredientsQuant
 
 class RecipeSchema(colander.MappingSchema):
     # timestamp ?
