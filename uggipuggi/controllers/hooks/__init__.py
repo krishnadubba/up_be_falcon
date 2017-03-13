@@ -31,12 +31,16 @@ def deserialize(req, res, resource, schema=None):
 
         req.params['body'] = {}
 
-        stream = req.stream.read().decode('utf8')
-        if not stream:
-            return
-
-        json_body = json_util.loads(stream)
-
+        try:
+            req_stream = req.stream.read()
+            if isinstance(req_stream, bytes):
+                json_body = json_util.loads(req_stream.decode('utf8'))
+            else:
+                json_body = json_util.loads(req_stream)
+        except Exception:
+            raise falcon.HTTPBadRequest(
+                "I don't understand", traceback.format_exc())
+        
         if schema:
             try:
                 body = schema.deserialize(json_body)

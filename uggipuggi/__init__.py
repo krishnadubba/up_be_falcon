@@ -10,8 +10,10 @@ import logging.handlers
 import time
 from mongoengine import connection
 from uggipuggi.controllers import recipe, tag, status, rating, user, batch
-from uggipuggi.middlewares.auth import JWTAuthMiddleware
-from uggipuggi.constants import DATETIME_FORMAT, AUTH_SHARED_SECRET_ENV
+from uggipuggi.services.user import get_user  
+#from uggipuggi.middlewares.auth import JWTAuthMiddleware
+from uggipuggi.middlewares import auth_jwt
+from uggipuggi.constants import DATETIME_FORMAT, AUTH_SHARED_SECRET_ENV, MAX_TOKEN_AGE
 
 
 def create_uggipuggi(**config):
@@ -27,7 +29,21 @@ class UggiPuggi(object):
 
         shared_secret = os.getenv(AUTH_SHARED_SECRET_ENV)
         
-        self.app = falcon.API(middleware=[CorsMiddleware(config)])
+        COOKIE_OPTS = {"name": "my_auth_token",
+                       "max_age": MAX_TOKEN_AGE,
+                       "path": "/recipes",
+                       "http_only": True}        
+
+        # LoginResource, AuthMiddleware
+        self.login, self.auth_middleware = auth_jwt.get_auth_objects(
+            get_user,
+            shared_secret, # random secret
+            TOKEN_EXPIRATION_SECS,
+            token_opts=COOKIE_OPTS
+        )
+        
+        self.app = falcon.API(middleware=[CorsMiddleware(config), 
+                                          self.auth_middleware])
         # If we need authentication
         #self.app = falcon.API(
             #middleware=[JWTAuthMiddleware(shared_secret),CorsMiddleware(config)]
@@ -47,6 +63,7 @@ class UggiPuggi(object):
         
         self.app.add_route('/users', user.Collection())
         self.app.add_route('/users/{id}', user.Item())
+        self.app.add_route('/login', self.login)
 
         # batch resources
         self.app.add_route('/batch/recipes', batch.RecipeCollection())
