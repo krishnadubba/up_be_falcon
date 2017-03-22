@@ -13,7 +13,7 @@ from uggipuggi.controllers import recipe, tag, status, rating, user, batch
 from uggipuggi.services.user import get_user  
 #from uggipuggi.middlewares.auth import JWTAuthMiddleware
 from uggipuggi.middlewares import auth_jwt
-from uggipuggi.constants import DATETIME_FORMAT, AUTH_SHARED_SECRET_ENV, MAX_TOKEN_AGE
+from uggipuggi.constants import DATETIME_FORMAT, AUTH_SHARED_SECRET_ENV, MAX_TOKEN_AGE, TOKEN_EXPIRATION_SECS
 
 
 def create_uggipuggi(**config):
@@ -35,7 +35,7 @@ class UggiPuggi(object):
                        "http_only": True}        
 
         # LoginResource, AuthMiddleware
-        self.login, self.auth_middleware = auth_jwt.get_auth_objects(
+        self.register, self.login, self.auth_middleware = auth_jwt.get_auth_objects(
             get_user,
             shared_secret, # random secret
             TOKEN_EXPIRATION_SECS,
@@ -64,7 +64,7 @@ class UggiPuggi(object):
         self.app.add_route('/users', user.Collection())
         self.app.add_route('/users/{id}', user.Item())
         self.app.add_route('/login', self.login)
-
+        self.app.add_route('/register', self.register)
         # batch resources
         self.app.add_route('/batch/recipes', batch.RecipeCollection())
 

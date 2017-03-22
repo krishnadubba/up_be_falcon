@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 import falcon
 import logging
+from bson import json_util
 from uggipuggi import constants
 from uggipuggi.controllers.hooks import deserialize, serialize
 from uggipuggi.controllers.schema.recipe import RecipeSchema, RecipeCreateSchema
@@ -54,7 +55,7 @@ class Collection(object):
 
         recipes = Recipe.objects(**query_params)[start:end]
 
-        res.body = {'items': recipes, 'count': len(recipes)}
+        res.body = json_util.dumps({'items': recipes, 'count': len(recipes)})
 
     @falcon.before(deserialize_create)
     @falcon.after(serialize)
