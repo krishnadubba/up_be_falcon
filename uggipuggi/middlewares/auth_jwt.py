@@ -86,9 +86,9 @@ class VerifyPhoneResource(object):
         logging.debug(data)
         phone_number = data["phone"]
         user = self.get_user('phone', phone_number, verify=True)
-        logging.debug("getting user")
-        logging.debug(user.phone)
         if user:
+            logging.debug("getting user")
+            logging.debug(user.phone)            
             resp.status = falcon.HTTP_UNAUTHORIZED
             raise falcon.HTTPUnauthorized('User already exists with this phone number!',
                                           'Please login.',
