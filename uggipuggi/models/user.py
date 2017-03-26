@@ -28,8 +28,7 @@ class User(mongo.DynamicDocument):
 
     first_name = mongo.StringField(required=False)
     last_name = mongo.StringField(required=False)
-    display_name = mongo.StringField(required=True)
-    verification_code = mongo.StringField(required=False)
+    display_name = mongo.StringField(required=True, min_length=5)
     email = mongo.EmailField(required=True, unique=True)
     role = mongo.IntField(required=True, default=Role.USER)
     facebook_id = mongo.LongField(required=False)  # Facebook ID is numeric but can be pretty big
@@ -37,7 +36,7 @@ class User(mongo.DynamicDocument):
     instagram_id = mongo.StringField(required=False)  # Instagram ID is alphanumeric
     country_code = mongo.StringField(min_length=2, max_length=2, required=True)  # follows ISO_3166-1
     phone = mongo.StringField(required=True, unique=True)  # contact number
-    password = mongo.StringField(required=True)
+    password = mongo.StringField(required=True, min_length=8)
 
     @property
     def role_type(self):

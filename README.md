@@ -23,7 +23,7 @@ Before running the application, we need to have our database up. Do `$sudo mongo
 Assuming you are already in the project directory, simply run the following command:
 
 ```
-$ gunicorn manage:uggipuggi.app
+$ gunicorn -b 0.0.0.0:8000 manage:uggipuggi.app
 ```
 
 Point your browser to localhost:8000/recipes (thereby making a GET request).
