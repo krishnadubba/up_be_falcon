@@ -11,9 +11,9 @@ import time
 from mongoengine import connection
 from uggipuggi.controllers import recipe, tag, status, rating, user, batch
 from uggipuggi.services.user import get_user  
-#from uggipuggi.middlewares.auth import JWTAuthMiddleware
 from uggipuggi.middlewares import auth_jwt
-from uggipuggi.constants import DATETIME_FORMAT, AUTH_SHARED_SECRET_ENV, MAX_TOKEN_AGE, TOKEN_EXPIRATION_SECS
+from uggipuggi.constants import DATETIME_FORMAT, AUTH_SHARED_SECRET_ENV, \
+                                MAX_TOKEN_AGE, TOKEN_EXPIRATION_SECS, VERIFY_PHONE_TOKEN_EXPIRATION_SECS
 
 
 def create_uggipuggi(**config):
@@ -29,16 +29,18 @@ class UggiPuggi(object):
 
         shared_secret = os.getenv(AUTH_SHARED_SECRET_ENV)
         
-        COOKIE_OPTS = {"name": "my_auth_token",
-                       "max_age": MAX_TOKEN_AGE,
+        COOKIE_OPTS = {"name": "auth_token",
+                       "location": "header",
+                       #"max_age": MAX_TOKEN_AGE,
                        "path": "/recipes",
                        "http_only": True}        
 
         # LoginResource, AuthMiddleware
-        self.register, self.login, self.auth_middleware = auth_jwt.get_auth_objects(
+        self.verify_phone, self.register, self.login, self.auth_middleware = auth_jwt.get_auth_objects(
             get_user,
             shared_secret, # random secret
             TOKEN_EXPIRATION_SECS,
+            VERIFY_PHONE_TOKEN_EXPIRATION_SECS,
             token_opts=COOKIE_OPTS
         )
         
@@ -65,6 +67,7 @@ class UggiPuggi(object):
         self.app.add_route('/users/{id}', user.Item())
         self.app.add_route('/login', self.login)
         self.app.add_route('/register', self.register)
+        self.app.add_route('/verify', self.verify_phone)
         # batch resources
         self.app.add_route('/batch/recipes', batch.RecipeCollection())
 

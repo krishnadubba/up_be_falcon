@@ -36,7 +36,7 @@ class User(mongo.DynamicDocument):
     twitter_id = mongo.StringField(required=False)  # Twitter ID is alphanumeric
     instagram_id = mongo.StringField(required=False)  # Instagram ID is alphanumeric
     country_code = mongo.StringField(min_length=2, max_length=2, required=True)  # follows ISO_3166-1
-    tel = mongo.StringField(required=True, unique=True)  # contact number
+    phone = mongo.StringField(required=True, unique=True)  # contact number
     password = mongo.StringField(required=True)
 
     @property
@@ -45,3 +45,8 @@ class User(mongo.DynamicDocument):
 
     def role_satisfy(self, role):
         return self.role >= role
+
+class VerifyPhone(mongo.DynamicDocument):
+
+    phone = mongo.StringField(required=True, unique=True)  # contact number
+    otp = mongo.StringField(required=True, min_length=4, max_length=5)
