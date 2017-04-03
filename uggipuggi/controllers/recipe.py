@@ -30,7 +30,7 @@ class Collection(object):
 
     @falcon.before(deserialize)
     @falcon.after(serialize)
-    def on_get(self, req, res):
+    def on_get(self, req, resp):
         query_params = req.params.get('query')
 
         try:
@@ -55,12 +55,11 @@ class Collection(object):
 
         recipes = Recipe.objects(**query_params)[start:end]
 
-        res.body = json_util.dumps({'items': recipes, 'count': len(recipes)})
+        resp.body = json_util.dumps({'items': recipes, 'count': len(recipes)})
 
     @falcon.before(deserialize_create)
     @falcon.after(serialize)
     def on_post(self, req, res):
-        # save restaurants, and menus (if any)
         data = req.params.get('body')  # recipe data
         logger.debug(data)
         
@@ -80,22 +79,22 @@ class Item(object):
     def _try_get_recipe(self, id):
         try:
             return Recipe.objects.get(id=id)
-        except (ValidationError, DoesNotExist, MultipleObjectsReturned) as e:
-            raise HTTPBadRequest(title='Invalid Value', description='Invalid ID provided. {}'.format(e.message))
+        except (ValidationError, DoesNotExist, MultipleObjectsReturned) as e:            
+            raise HTTPBadRequest(title='Invalid Value', description='Invalid recipe ID provided. {}'.format(e.message))
 
     @falcon.after(serialize)
-    def on_get(self, req, res, id):
+    def on_get(self, req, resp, id):
         recipe = self._try_get_recipe(id)
 
     @falcon.after(serialize)
-    def on_delete(self, req, res, id):
+    def on_delete(self, req, resp, id):
         recipe = self._try_get_recipe(id)
         recipe.delete()
 
     # TODO: handle PUT requests
     @falcon.before(deserialize_update)
     @falcon.after(serialize)
-    def on_put(self, req, res, id):
+    def on_post(self, req, resp, id):
         recipe = self._try_get_recipe(id)
         data = req.params.get('body')
 
@@ -105,4 +104,4 @@ class Item(object):
         recipe.save()
 
         recipe = Recipe.objects.get(id=id)
-        res.body = recipe
+        resp.body = recipe

@@ -37,6 +37,7 @@ class User(mongo.DynamicDocument):
     country_code = mongo.StringField(min_length=2, max_length=2, required=True)  # follows ISO_3166-1
     phone = mongo.StringField(required=True, unique=True)  # contact number
     password = mongo.StringField(required=True, min_length=8)
+    pw_last_changed = mongo.DateTimeField(required=True)
 
     @property
     def role_type(self):

@@ -47,10 +47,10 @@ class Item(object):
         try:
             return User.objects.get(id=id)
         except (ValidationError, DoesNotExist, MultipleObjectsReturned) as e:
-            raise HTTPBadRequest(title='Invalid Value', description='Invalid ID provided. {}'.format(e.message))
+            raise HTTPBadRequest(title='Invalid Value', description='Invalid userID provided. {}'.format(e.message))
 
     @falcon.after(serialize)
-    def on_get(self, req, res, id):
+    def on_get(self, req, resp, id):
         request_user_id = req.params[constants.AUTH_HEADER_USER_ID]
         request_user = User.objects.get(id=request_user_id)
         if not request_user.role_satisfy(Role.EMPLOYEE):
@@ -59,4 +59,5 @@ class Item(object):
                 raise HTTPUnauthorized(title='Unauthorized Request',
                                        description='Not allowed to request for user resource: {}'.format(id))
         user = self._try_get_user(id)
-        res.body = user
+        resp.status = falcon.HTTP_FOUND
+        resp.body = user

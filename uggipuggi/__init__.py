@@ -36,7 +36,7 @@ class UggiPuggi(object):
                        "http_only": True}        
 
         # LoginResource, AuthMiddleware
-        self.verify_phone, self.register, self.login, self.auth_middleware = auth_jwt.get_auth_objects(
+        self.register, self.pw_change, self.login, self.verify_phone, self.auth_middleware = auth_jwt.get_auth_objects(
             get_user,
             shared_secret, # random secret
             TOKEN_EXPIRATION_SECS,
@@ -68,6 +68,7 @@ class UggiPuggi(object):
         self.app.add_route('/login', self.login)
         self.app.add_route('/register', self.register)
         self.app.add_route('/verify', self.verify_phone)
+        self.app.add_route('/password_change', self.pw_change)
         # batch resources
         self.app.add_route('/batch/recipes', batch.RecipeCollection())
 
