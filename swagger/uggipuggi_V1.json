@@ -1,0 +1,791 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is UggiPuggi server.",
+        "version": "0.1.0",
+        "title": "UggiPuggi"
+    },
+    "host": "139.59.33.69",
+    "basePath": "/v1",
+    "tags": [
+        {
+            "name": "recipes",
+            "description": "Everything about your Recipes"
+        },
+        {
+            "name": "user",
+            "description": "Operations about user"
+        }
+    ],
+    "schemes": [
+        "http"
+    ],
+    "paths": {
+        "/recipes": {
+            "put": {
+                "tags": [
+                    "recipes"
+                ],
+                "summary": "Add a new recipe",
+                "description": "",
+                "operationId": "addRecipe",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "Recipe object that needs to be added to the store",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Recipe"
+                        }
+                    }
+                ],
+                "responses": {
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                },
+                "security": [
+                    {
+                        "recipe_auth": [
+                            "write:recipes",
+                            "read:recipes"
+                        ]
+                    }
+                ]
+            },
+            "get": {
+                "tags": [
+                    "recipes"
+                ],
+                "summary": "search a recipe by name",
+                "description": "",
+                "operationId": "searchRecipe",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "name",
+                        "description": "Recipe name to search for",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                },
+                "security": [
+                    {
+                        "recipe_auth": [
+                            "write:recipes",
+                            "read:recipes"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/recipes/findByTags": {
+            "get": {
+                "tags": [
+                    "recipes"
+                ],
+                "summary": "Finds recipes by tags",
+                "description": "Muliple tags can be provided with comma separated strings. Use         tag1, tag2, tag3 for testing.",
+                "operationId": "findRecipeByTags",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "tags",
+                        "in": "query",
+                        "description": "Tags to filter by",
+                        "required": true,
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Recipe"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid tag value"
+                    }
+                },
+                "security": [
+                    {
+                        "recipe_auth": [
+                            "write:recipes",
+                            "read:recipes"
+                        ]
+                    }
+                ],
+                "deprecated": true
+            }
+        },
+        "/recipes/{recipeId}": {
+            "get": {
+                "tags": [
+                    "recipes"
+                ],
+                "summary": "Find recipe by ID",
+                "description": "Returns a single recipe",
+                "operationId": "getRecipeById",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "recipeId",
+                        "in": "path",
+                        "description": "ID of recipe to return",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "$ref": "#/definitions/Recipe"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID supplied"
+                    },
+                    "401": {
+                        "description": "Authentication token provided not valid"
+                    },
+                    "404": {
+                        "description": "Recipe not found"
+                    },
+                    "428": {
+                        "description": "Authentication token not supplied"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "recipes"
+                ],
+                "summary": "Updates a recipe in the store with form data",
+                "description": "",
+                "operationId": "updateRecipeWithForm",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "recipeId",
+                        "in": "path",
+                        "description": "ID of recipe that needs to be updated",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "401": {
+                        "description": "Authentication token provided not valid"
+                    },
+                    "405": {
+                        "description": "Invalid input"
+                    }
+                },
+                "security": [
+                    {
+                        "recipe_auth": [
+                            "write:recipes",
+                            "read:recipes"
+                        ]
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "recipes"
+                ],
+                "summary": "Deletes a recipe",
+                "description": "",
+                "operationId": "deleteRecipe",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "api_key",
+                        "in": "header",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "recipeId",
+                        "in": "path",
+                        "description": "Recipe id to delete",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                ],
+                "responses": {
+                    "400": {
+                        "description": "Invalid ID supplied"
+                    },
+                    "401": {
+                        "description": "Authentication token provided not valid"
+                    },
+                    "404": {
+                        "description": "Recipe not found"
+                    }
+                },
+                "security": [
+                    {
+                        "recipe_auth": [
+                            "write:recipes",
+                            "read:recipes"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/verify": {
+            "post": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "Getting user phone number to verify",
+                "operationId": "verifyPhone",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "phone",
+                        "in": "query",
+                        "description": "User phone number",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Phone number accepted for verification"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "User already exists with this phone number"
+                    },
+                    "503": {
+                        "description": "Failed to send OTP SMS!"
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "Verifying user phone number using OTP",
+                "operationId": "verifyOTP",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "description": "OTP code send using SMS to user phone",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "OTP code accepted, phone number verified"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Authentication token provided not valid"
+                    },
+                    "403": {
+                        "description": "User phone number does not exist in verify database"
+                    },
+                    "406": {
+                        "description": "OTP supplied does not match with database"
+                    },
+                    "428": {
+                        "description": "Authentication token not supplied"
+                    }
+                }
+            }
+        },
+        "/register": {
+            "post": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "Create user",
+                "operationId": "createUser",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "Created user object",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/User"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User successfully created"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "User already exists with supplied email"
+                    }
+                }
+            }
+        },
+        "/login": {
+            "post": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "Logs user into the system",
+                "description": "",
+                "operationId": "loginUser",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "email",
+                        "in": "query",
+                        "description": "The user email for login",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "password",
+                        "in": "query",
+                        "description": "The password for login in clear text",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "headers": {
+                            "X-Rate-Limit": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "calls per hour allowed by the user"
+                            },
+                            "X-Expires-After": {
+                                "type": "string",
+                                "format": "date-time",
+                                "description": "date in UTC when token expires"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "User does not exist"
+                    },
+                    "403": {
+                        "description": "Invalid userId/password supplied"
+                    }
+                }
+            }
+        },
+        "/password_change": {
+            "post": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "Changes user password in the system",
+                "description": "",
+                "operationId": "passwrodChange",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "email",
+                        "in": "query",
+                        "description": "The user email for login",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "password",
+                        "in": "query",
+                        "description": "The password for login in clear text",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "new_password",
+                        "in": "query",
+                        "description": "New password",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "headers": {
+                            "X-Rate-Limit": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "calls per hour allowed by the user"
+                            },
+                            "X-Expires-After": {
+                                "type": "string",
+                                "format": "date-time",
+                                "description": "date in UTC when token expires"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "User does not exist"
+                    },
+                    "403": {
+                        "description": "Invalid userId/password supplied"
+                    }
+                }
+            }
+        },
+        "/users": {
+            "post": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "Search users",
+                "description": "This can only be done by the logged in user.",
+                "operationId": "searchUsers",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "displayName",
+                        "description": "User to be searched",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/users/{userId}": {
+            "get": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "Get user by userId",
+                "description": "",
+                "operationId": "getUserById",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "description": "The userId that needs to be fetched.",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "User Found",
+                        "schema": {
+                            "$ref": "#/definitions/User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request, user not found"
+                    },
+                    "401": {
+                        "description": "Unauthorized request"
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "recipe_auth": {
+            "type": "oauth2",
+            "authorizationUrl": "http://petstore.swagger.io/oauth/dialog",
+            "flow": "implicit",
+            "scopes": {
+                "write:recipes": "modify recipes in your account",
+                "read:recipes": "read your recipes"
+            }
+        },
+        "api_key": {
+            "type": "apiKey",
+            "name": "api_key",
+            "in": "header"
+        }
+    },
+    "definitions": {
+        "Category": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "xml": {
+                "name": "Category"
+            }
+        },
+        "User": {
+            "type": "object",
+            "required": [
+                "role",
+                "display_name",
+                "email",
+                "password",
+                "phone",
+                "country_code"
+            ],
+            "properties": {
+                "_id": {
+                    "type": "string",
+                    "description": "Automatically assigned by database"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "facebook_id": {
+                    "type": "string"
+                },
+                "instagram_id": {
+                    "type": "string"
+                },
+                "twitter_id": {
+                    "type": "string"
+                },
+                "country_code": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "User Role (user:1, employee:8, admin:9)"
+                }
+            },
+            "xml": {
+                "name": "User"
+            }
+        },
+        "Tag": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "_id": {
+                    "type": "string",
+                    "description": "Automatically assigned by database"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "xml": {
+                "name": "Tag"
+            }
+        },
+        "Recipe": {
+            "type": "object",
+            "required": [
+                "name",
+                "ingredients",
+                "steps",
+                "prep_time",
+                "cook_time"
+            ],
+            "properties": {
+                "_id": {
+                    "type": "string",
+                    "description": "Automatically assigned by database"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "category": {
+                    "$ref": "#/definitions/Category"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Greek Salad"
+                },
+                "images": {
+                    "type": "array",
+                    "xml": {
+                        "name": "images",
+                        "wrapped": true
+                    },
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tags": {
+                    "type": "array",
+                    "xml": {
+                        "name": "tag",
+                        "wrapped": true
+                    },
+                    "items": {
+                        "$ref": "#/definitions/Tag"
+                    }
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "ingredients": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "ingredients_quant": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                },
+                "ingredients_metric": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "rating_count": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "likes_count": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "shares_count": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "rating_total": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "prep_time": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "cook_time": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "last_modified": {
+                    "type": "string"
+                }
+            },
+            "xml": {
+                "name": "Recipe"
+            }
+        },
+        "ApiResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
