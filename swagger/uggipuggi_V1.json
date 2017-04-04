@@ -83,8 +83,17 @@
                     }
                 ],
                 "responses": {
-                    "405": {
-                        "description": "Invalid input"
+                    "302": {
+                        "description": "Recipes Found",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Recipe"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
                     }
                 },
                 "security": [
@@ -343,7 +352,7 @@
                     "406": {
                         "description": "OTP supplied does not match with database"
                     },
-                    "428": {
+                    "412": {
                         "description": "Authentication token not supplied"
                     }
                 }
@@ -373,6 +382,38 @@
                 "responses": {
                     "201": {
                         "description": "User successfully created"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "User already exists with supplied email"
+                    }
+                }
+            }
+        },
+        "/forgot_password": {
+            "post": {
+                "tags": [
+                    "user"
+                ],
+                "summary": "Generate new temporary password and send to email.",
+                "operationId": "forgotPassword",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "email",
+                        "in": "query",
+                        "description": "The user email for emailing",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Password generated successfully"
                     },
                     "400": {
                         "description": "Bad Request"
@@ -521,8 +562,20 @@
                     }
                 ],
                 "responses": {
-                    "default": {
-                        "description": "successful operation"
+                    "302": {
+                        "description": "User Found",
+                        "schema": {
+                            "type": "string",
+                            "items": {
+                                "$ref": "#/definitions/User"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request, user not found"
+                    },
+                    "401": {
+                        "description": "Unauthorized request"
                     }
                 }
             }

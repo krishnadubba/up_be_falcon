@@ -56,10 +56,11 @@ class Collection(object):
         recipes = Recipe.objects(**query_params)[start:end]
 
         resp.body = json_util.dumps({'items': recipes, 'count': len(recipes)})
-
+        resp.status = falcon.HTTP_FOUND
+        
     @falcon.before(deserialize_create)
     @falcon.after(serialize)
-    def on_post(self, req, res):
+    def on_post(self, req, resp):
         data = req.params.get('body')  # recipe data
         logger.debug(data)
         
@@ -69,8 +70,7 @@ class Collection(object):
         
         # return Recipe
         recipe = Recipe.objects.get(id=recipe.id)
-        res.body = recipe
-
+        resp.body = recipe        
 
 class Item(object):
     def __init__(self):
