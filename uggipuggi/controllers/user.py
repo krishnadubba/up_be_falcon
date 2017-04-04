@@ -22,7 +22,7 @@ class Collection(object):
 
     @falcon.before(deserialize)
     @falcon.after(serialize)
-    def on_get(self, req, res):
+    def on_get(self, req, resp):
         query_params = req.params.get('query')
 
         try:
@@ -36,8 +36,8 @@ class Collection(object):
                                  description='Invalid arguments in URL query:\n{}'.format(e.message))
 
         users = User.objects(**query_params)[start:end]
-        res.body = {'items': users, 'count': len(users)}
-
+        resp.body = {'items': users, 'count': len(users)}
+        resp.status = falcon.HTTP_FOUND
 
 class Item(object):
     def __init__(self):

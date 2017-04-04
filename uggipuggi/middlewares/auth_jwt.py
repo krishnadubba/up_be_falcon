@@ -4,6 +4,8 @@ import falcon
 import jwt
 import os
 import plivo
+import random
+import string
 
 from random import randint
 from bson import json_util
@@ -340,6 +342,53 @@ class LoginResource(object):
             raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')
         resp.status = falcon.HTTP_ACCEPTED #HTTP_202
 
+class ForgotPasswordResource(object):
+
+    def __init__(self, get_user):
+        self.get_user = get_user
+
+    def on_post(self, req, resp):
+        # Should we check if the number supplied is same as the number verified?
+        # Can we do this in client instead of server?
+        logging.debug("Reached on_post() in ForgotPassword")
+        try:
+            req_stream = req.stream.read()
+            logging.debug("req_stream")
+            logging.debug(req_stream)
+            
+            if isinstance(req_stream, bytes):
+                data = json_util.loads(req_stream.decode('utf8'))
+            else:
+                data = json_util.loads(req_stream)
+        except Exception:
+            raise falcon.HTTPBadRequest(
+                "I don't understand", traceback.format_exc())
+        
+        logging.debug(data)
+        email = data["email"]
+        user = self.get_user('email', email)
+        
+        logging.debug("getting user")
+        logging.debug(user)
+        if user:
+            random_password = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(10))
+            setattr(user, "password", crypt.encrypt(random_password))
+            setattr(user, "pw_last_changed", datetime.utcnow())
+            user.save()
+            requests.post(
+                os.environ["MAILGUN_SERVER"],
+                auth=("api", os.environ["MAILGUN_APIKEY"]),
+                data={"from": "UggiPuggi Temporary Password <uggi.puggi@gmail.com>",
+                      "to": [email],
+                      "subject": "UggiPuggi Temporary Password",
+                      "text": "Your UggiPuggi temporary password: %s \n Please change it immediately after login. \n Automatically generated, do not reply to this email."%random_password})
+            resp.status = falcon.HTTP_ACCEPTED #HTTP_202
+        else:
+            raise falcon.HTTPUnauthorized('User with this email does not exists!',
+                                          'Please register.',
+                                          ['Hello="World!"'])
+
+
 class PasswordChangeResource(object):
 
     def __init__(self, get_user, secret, token_expiration_seconds, **token_opts):
@@ -434,7 +483,7 @@ class AuthMiddleware(object):
     def process_resource(self, req, resp, resource, params): # pylint: disable=unused-argument
         logging.debug("Processing request in AuthMiddleware: ")
         if isinstance(resource, LoginResource) or isinstance(resource, RegisterResource) or isinstance(resource, VerifyPhoneResource) \
-           or isinstance(resource, PasswordChangeResource):
+           or isinstance(resource, PasswordChangeResource) or isinstance(resource, ForgotPasswordResource):
             logging.debug("DON'T NEED TOKEN")
             return
         
@@ -508,6 +557,7 @@ class AuthMiddleware(object):
 
 def get_auth_objects(get_user, secret, token_expiration_seconds, verify_phone_token_expiration_seconds, token_opts=DEFAULT_TOKEN_OPTS): # pylint: disable=dangerous-default-value
     return RegisterResource(get_user),\
+           ForgotPasswordResource(get_user),\
            PasswordChangeResource(get_user, secret, token_expiration_seconds, **token_opts),\
            LoginResource(get_user, secret, token_expiration_seconds, **token_opts),\
            VerifyPhoneResource(get_user, secret, verify_phone_token_expiration_seconds, **token_opts),\
