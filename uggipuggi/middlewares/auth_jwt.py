@@ -381,7 +381,8 @@ class ForgotPasswordResource(object):
                 data={"from": "UggiPuggi Temporary Password <uggi.puggi@gmail.com>",
                       "to": [email],
                       "subject": "UggiPuggi Temporary Password",
-                      "text": "Your UggiPuggi temporary password: %s \n Please change it immediately after login. \n Automatically generated, do not reply to this email."%random_password})
+                      "text": "Your UggiPuggi temporary password: %s \n Please change it immediately after login. \n Automatically generated, do not reply to this email."%random_password,
+                      "html": "<html>Your UggiPuggi temporary password: <b>%s</b> \n Please change it immediately after login. \n Automatically generated, do not reply to this email.</html>"%random_password})
             resp.status = falcon.HTTP_ACCEPTED #HTTP_202
         else:
             raise falcon.HTTPUnauthorized('User with this email does not exists!',

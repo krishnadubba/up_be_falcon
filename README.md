@@ -15,6 +15,8 @@ We first need to install all the dependencies or packages needed (a virtualenv i
 
 ```
 $ python setup.py develop
+$ cd swagger
+$ pretty-swag -i uggipuggi_V1.json -o up_doc.html
 ```
 
 ## Up and Running
