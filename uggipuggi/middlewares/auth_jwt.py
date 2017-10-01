@@ -19,6 +19,7 @@ def random_with_N_digits(n):
     return repr(randint(range_start, range_end))
 
 DEFAULT_TOKEN_OPTS = {"name": "auth_token", "location": "header"}
+SRC_PHONE_NUM = '00447539020600'
 
 # role-based permission control
 ACL_MAP = {
@@ -69,8 +70,9 @@ class VerifyPhoneResource(object):
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         logging.debug(token_opts)
 
-    def on_post(self, req, resp):
-        logging.debug("Reached on_post() in VerifyPhone")
+    def on_get(self, req, resp):
+        # Used to get the OTP
+        logging.debug("Reached on_get() in VerifyPhone")
         try:
             req_stream = req.stream.read()
             logging.debug("req_stream")
@@ -87,8 +89,15 @@ class VerifyPhoneResource(object):
         logging.debug(data)
         phone_number = data["phone"]
         logging.debug("getting user")        
-        user = self.get_user('phone', phone_number, verify=True)
-        if user:
+        user = self.get_user('phone', phone_number)
+        
+        if not user:
+            description = ('No user found with this phone number. Please register.')
+            logging.warn('User record with this phone number does not exist!')        
+            raise falcon.HTTPForbidden('User record with this phone number does not exist!',
+                                       description,
+                                       href='http://docs.example.com/auth') 
+        if user.phone_verified:
             logging.debug(user.phone)            
             raise falcon.HTTPUnauthorized('User already exists with this phone number!',
                                           'Please login.',
@@ -97,12 +106,12 @@ class VerifyPhoneResource(object):
             logging.debug("Sending SMS to new user ...")
             otpass = random_with_N_digits(4)
             
+            # Plivo does not accept 0044, only accepts +44
+            plivo_valid_dst = '+' + phone_number[2:]
             params = {
-                'src': '0044790110313', # Sender's phone number with country code
-                'dst' : phone_number,  # Receiver's phone Number with country code
+                'src': SRC_PHONE_NUM, # Sender's phone number with country code
+                'dst' : plivo_valid_dst,  # Receiver's phone Number with country code
                 'text' : u"Your UggiPuggi OTP: %s" %otpass, # Your SMS Text Message - English
-                #'url' : "http://example.com/report/", # The URL to which with the status of the message is sent
-                'method' : 'POST' # The method used to call the url
             }
             
             response = self.sms.send_message(params)
@@ -114,12 +123,14 @@ class VerifyPhoneResource(object):
                 self.add_new_jwtoken(resp, phone_number)
                 resp.status = falcon.HTTP_OK
             else:
+                logging.debug("OTP SMS failed!")
                 raise falcon.HTTPBadRequest(
                                 "OTP SMS failed!", traceback.format_exc())
             
-    def on_get(self, req, resp):
+    def on_post(self, req, resp):
+        # Used to send the OTP for verificiation
         challenges = ['Hello="World"']
-        logging.debug("Reached on_get() in VerifyPhone")
+        logging.debug("Reached on_post() in VerifyPhone")
         try:
             req_stream = req.stream.read()
             logging.debug("req_stream")
@@ -170,12 +181,14 @@ class VerifyPhoneResource(object):
         logging.debug(user)        
         if not user:
             description = ('Please register again.')
-            raise falcon.HTTPForbidden('User record with this phone number does not exists!',
+            raise falcon.HTTPForbidden('User record with this phone number does not exist!',
                                        description,
                                        href='http://docs.example.com/auth')                                       
         else:
             logging.debug("Verifying user...")
             if otp_code == user.otp:
+                full_user = self.get_user('phone', phone_number)
+                full_user.update(phone_verified=True)
                 logging.debug("User verification: Success")
                 resp.status = falcon.HTTP_ACCEPTED
             else:
@@ -184,7 +197,6 @@ class VerifyPhoneResource(object):
                 raise falcon.HTTPNotAcceptable(description,
                                                href='http://docs.example.com/auth')
                 
-
     # given a user identifier, this will add a new token to the response
     # Typically you would call this from within your login function, after the
     # back end has OK'd the username/password
@@ -258,7 +270,7 @@ class RegisterResource(object):
             logging.debug("Adding new user...")
             new_user = User(email=email, password=crypt.encrypt(password), phone=data["phone"], 
                             country_code=data["country_code"], display_name=data["display_name"],
-                            pw_last_changed=datetime.utcnow())
+                            pw_last_changed=datetime.utcnow(), phone_verified=False)
             new_user.save()
             resp.status = falcon.HTTP_CREATED #HTTP_201
             logging.debug("Added new user")
@@ -372,9 +384,8 @@ class ForgotPasswordResource(object):
         logging.debug(user)
         if user:
             random_password = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(10))
-            setattr(user, "password", crypt.encrypt(random_password))
-            setattr(user, "pw_last_changed", datetime.utcnow())
-            user.save()
+            user.update(password=crypt.encrypt(random_password))
+            user.update(pw_last_changed=datetime.utcnow())
             requests.post(
                 os.environ["MAILGUN_SERVER"],
                 auth=("api", os.environ["MAILGUN_APIKEY"]),
@@ -424,9 +435,8 @@ class PasswordChangeResource(object):
             logging.debug(user.id)
             if crypt.verify(password, user["password"]):
                 logging.debug("Valid user, jwt'ing!")
-                setattr(user, "password", crypt.encrypt(new_password))
-                setattr(user, "pw_last_changed", datetime.utcnow())
-                user.save()
+                user.update(password=crypt.encrypt(new_password))
+                user.update(pw_last_changed=datetime.utcnow())                
                 # We need to give new token when password changes.
                 # All previously given tokens are now invalid
                 self.add_new_jwtoken(resp, user.email, user.pw_last_changed)

@@ -1,0 +1,9 @@
+Register:
+curl -X  POST -H "Content-Type:application/json" -d '{"email":"dksreddy@gmail.com","password":"abcd1234","phone":"00447901103131","country_code":"IN","display_name":"dksreddy"}' http://localhost:8000/register
+
+Get OTP code:
+curl -X  GET -H "Content-Type:application/json" -d '{"phone":"00447901103131"}' http://localhost:8000/verify
+
+Verify OTP code (use auth token you get when getting OTP code):
+curl -X  POST -H "auth_token:eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1MDY5ODIzMDgsInVzZXJfaWRlbnRpZmllciI6IjAwNDQ3OTAxMTAzMTMxIn0.4MTuBa_8NfBCA6fOQ0zzDj-jTIUkNAGEnusGmZKAnjA"  -H "Content-Type:application/json" -d '{"phone":"00447901103131","code":"4603"}' http://localhost:8000/verify
+

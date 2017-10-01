@@ -27,7 +27,7 @@ class UggiPuggi(object):
 
         self.config = config
 
-        shared_secret = os.getenv(AUTH_SHARED_SECRET_ENV)
+        shared_secret = os.getenv(AUTH_SHARED_SECRET_ENV, 'uggipuggi')
         
         COOKIE_OPTS = {"name": "auth_token",
                        "location": "header",
@@ -72,7 +72,8 @@ class UggiPuggi(object):
         self.app.add_route('/password_change', self.pw_change)
         # batch resources
         self.app.add_route('/batch/recipes', batch.RecipeCollection())
-
+        self.logger.info('Loading routes FINISHED')
+        
     def _setup_db(self, db_section='mongodb'):
         self.logger.info('connecting to database ...')
         # get all config values about DB
