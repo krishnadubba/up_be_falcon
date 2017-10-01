@@ -116,10 +116,18 @@ class VerifyPhoneResource(object):
             
             response = self.sms.send_message(params)
             logging.debug(response)
-            if response[0] == 202:                
-                new_user = VerifyPhone(phone=data["phone"], otp=otpass)
-                new_user.save()
-                logging.debug("Added new user in verify database as sms OTP successful")
+            if response[0] == 202:
+                # See if there is a user with that phone in verify_user DB
+                verify_user = self.get_user('phone', phone_number, verify=True)
+                if verify_user:
+                    # If user is there, just update otp, this is just resend OTP request
+                    verify_user.update(otp=otpass)
+                    logging.debug("User present in verify database, updating with new OTP")
+                else:
+                    # Else create new user with that phone in verify_user DB
+                    verify_user = VerifyPhone(phone=data["phone"], otp=otpass)
+                    verify_user.save()
+                    logging.debug("Added new user in verify database as sms OTP successful")
                 self.add_new_jwtoken(resp, phone_number)
                 resp.status = falcon.HTTP_OK
             else:
