@@ -23,6 +23,24 @@ class Role(object):
     def get_role_type(role):
         return Role.ROLE_MAP.get(role, 'user')
 
+class Subscription(object):
+    # defines all available subscription for users
+    # this will and should determine the access control permissions and features for each endpoint
+    ADS = 10
+    BUSINESS = 8
+    PREMIUM = 4
+    FREE = 1
+    
+    SUBSCRIPTION_MAP = {
+        ADS: 'ads',
+        BUSINESS: 'business',
+        PREMIUM: 'premium',
+        FREE: 'free',
+    }
+
+    @staticmethod
+    def get_subscription_type(subscription):
+        return Subscription.SUBSCRIPTION_MAP.get(subscription, 'free')
 
 class User(mongo.DynamicDocument):
 
@@ -38,8 +56,18 @@ class User(mongo.DynamicDocument):
     phone = mongo.StringField(required=True, unique=True)  # contact number
     password = mongo.StringField(required=True, min_length=8)
     pw_last_changed = mongo.DateTimeField(required=True)
-    phone_verified  = mongo.BooleanField(required=True)
+    phone_verified  = mongo.BooleanField(required=True, default=False)
+    account_active  = mongo.BooleanField(required=True, default=False)
+    subscription = mongo.IntField(required=True, default=Subscription.FREE)
+    online_status = mongo.IntField(required=True)
 
+    @property
+    def subscription_type(self):
+        return Subscription.get_subscription_type(self.subscription)
+    
+    def subscription_satisfy(self, subscription):
+        return self.subscription >= subscription
+    
     @property
     def role_type(self):
         return Role.get_role_type(self.role)

@@ -40,7 +40,7 @@ ACL_MAP = {
     '/users/+': {
         'get': Role.USER,
         'put': Role.EMPLOYEE,
-        'delete': Role.EMPLOYEE
+        'delete': Role.ADMIN
     },
     '/verify': {
         'get': Role.USER,
@@ -197,6 +197,7 @@ class VerifyPhoneResource(object):
             if otp_code == user.otp:
                 full_user = self.get_user('phone', phone_number)
                 full_user.update(phone_verified=True)
+                full_user.update(account_active=True)
                 logging.debug("User verification: Success")
                 resp.status = falcon.HTTP_ACCEPTED
             else:
@@ -264,9 +265,8 @@ class RegisterResource(object):
                 "I don't understand", traceback.format_exc())
         
         logging.debug(data)
-        email = data["email"]
-        password = data["password"]
-        user = self.get_user('email', email)
+        phone = data["phone"]
+        user = self.get_user('phone', phone)
         
         logging.debug("getting user")
         logging.debug(user)
@@ -276,9 +276,13 @@ class RegisterResource(object):
                                           ['Hello="World!"'])
         else:
             logging.debug("Adding new user...")
-            new_user = User(email=email, password=crypt.encrypt(password), phone=data["phone"], 
-                            country_code=data["country_code"], display_name=data["display_name"],
-                            pw_last_changed=datetime.utcnow(), phone_verified=False)
+            # We don't check of display name is unique. We only check for email and phone 
+            new_user = User(email=data["email"], 
+                            password=crypt.encrypt(data["password"]),
+                            phone=phone, 
+                            country_code=data["country_code"],
+                            display_name=data["display_name"],
+                            pw_last_changed=datetime.utcnow())
             new_user.save()
             resp.status = falcon.HTTP_CREATED #HTTP_201
             logging.debug("Added new user")
