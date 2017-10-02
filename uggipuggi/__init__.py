@@ -2,10 +2,11 @@
 
 from __future__ import absolute_import
 #import __builtin__
+import os
 import builtins
 import falcon
 import logging
-import os
+import logging.config as logging_config
 import logging.handlers
 import time
 from mongoengine import connection
@@ -14,11 +15,6 @@ from uggipuggi.services.user import get_user
 from uggipuggi.middlewares import auth_jwt
 from uggipuggi.constants import DATETIME_FORMAT, AUTH_SHARED_SECRET_ENV, \
                                 MAX_TOKEN_AGE, TOKEN_EXPIRATION_SECS, VERIFY_PHONE_TOKEN_EXPIRATION_SECS
-
-
-def create_uggipuggi(**config):
-    uggipuggi = UggiPuggi(config)
-    return uggipuggi
 
 
 class UggiPuggi(object):
@@ -134,7 +130,7 @@ class UggiPuggi(object):
         LOG_SETTINGS['loggers']['']['level'] = log_level        
         if os.environ.get('UGGIPUGGI_BACKEND_ENV', 'dev') == 'live':
             LOG_SETTINGS['loggers']['']['handlers'] = ['rotate_file']           
-        logging.config.dictConfig(LOG_SETTINGS)
+        logging_config.dictConfig(LOG_SETTINGS)
         return logging.getLogger(__name__) 
         
 class CorsMiddleware():
