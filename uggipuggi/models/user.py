@@ -59,7 +59,7 @@ class User(mongo.DynamicDocument):
     phone_verified  = mongo.BooleanField(required=True, default=False)
     account_active  = mongo.BooleanField(required=True, default=False)
     subscription = mongo.IntField(required=True, default=Subscription.FREE)
-    online_status = mongo.IntField(required=True)
+    #online_status = mongo.IntField(required=True)
 
     @property
     def subscription_type(self):
