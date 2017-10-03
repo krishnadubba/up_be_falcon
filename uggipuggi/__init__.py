@@ -32,7 +32,7 @@ class UggiPuggi(object):
                        "http_only": True}        
 
         # LoginResource, AuthMiddleware
-        self.register, self.forgot_password, self.pw_change, self.login, self.verify_phone, self.auth_middleware = auth_jwt.get_auth_objects(
+        self.forgot_password, self.register, self.pw_change, self.login, self.verify_phone, self.auth_middleware = auth_jwt.get_auth_objects(
             get_user,
             shared_secret, # random secret
             TOKEN_EXPIRATION_SECS,

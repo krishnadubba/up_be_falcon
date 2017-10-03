@@ -3,6 +3,7 @@ import logging
 import falcon
 import jwt
 import os
+import json
 import plivo
 import random
 import string
@@ -20,6 +21,9 @@ def random_with_N_digits(n):
 
 DEFAULT_TOKEN_OPTS = {"name": "auth_token", "location": "header"}
 SRC_PHONE_NUM = '00447539020600'
+sms_auth_id = os.environ["SMS_AUTH_ID"]
+sms_auth_token = os.environ["SMS_AUTH_TOKEN"]
+sms = plivo.RestAPI(sms_auth_id, sms_auth_token)
 
 # role-based permission control
 ACL_MAP = {
@@ -58,83 +62,13 @@ ACL_MAP = {
 
 class VerifyPhoneResource(object):
 
-    def __init__(self, get_user, secret, verify_phone_token_expiration_seconds, **token_opts):
-        sms_auth_id = os.environ["SMS_AUTH_ID"]
-        sms_auth_token = os.environ["SMS_AUTH_TOKEN"]
-        
-        self.sms = plivo.RestAPI(sms_auth_id, sms_auth_token)
+    def __init__(self, get_user, secret, **token_opts):
         
         self.get_user = get_user
         self.secret = secret
-        self.verify_phone_token_expiration_seconds = verify_phone_token_expiration_seconds
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         logging.debug(token_opts)
 
-    def on_get(self, req, resp):
-        # Used to get the OTP
-        logging.debug("Reached on_get() in VerifyPhone")
-        try:
-            req_stream = req.stream.read()
-            logging.debug("req_stream")
-            logging.debug(req_stream)
-            
-            if isinstance(req_stream, bytes):
-                data = json_util.loads(req_stream.decode('utf8'))
-            else:
-                data = json_util.loads(req_stream)
-        except Exception:
-            raise falcon.HTTPBadRequest(
-                "I don't understand", traceback.format_exc())
-        
-        logging.debug(data)
-        phone_number = data["phone"]
-        logging.debug("getting user")        
-        user = self.get_user('phone', phone_number)
-        
-        if not user:
-            description = ('No user found with this phone number. Please register.')
-            logging.warn('User record with this phone number does not exist!')        
-            raise falcon.HTTPForbidden('User record with this phone number does not exist!',
-                                       description,
-                                       href='http://docs.example.com/auth') 
-        if user.phone_verified:
-            logging.debug(user.phone)            
-            raise falcon.HTTPUnauthorized('User already exists with this phone number!',
-                                          'Please login.',
-                                          ['Hello="World!"'])
-        else:
-            logging.debug("Sending SMS to new user ...")
-            otpass = random_with_N_digits(4)
-            
-            # Plivo does not accept 0044, only accepts +44
-            plivo_valid_dst = '+' + phone_number[2:]
-            params = {
-                'src': SRC_PHONE_NUM, # Sender's phone number with country code
-                'dst' : plivo_valid_dst,  # Receiver's phone Number with country code
-                'text' : u"Your UggiPuggi OTP: %s" %otpass, # Your SMS Text Message - English
-            }
-            
-            response = self.sms.send_message(params)
-            logging.debug(response)
-            if response[0] == 202:
-                # See if there is a user with that phone in verify_user DB
-                verify_user = self.get_user('phone', phone_number, verify=True)
-                if verify_user:
-                    # If user is there, just update otp, this is just resend OTP request
-                    verify_user.update(otp=otpass)
-                    logging.debug("User present in verify database, updating with new OTP")
-                else:
-                    # Else create new user with that phone in verify_user DB
-                    verify_user = VerifyPhone(phone=data["phone"], otp=otpass)
-                    verify_user.save()
-                    logging.debug("Added new user in verify database as sms OTP successful")
-                self.add_new_jwtoken(resp, phone_number)
-                resp.status = falcon.HTTP_OK
-            else:
-                logging.debug("OTP SMS failed!")
-                raise falcon.HTTPBadRequest(
-                                "OTP SMS failed!", traceback.format_exc())
-            
     def on_post(self, req, resp):
         # Used to send the OTP for verificiation
         challenges = ['Hello="World"']
@@ -167,6 +101,7 @@ class VerifyPhoneResource(object):
             # Unrecognized token location
             token = None
 
+        logging.debug(token)
         if token is None:
             description = ('Please provide an auth token as part of the request.')
             raise falcon.HTTPPreconditionFailed('Auth token required',
@@ -206,33 +141,7 @@ class VerifyPhoneResource(object):
                 raise falcon.HTTPNotAcceptable(description,
                                                href='http://docs.example.com/auth')
                 
-    # given a user identifier, this will add a new token to the response
-    # Typically you would call this from within your login function, after the
-    # back end has OK'd the username/password
-    def add_new_jwtoken(self, resp, user_identifier=None):
-        # add a JSON web token to the response headers
-        if not user_identifier:
-            resp.status = falcon.HTTP_BAD_REQUEST
-            raise Exception('Empty user_identifer passed to set JWT')
-        logging.debug(
-            "Creating new JWT, user_identifier is: {}".format(user_identifier))
-        token = jwt.encode({'user_identifier': user_identifier,
-                            'exp': datetime.utcnow() + timedelta(seconds=self.verify_phone_token_expiration_seconds)},
-                           self.secret,
-                           algorithm='HS256').decode("utf-8")
-        logging.debug("Setting TOKEN!")
-        self.token_opts["value"] = token
-        logging.debug(self.token_opts)
-        if self.token_opts.get('location', 'cookie') == 'cookie': # default to cookie
-            resp.set_cookie(**self.token_opts)
-        elif self.token_opts['location'] == 'header':
-            resp.body = json_util.dumps({
-                self.token_opts['name'] : self.token_opts['value']
-                })
-        else:
-            raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')
-        resp.status = falcon.HTTP_CREATED #HTTP_201
-        
+                       
     def _token_is_valid(self, resp, token):
         try:
             options = {'verify_exp': True}
@@ -244,8 +153,11 @@ class VerifyPhoneResource(object):
         
 class RegisterResource(object):
 
-    def __init__(self, get_user):
+    def __init__(self, get_user, secret, verify_phone_token_expiration_seconds, **token_opts):
         self.get_user = get_user
+        self.secret = secret
+        self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
+        self.verify_phone_token_expiration_seconds = verify_phone_token_expiration_seconds        
 
     def on_post(self, req, resp):
         # Should we check if the number supplied is same as the number verified?
@@ -284,8 +196,68 @@ class RegisterResource(object):
                             display_name=data["display_name"],
                             pw_last_changed=datetime.utcnow())
             new_user.save()
-            resp.status = falcon.HTTP_CREATED #HTTP_201
-            logging.debug("Added new user")
+            
+            logging.debug("Sending SMS to new user ...")
+            otpass = random_with_N_digits(4)
+            logging.debug(otpass)
+            # Plivo does not accept 0044, only accepts +44
+            plivo_valid_dst = '+' + phone[2:]
+            params = {
+                'src': SRC_PHONE_NUM, # Sender's phone number with country code
+                'dst' : plivo_valid_dst,  # Receiver's phone Number with country code
+                'text' : u"Your UggiPuggi OTP: %s" %otpass, # Your SMS Text Message - English
+            }
+            
+            #response = sms.send_message(params)
+            #logging.debug(response)
+            response = [202]            
+            if response[0] == 202:
+                # See if there is a user with that phone in verify_user DB
+                verify_user = self.get_user('phone', phone, verify=True)
+                if verify_user:
+                    # If user is there, just update otp, this is just resend OTP request
+                    verify_user.update(otp=otpass)
+                    logging.debug("User present in verify database, updating with new OTP")
+                else:
+                    # Else create new user with that phone in verify_user DB
+                    verify_user = VerifyPhone(phone=phone, otp=otpass)
+                    verify_user.save()
+                    logging.debug("Added new user in verify database as sms OTP successful")
+                self.add_new_jwtoken(resp, phone)
+                resp.status = falcon.HTTP_OK
+            else:
+                logging.debug("OTP SMS failed!")
+                raise falcon.HTTPBadRequest(
+                                "OTP SMS failed!", traceback.format_exc())
+            
+            logging.debug("Added new user. Please verify phone number")
+
+    # given a user identifier, this will add a new token to the response
+    # Typically you would call this from within your login function, after the
+    # back end has OK'd the username/password
+    def add_new_jwtoken(self, resp, user_identifier=None):
+        # add a JSON web token to the response headers
+        if not user_identifier:
+            resp.status = falcon.HTTP_BAD_REQUEST
+            raise Exception('Empty user_identifer passed to set JWT')
+        logging.debug(
+            "Creating new JWT, user_identifier is: {}".format(user_identifier))
+        token = jwt.encode({'user_identifier': user_identifier,
+                            'exp': datetime.utcnow() + timedelta(seconds=self.verify_phone_token_expiration_seconds)},
+                           self.secret,
+                           algorithm='HS256').decode("utf-8")
+        logging.debug("Setting TOKEN!")
+        self.token_opts["value"] = token
+        logging.debug(self.token_opts)
+        if self.token_opts.get('location', 'cookie') == 'cookie': # default to cookie
+            resp.set_cookie(**self.token_opts)
+        elif self.token_opts['location'] == 'header':
+            resp.body = json_util.dumps({
+                self.token_opts['name'] : self.token_opts['value']
+                })
+        else:
+            raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')
+        resp.status = falcon.HTTP_CREATED #HTTP_201
 
 class LoginResource(object):
 
@@ -504,9 +476,12 @@ class AuthMiddleware(object):
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
 
     def process_resource(self, req, resp, resource, params): # pylint: disable=unused-argument
-        logging.debug("Processing request in AuthMiddleware: ")
-        if isinstance(resource, LoginResource) or isinstance(resource, RegisterResource) or isinstance(resource, VerifyPhoneResource) \
-           or isinstance(resource, PasswordChangeResource) or isinstance(resource, ForgotPasswordResource):
+        logging.debug("Processing request in AuthMiddleware: %s" %repr(type(resource)))
+        if isinstance(resource, LoginResource) or \
+           isinstance(resource, RegisterResource) or \
+           isinstance(resource, VerifyPhoneResource) or \
+           isinstance(resource, PasswordChangeResource) or \
+           isinstance(resource, ForgotPasswordResource):
             logging.debug("DON'T NEED TOKEN")
             return
         
@@ -579,9 +554,9 @@ class AuthMiddleware(object):
         return user is not None and self._access_allowed(req, user)
 
 def get_auth_objects(get_user, secret, token_expiration_seconds, verify_phone_token_expiration_seconds, token_opts=DEFAULT_TOKEN_OPTS): # pylint: disable=dangerous-default-value
-    return RegisterResource(get_user),\
-           ForgotPasswordResource(get_user),\
+    return ForgotPasswordResource(get_user),\
+           RegisterResource(get_user, secret, verify_phone_token_expiration_seconds, **token_opts),\
            PasswordChangeResource(get_user, secret, token_expiration_seconds, **token_opts),\
            LoginResource(get_user, secret, token_expiration_seconds, **token_opts),\
-           VerifyPhoneResource(get_user, secret, verify_phone_token_expiration_seconds, **token_opts),\
+           VerifyPhoneResource(get_user, secret, **token_opts),\
            AuthMiddleware(get_user, secret, **token_opts)
