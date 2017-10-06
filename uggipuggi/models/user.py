@@ -44,21 +44,24 @@ class Subscription(object):
 
 class User(mongo.DynamicDocument):
 
-    first_name = mongo.StringField(required=False)
-    last_name = mongo.StringField(required=False)
-    display_name = mongo.StringField(required=True, min_length=5, max_length=20)
-    email = mongo.EmailField(required=True, unique=True)
-    role = mongo.IntField(required=True, default=Role.USER)
-    facebook_id = mongo.LongField(required=False)  # Facebook ID is numeric but can be pretty big
-    twitter_id = mongo.StringField(required=False)  # Twitter ID is alphanumeric
-    instagram_id = mongo.StringField(required=False)  # Instagram ID is alphanumeric
-    country_code = mongo.StringField(min_length=2, max_length=2, required=True)  # follows ISO_3166-1
-    phone = mongo.StringField(required=True, unique=True)  # contact number
-    password = mongo.StringField(required=True, min_length=8)
+    display_name    = mongo.StringField(required=True, min_length=5, max_length=20)
+    email           = mongo.EmailField(required=True, unique=True)
+    role            = mongo.IntField(required=True, default=Role.USER)
+    country_code    = mongo.StringField(min_length=2, max_length=2, required=True)  # follows ISO_3166-1
+    phone           = mongo.StringField(required=True, unique=True)  # contact number
+    password        = mongo.StringField(required=True, min_length=8)
     pw_last_changed = mongo.DateTimeField(required=True)
     phone_verified  = mongo.BooleanField(required=True, default=False)
     account_active  = mongo.BooleanField(required=True, default=False)
-    subscription = mongo.IntField(required=True, default=Subscription.FREE)
+    subscription    = mongo.IntField(required=True, default=Subscription.FREE)    
+    # Not mandatory
+    first_name      = mongo.StringField(required=False)
+    last_name       = mongo.StringField(required=False)
+    display_pic     = mongo.URLField(required=False)
+    gender          = mongo.StringField(required=False, min_length=4, max_length=6)        
+    facebook_id     = mongo.LongField(required=False)  # Facebook ID is numeric but can be pretty big
+    twitter_id      = mongo.StringField(required=False)  # Twitter ID is alphanumeric
+    instagram_id    = mongo.StringField(required=False)  # Instagram ID is alphanumeric
     #online_status = mongo.IntField(required=True)
 
     @property
