@@ -10,7 +10,7 @@ import logging.config as logging_config
 import logging.handlers
 import time
 from mongoengine import connection
-from uggipuggi.controllers import recipe, tag, status, rating, user, batch
+from uggipuggi.controllers import recipe, tag, status, rating, user, batch, activity
 from uggipuggi.services.user import get_user  
 from uggipuggi.middlewares import auth_jwt
 from uggipuggi.constants import DATETIME_FORMAT, AUTH_SHARED_SECRET_ENV, \
@@ -58,6 +58,9 @@ class UggiPuggi(object):
         self.logger.info('Loading routes ...')
         self.app.add_route('/recipes', recipe.Collection())
         self.app.add_route('/recipes/{id}', recipe.Item())
+        
+        self.app.add_route('/activity', activity.Collection())
+        self.app.add_route('/activity/{id}', activity.Item())
         
         self.app.add_route('/users', user.Collection())
         self.app.add_route('/users/{id}', user.Item())

@@ -44,7 +44,7 @@ class Subscription(object):
 
 class User(mongo.DynamicDocument):
 
-    display_name    = mongo.StringField(required=True, min_length=5, max_length=20)
+    display_name    = mongo.StringField(required=True, min_length=4, max_length=20)
     email           = mongo.EmailField(required=True, unique=True)
     role            = mongo.IntField(required=True, default=Role.USER)
     country_code    = mongo.StringField(min_length=2, max_length=2, required=True)  # follows ISO_3166-1

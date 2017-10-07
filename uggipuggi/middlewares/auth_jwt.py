@@ -9,7 +9,7 @@ import random
 import string
 
 from random import randint
-from bson import json_util
+from bson import json_util, ObjectId
 from datetime import datetime, timedelta
 from passlib.hash import bcrypt as crypt
 from uggipuggi.models.user import Role, User, VerifyPhone
@@ -24,12 +24,13 @@ SRC_PHONE_NUM = '00447539020600'
 sms_auth_id = os.environ["SMS_AUTH_ID"]
 sms_auth_token = os.environ["SMS_AUTH_TOKEN"]
 sms = plivo.RestAPI(sms_auth_id, sms_auth_token)
+SERVER_SECURE_MODE = 'DEBUG'
 
 # role-based permission control
 ACL_MAP = {
     '/recipes': {
         'get': Role.USER,
-        'post': Role.OWNER
+        'post': Role.USER
     },
     '/recipes/+': {
         'get': Role.USER,
@@ -163,6 +164,7 @@ class RegisterResource(object):
         # Should we check if the number supplied is same as the number verified?
         # Can we do this in client instead of server?
         logging.debug("Reached on_post() in Register")
+        resp.body = {}
         try:
             req_stream = req.stream.read()
             logging.debug("req_stream")
@@ -196,9 +198,18 @@ class RegisterResource(object):
                             display_name=data["display_name"],
                             pw_last_changed=datetime.utcnow())
             new_user.save()
+ 
+            if 'gender' in data:
+                new_user.update(gender=data['gender'])
+            if 'display_pic' in data:
+                new_user.update(display_pic=data['display_pic'])
             
             logging.debug("Sending SMS to new user ...")
-            otpass = random_with_N_digits(4)
+            if SERVER_SECURE_MODE == 'DEBUG':
+                logging.warn("SERVER RUNNING in DEBUG Mode")
+                otpass = repr(9999)
+            else:    
+                otpass = random_with_N_digits(4)
             logging.debug(otpass)
             # Plivo does not accept 0044, only accepts +44
             plivo_valid_dst = '+' + phone[2:]
@@ -252,10 +263,8 @@ class RegisterResource(object):
         if self.token_opts.get('location', 'cookie') == 'cookie': # default to cookie
             resp.set_cookie(**self.token_opts)
         elif self.token_opts['location'] == 'header':
-            resp.body = {self.token_opts['name'] : self.token_opts['value']}
-            #resp.body = json_util.dumps({
-                #self.token_opts['name'] : self.token_opts['value']
-                #})
+            resp.body.update({self.token_opts['name'] : self.token_opts['value']})
+            resp.body = json_util.dumps(resp.body)
         else:
             raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')
         resp.status = falcon.HTTP_CREATED #HTTP_201
@@ -271,6 +280,7 @@ class LoginResource(object):
 
     def on_post(self, req, resp):
         logging.debug("Reached on_post() in Login")
+        resp.body = {}
         try:
             req_stream = req.stream.read()
             logging.debug("req_stream")
@@ -291,9 +301,14 @@ class LoginResource(object):
         user = self.get_user('email', email)
         if user:
             logging.debug(user.id)
+            if not user.phone_verified:
+                raise falcon.HTTPUnauthorized('Phone not verified. Please verify phone.',
+                                              'User did not verify phone.',
+                                              ['Hello="World!"'])                
             if crypt.verify(password, user["password"]):
                 logging.debug("Valid user, jwt'ing!")
-                self.add_new_jwtoken(resp, user.email, user.pw_last_changed)
+                resp.body.update({'user_id':str(user.id)})
+                self.add_new_jwtoken(resp, user.phone, user.pw_last_changed)                
                 resp.status = falcon.HTTP_ACCEPTED #HTTP_202
             else:
                 description = ('Password did not match, please try again')
@@ -330,12 +345,9 @@ class LoginResource(object):
         if self.token_opts.get('location', 'cookie') == 'cookie': # default to cookie
             resp.set_cookie(**self.token_opts)
         elif self.token_opts['location'] == 'header':
-            resp.body = {self.token_opts['name'] : self.token_opts['value'],
-                         "user_identifier": user_identifier}
-            #resp.body = json_util.dumps({
-                #self.token_opts['name'] : self.token_opts['value'],
-                #"user_identifier": user_identifier
-                #})
+            resp.body.update({self.token_opts['name'] : self.token_opts['value'],
+                              "user_identifier": user_identifier})
+            resp.body = json_util.dumps(resp.body)
         else:
             resp.status = falcon.HTTP_INTERNAL_SERVER_ERROR
             raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')
@@ -515,11 +527,13 @@ class AuthMiddleware(object):
         
         user_id = self.decoded.pop("user_identifier")
         pw_last_changed = self.decoded.pop("pw_last_changed")
-        
+        logging.debug("Password last changed recovered from auth_token:")
+        logging.debug(pw_last_changed)
         # check if user is authorized to this request
-        if not self._is_user_authorized(req, user_id, pw_last_changed):
+        if not self._is_user_authorized(req, user_id, pw_last_changed, user_id_type='phone'):
             resp.status = falcon.HTTP_UNAUTHORIZED
-            raise HTTPUnauthorized(
+            logging.error("Authorization Failed: User does not have privilege/permission or supplied expired token.")
+            raise falcon.HTTPUnauthorized(
                 title='Authorization Failed',
                 description='User does not have privilege/permission to view requested resource.'
             )        
@@ -536,9 +550,12 @@ class AuthMiddleware(object):
             return False
 
     def _access_allowed(self, req, user):
+        logging.debug("Checking if user is allowed access or not ...")
         method = req.method.lower() or 'get'
         path = req.path.lower()
-
+        logging.debug("method: %s" %repr(method))
+        logging.debug("path: %s" %repr(path))
+        
         if path not in ACL_MAP:
             # try replacing :id value with `+`
             sub_path, _, id = path.rpartition('/')
@@ -547,12 +564,14 @@ class AuthMiddleware(object):
             path = "{}/+".format(sub_path)
             if path not in ACL_MAP:
                 return False
-
+            
+        logging.debug("Required role: %s" %repr(ACL_MAP[path].get(method, Role.USER)))
         return user.role_satisfy(ACL_MAP[path].get(method, Role.USER))  # defaults to minimal role if method not found
 
-    def _is_user_authorized(self, req, user_id, pw_last_changed):
-        user = self.get_user('email', user_id)
+    def _is_user_authorized(self, req, user_id, pw_last_changed, user_id_type='phone'):
+        user = self.get_user(user_id_type, user_id)
         if str(user.pw_last_changed) != pw_last_changed:
+            logging.debug("Supplied authentication token is expired. Please supply new token.")
             return False
         return user is not None and self._access_allowed(req, user)
 

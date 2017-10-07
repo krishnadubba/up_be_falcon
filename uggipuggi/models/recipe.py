@@ -6,25 +6,26 @@ from uggipuggi.constants import TWEET_CHAR_LENGTH
 
 class Recipe(mongo.DynamicDocument):
     recipe_name        = mongo.StringField(required=True)
-    user_id            = mongo.StringField(required=True)
+    user_id            = mongo.StringField(required=True) #User phone number is used to identify owner
+    user_name          = mongo.StringField(required=True) #User display name
     steps              = mongo.ListField(required=True)
+    likes_count        = mongo.IntField(required=True, default=0)
     ingredients        = mongo.ListField(required=True) #Ingredients names
-    ingredients_ids    = mongo.ListField(required=True) #Ingredients ids
     ingredients_quant  = mongo.ListField(required=True) 
     ingredients_metric = mongo.ListField(required=True)
     ingredients_imgs   = mongo.ListField(mongo.URLField()) # list of urls of ingredients images
-    likes_count        = mongo.IntField(required=True, default=0)
+    ingredients_ids    = mongo.ListField(required=False) #Ingredients ids        
     tips               = mongo.ListField(required=False)    
-    description        = mongo.StringField(max_length=TWEET_CHAR_LENGTH)
+    description        = mongo.StringField(required=False, max_length=TWEET_CHAR_LENGTH)
     images             = mongo.ListField(mongo.URLField())  # list of urls
-    tags               = mongo.ListField()
-    category           = mongo.ListField()         # Should this be a class?
-    rating_count       = mongo.IntField(default=0)
-    shares_count       = mongo.IntField(default=0)
-    rating_total       = mongo.FloatField(default=0)
-    prep_time          = mongo.IntField(default=0) # In minutes   
-    cook_time          = mongo.IntField(default=0) # In minutes   
-    last_modified      = mongo.DateTimeField()
+    tags               = mongo.ListField(required=False)
+    category           = mongo.ListField(required=False)         # Should this be a class?
+    rating_count       = mongo.IntField(required=False, default=0)
+    shares_count       = mongo.IntField(required=False, default=0)
+    rating_total       = mongo.FloatField(required=False, default=0.0)
+    prep_time          = mongo.IntField(required=False, default=0) # In minutes   
+    cook_time          = mongo.IntField(required=False, default=0) # In minutes   
+    last_modified      = mongo.DateTimeField(required=False)
     
     @property
     def rating(self):

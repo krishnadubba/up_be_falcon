@@ -325,19 +325,19 @@ recipes = [
       'name': 'City Park Salad',
       'image': 'assets/img/city_spark_salad.png',
       'author': users[8],
-      'direction': """<b>White Balsamic Vinaigrette:</b>\n
-      <ul>\n
-        <li>Add all ingredients or a mixing bowl or squeeze bottle.</li>\n
-        <li>Whisk or shake well to combine ingredients.</li>\n
-        <li>Set aside until ready to dress the salads.</li>\n
-      </ul>\n
-      <b>Salad Assembly:</b>\n
-      <ul>\n
-        <li>Cook bacon over medium high heat in a skillet until crispy. Set aside to cool and drain on paper towels. Chop once cool.</li>\n
-        <li>Place romaine on two plates and top each with half of the dressing.</li>\n
-        <li>Finish the salads by topping each with half of the bacon, apple, blue cheese and green onion.</li>\n
-        <li>Serve immediately.</li>\n
-      </ul>\n""",
+      'direction': """<b>White Balsamic Vinaigrette:</b>
+      <ul>
+        <li>Add all ingredients or a mixing bowl or squeeze bottle.</li>
+        <li>Whisk or shake well to combine ingredients.</li>
+        <li>Set aside until ready to dress the salads.</li>
+      </ul>
+      <b>Salad Assembly:</b>
+      <ul>
+        <li>Cook bacon over medium high heat in a skillet until crispy. Set aside to cool and drain on paper towels. Chop once cool.</li>
+        <li>Place romaine on two plates and top each with half of the dressing.</li>
+        <li>Finish the salads by topping each with half of the bacon, apple, blue cheese and green onion.</li>
+        <li>Serve immediately.</li>
+      </ul>""",
       'ingredients': [
         {
           'material': materials[11],
@@ -395,12 +395,12 @@ recipes = [
         'name': 'Roasted Veggie Flatbread Pizza',
         'image': 'assets/img/roasted-veggie-flatbread-pizza.png',
         'author': users[6],
-        'direction':"""<ul>\n
-        <li>Preheat the oven to 400 ºF.</li>\n
-        <li>In a medium large skillet over medium high heat, combine the onion, salt, pepper and neutral oil. Cook for 10-15 minutes until onion is caramelized.</li>\n
-        <li>Add the hearty salad greens and toss well to combine. Remove from heat as soon as salad greens are softened.</li>\n
-        <li>Place the four naan flatbreads between two baking sheets. Divide the prepared topping ingredients into four portions, and top each bread with a quarter of the ingredients. Save the mozzarella and green onions for last - use those to top all of the other ingredients.</li>\n
-        <li>Bake for 10 minutes. Remove from oven and allow to cool 5 minutes before cutting.</li>\n
+        'direction':"""<ul>
+        <li>Preheat the oven to 400 ºF.</li>
+        <li>In a medium large skillet over medium high heat, combine the onion, salt, pepper and neutral oil. Cook for 10-15 minutes until onion is caramelized.</li>
+        <li>Add the hearty salad greens and toss well to combine. Remove from heat as soon as salad greens are softened.</li>
+        <li>Place the four naan flatbreads between two baking sheets. Divide the prepared topping ingredients into four portions, and top each bread with a quarter of the ingredients. Save the mozzarella and green onions for last - use those to top all of the other ingredients.</li>
+        <li>Bake for 10 minutes. Remove from oven and allow to cool 5 minutes before cutting.</li>
         </ul>"""
         ,
         'ingredients': [
@@ -457,13 +457,13 @@ recipes = [
         'name': 'Cajun Crawfish Pasta',
         'image': 'assets/img/one-pot-cajun-pasta.jpg',
         'author': users[10],
-        'direction':"""<ul>\n
-        <li>If you don't have cooked noodles on hand already, cook the noodles and cool them before starting to cook the rest of the dish. Set aside for now. You can cook the noodles while prepping the remaining ingredients in the recipe and that should take about the same amount of time.</li>\n
-        <li>In a medium-sized pot, melt the four tablespoons of butter over medium high heat.</li>\n
-        <li>Add the mushrooms, tomatoes, tasso, red bell pepper, green onion, garlic, kosher salt and cayenne pepper. Stir well and cook about 5 minutes, until vegetables are softened.</li>\n
-        <li>Stir in the crawfish tails and continue to cook another 3 minutes until crawfish tails are heated through.</li>\n
-        <li>Add the pasta, parsley (or chives) and parmesan cheese to the pot. Stir well to incorporate all ingredients.</li>\n
-        <li>Serve immediately. Tastes best with garlic bread on the side.</li>\n
+        'direction':"""<ul>
+        <li>If you don't have cooked noodles on hand already, cook the noodles and cool them before starting to cook the rest of the dish. Set aside for now. You can cook the noodles while prepping the remaining ingredients in the recipe and that should take about the same amount of time.</li>
+        <li>In a medium-sized pot, melt the four tablespoons of butter over medium high heat.</li>
+        <li>Add the mushrooms, tomatoes, tasso, red bell pepper, green onion, garlic, kosher salt and cayenne pepper. Stir well and cook about 5 minutes, until vegetables are softened.</li>
+        <li>Stir in the crawfish tails and continue to cook another 3 minutes until crawfish tails are heated through.</li>
+        <li>Add the pasta, parsley (or chives) and parmesan cheese to the pot. Stir well to incorporate all ingredients.</li>
+        <li>Serve immediately. Tastes best with garlic bread on the side.</li>
         </ul>""",
         'ingredients': [
             {
@@ -524,15 +524,15 @@ recipes = [
         'name': 'Spicy Kimchi Beff Noodles',
         'image': 'assets/img/spicy-kimchi-beef-flavor-instant-noodles.jpg',
         'author': users[5],
-        'direction':"""A homemade version of Korean-style spicy beef instant noodles made with short ribs, Korean chili paste, and kimchi.\n
-        <ul>\n
-        <li>Cover kombu with 1 quart cold water. Bring to a boil over medium-high heat. Immediately reduce heat to low and add niboshi or katsuobushi. Let steep for 15 minutes, then drain broth and discard solids. Set aside. While broth simmers, roughly chop 8 scallions and set aside. Finely slice remaining 4 scallions and refrigerate in a sealed container until ready to use.</li>\n
-        <li>Heat 1 tablespoon oil in a heavy Dutch oven or stock pot over high heat until lightly smoking. Add as many short ribs as fit in a single layer and cook, turning occasionally, until browned on all sides, about 10 minutes total. Transfer to a large bowl and repeat until short ribs are all browned.</li>\n
-        <li>Add onion (cut side down) and ginger to pot and cook until well browned, about 5 minutes. Add 6 cloves garlic and roughly chopped scallions and cook, stirring, until lightly browned, about 3 minutes. Return short ribs to pot along with gochujang and doubanjiang. Stir to coat vegetables and beef in spice mixture, then add strained kombu broth and chicken broth, scraping up any browned bits from the bottom of the pot. Bring to a boil, reduce to a bare simmer, cover with the lid slightly cracked, and cook until beef easily separates from the bones, about 4 hours. For best results, allow to cool and transfer to refrigerator overnight.</li>\n
-        <li>When ready to proceed, strain soup through a fine mesh strainer (if refrigerated overnight, you'll have to reheat it slightly until it liquefies). Transfer liquid to a medium pot and skim off any excess fat. Pick out short ribs and transfer to a bowl. Discard remaining solids. When cool enough to handle, pick meat off of short rib bones and transfer to a cutting board. Discard bones. Roughly chop meat and set aside.</li>\n
-            <li>Add kochukaru to broth. Place a fine mesh strainer over the pot and strain kimchi juice into the broth. Finely mince garlic with a garlic press or a microplane and stir into broth. Add soy sauce. Season broth to taste with salt, pepper, and extra kochukaru and gochujang if a spicier flavor is desired. Bring to a simmer and keep warm.</li>\n
-            <li>Heat remaining tablespoon oil in a medium skillet over medium-high heat until shimmering. Add mushrooms and cook until lightly browned, about 4 minutes. Add chopped short rib and cook, tossing occasionally, until crisped in spots and well browned, about 5 minutes longer. Remove from heat and set aside.</li>\n
-            <li>Cook ramen noodles according to package instructions. Divide into individual pre-heated serving bowls. Top with broth, followed by crisped beef and mushrooms, sliced scallions, kimchi, and a soft boiled egg split in half. Serve immediately.</li>\n
+        'direction':"""A homemade version of Korean-style spicy beef instant noodles made with short ribs, Korean chili paste, and kimchi.
+        <ul>
+        <li>Cover kombu with 1 quart cold water. Bring to a boil over medium-high heat. Immediately reduce heat to low and add niboshi or katsuobushi. Let steep for 15 minutes, then drain broth and discard solids. Set aside. While broth simmers, roughly chop 8 scallions and set aside. Finely slice remaining 4 scallions and refrigerate in a sealed container until ready to use.</li>
+        <li>Heat 1 tablespoon oil in a heavy Dutch oven or stock pot over high heat until lightly smoking. Add as many short ribs as fit in a single layer and cook, turning occasionally, until browned on all sides, about 10 minutes total. Transfer to a large bowl and repeat until short ribs are all browned.</li>
+        <li>Add onion (cut side down) and ginger to pot and cook until well browned, about 5 minutes. Add 6 cloves garlic and roughly chopped scallions and cook, stirring, until lightly browned, about 3 minutes. Return short ribs to pot along with gochujang and doubanjiang. Stir to coat vegetables and beef in spice mixture, then add strained kombu broth and chicken broth, scraping up any browned bits from the bottom of the pot. Bring to a boil, reduce to a bare simmer, cover with the lid slightly cracked, and cook until beef easily separates from the bones, about 4 hours. For best results, allow to cool and transfer to refrigerator overnight.</li>
+        <li>When ready to proceed, strain soup through a fine mesh strainer (if refrigerated overnight, you'll have to reheat it slightly until it liquefies). Transfer liquid to a medium pot and skim off any excess fat. Pick out short ribs and transfer to a bowl. Discard remaining solids. When cool enough to handle, pick meat off of short rib bones and transfer to a cutting board. Discard bones. Roughly chop meat and set aside.</li>
+            <li>Add kochukaru to broth. Place a fine mesh strainer over the pot and strain kimchi juice into the broth. Finely mince garlic with a garlic press or a microplane and stir into broth. Add soy sauce. Season broth to taste with salt, pepper, and extra kochukaru and gochujang if a spicier flavor is desired. Bring to a simmer and keep warm.</li>
+            <li>Heat remaining tablespoon oil in a medium skillet over medium-high heat until shimmering. Add mushrooms and cook until lightly browned, about 4 minutes. Add chopped short rib and cook, tossing occasionally, until crisped in spots and well browned, about 5 minutes longer. Remove from heat and set aside.</li>
+            <li>Cook ramen noodles according to package instructions. Divide into individual pre-heated serving bowls. Top with broth, followed by crisped beef and mushrooms, sliced scallions, kimchi, and a soft boiled egg split in half. Serve immediately.</li>
             </ul>"""
             ,
             'ingredients': [
@@ -594,13 +594,13 @@ recipes = [
         'name': 'Garlic Bread Pizza',
         'image': 'assets/img/garlic_bread_pizza.png',
         'author': users[11],
-        'direction':"""This garlic bread pizza recipe is quick, easy and delicious. It's ready in a few minutes and uses just a few simple yet tasty ingredients!\n
-        <ul>\n
-        <li>Pre-heat your oven's broiler.</li>\n
-        <li>Smear the warm red sauce on both halves of the the garlic bread.</li>\n
-        <li>Top with shredded mozzarella.</li>\n
-        <li>Place under the broiler for 3 1/2 to 4 minutes until cheese is melted and browned.</li>\n
-        <li>Top with chopped fresh parsley and serve.</li>\n
+        'direction':"""This garlic bread pizza recipe is quick, easy and delicious. It's ready in a few minutes and uses just a few simple yet tasty ingredients!
+        <ul>
+        <li>Pre-heat your oven's broiler.</li>
+        <li>Smear the warm red sauce on both halves of the the garlic bread.</li>
+        <li>Top with shredded mozzarella.</li>
+        <li>Place under the broiler for 3 1/2 to 4 minutes until cheese is melted and browned.</li>
+        <li>Top with chopped fresh parsley and serve.</li>
         </ul>"""
         ,
         'ingredients': [
@@ -647,11 +647,11 @@ recipes = [
         'name': 'Cane + Nuts Cocktail',
         'image': 'assets/img/cane_nuts_frangelico_cocktail.png',
         'author': users[11],
-        'direction':"""Cane + Nuts is a simple, delicious Frangelico cocktail recipe that also includes spiced rum and Coca-Cola. Great holiday drink!\n
-        <ul>\n
-        <li>Add both liquors to the rocks glass filled with ice then top with Coca-Cola.</li>\n
-        <li>Stir gently with a cocktail stirrer, and if desired, garnish with two Luxardo cherries.</li>\n
-        <li>Sip and enjoy!</li>\n
+        'direction':"""Cane + Nuts is a simple, delicious Frangelico cocktail recipe that also includes spiced rum and Coca-Cola. Great holiday drink!
+        <ul>
+        <li>Add both liquors to the rocks glass filled with ice then top with Coca-Cola.</li>
+        <li>Stir gently with a cocktail stirrer, and if desired, garnish with two Luxardo cherries.</li>
+        <li>Sip and enjoy!</li>
         </ul>"""
         ,
         'ingredients': [
@@ -698,11 +698,11 @@ recipes = [
         'name': 'Japanese Style Grilled Fish',
         'image': 'assets/img/nutrition01.jpg',
         'author': users[11],
-        'direction':"""Cane + Nuts is a simple, delicious Frangelico cocktail recipe that also includes spiced rum and Coca-Cola. Great holiday drink!\n
-        <ul>\n
-        <li>Add both liquors to the rocks glass filled with ice then top with Coca-Cola.</li>\n
-        <li>Stir gently with a cocktail stirrer, and if desired, garnish with two Luxardo cherries.</li>\n
-        <li>Sip and enjoy!</li>\n
+        'direction':"""Cane + Nuts is a simple, delicious Frangelico cocktail recipe that also includes spiced rum and Coca-Cola. Great holiday drink!
+        <ul>
+        <li>Add both liquors to the rocks glass filled with ice then top with Coca-Cola.</li>
+        <li>Stir gently with a cocktail stirrer, and if desired, garnish with two Luxardo cherries.</li>
+        <li>Sip and enjoy!</li>
         </ul>"""
         ,
         'ingredients': [
