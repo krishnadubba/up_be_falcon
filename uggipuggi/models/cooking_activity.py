@@ -13,8 +13,8 @@ class CookingActivity(mongo.DynamicDocument):
     tags         = mongo.ListField()
     category     = mongo.StringField()    
     shares_count = mongo.IntField(default=0)
-    prep_time    = mongo.IntField(default=0)    
-    cook_time    = mongo.IntField(default=0)    
+    prep_time    = mongo.IntField(default=15)    
+    cook_time    = mongo.IntField(default=15)    
     activity_time_stamp = mongo.DateTimeField()
     
     @property

@@ -66,10 +66,9 @@ def get_dummy_display_name(count):
 
 count = 0
 users_map = {}
-current_author_id = 'U0007'
+recipe_map = {}
 for user in users:
-    if user['id'] != current_author_id:
-        continue
+    current_author_id = user['id']
     print (user)
     payload = {"email": get_dummy_email(count),
                "password": get_dummy_password(count),
@@ -98,44 +97,61 @@ for user in users:
     users_map[user['id']].update({'login_token':login_token})
     users_map[user['id']].update({'user_id':user_mongo_id})
     
-    current_recipe = None
+    # Add all the recipes authored by this user
     for recipe in recipes:
         if recipe['author']['id'] != current_author_id:
             continue
-        current_recipe = recipe
     
-    recipe_payload = {"recipe_name": recipe['name'],
-                      "user_id": user_mongo_id,
-                      "likes_count": 0,
-                      "user_name": users_map[user['id']]['display_name'],
-                      "images":[food_gcs_base+recipe['image'].split('/')[-1]],                      
-                      }
-    steps = []
-    for direction in recipe['direction'].split('\n'):
-        if direction == '':
-            continue
-        steps.append(direction)
-    recipe_payload.update({"steps":steps})
-    
-    ingredients = []
-    ingredients_imgs   = []
-    ingredients_quant  = []
-    ingredients_metric = []
-    for ig in recipe['ingredients']:
-        ingredients_metric.append(ig['unit'])
-        ingredients_quant.append(ig['quantity'])
-        ingredients_imgs.append(food_gcs_base+ig['material']['image'].split('/')[-1])
-        ingredients.append(ig['material']['name'])
+        recipe_payload = {"recipe_name": recipe['name'],
+                          "user_id": user_mongo_id,
+                          "likes_count": 0,
+                          "user_name": users_map[user['id']]['display_name'],
+                          "images":[food_gcs_base+recipe['image'].split('/')[-1]],                      
+                          }
+        steps = []
+        for direction in recipe['direction'].split('\n'):
+            if direction == '':
+                continue
+            steps.append(direction)
+        recipe_payload.update({"steps":steps})
         
-    recipe_payload.update({'ingredients':ingredients})
-    recipe_payload.update({'ingredients_imgs':ingredients_imgs})
-    recipe_payload.update({'ingredients_quant':ingredients_quant})
-    recipe_payload.update({'ingredients_metric':ingredients_metric})    
-    
-    header.update({'auth_token':login_token})
-    r = requests.post(rest_api + 'recipes', data=json.dumps(recipe_payload), 
-                      headers=header)    
-    
+        ingredients = []
+        ingredients_imgs   = []
+        ingredients_quant  = []
+        ingredients_metric = []
+        for ig in recipe['ingredients']:
+            ingredients_metric.append(ig['unit'])
+            ingredients_quant.append(ig['quantity'])
+            ingredients_imgs.append(food_gcs_base+ig['material']['image'].split('/')[-1])
+            ingredients.append(ig['material']['name'])
+            
+        recipe_payload.update({'ingredients':ingredients})
+        recipe_payload.update({'ingredients_imgs':ingredients_imgs})
+        recipe_payload.update({'ingredients_quant':ingredients_quant})
+        recipe_payload.update({'ingredients_metric':ingredients_metric})    
+        
+        recipe_map[recipe['id']] = recipe_payload
+        
+        header.update({'auth_token':login_token})
+        r = requests.post(rest_api + 'recipes', data=json.dumps(recipe_payload), 
+                          headers=header)    
+        
+        recipe_map[recipe['id']].update({'recipe_id':json.loads(r.content.decode('utf-8'))['recipe_id']})
+                            
     count += 1
     print (r)
-
+    
+for feed in feeds:
+    user_mongo_id = users_map[feed['creator']['id']]['user_id']
+    recipe_mongo_id = recipe_map[feed['recipe']['id']]['recipe_id']
+    activity_payload = {"recipe_id": recipe_mongo_id,
+                        "user_id": user_mongo_id,
+                        "likes_count": 0,
+                        }
+    header = {'Content-Type':'application/json'}
+    header.update({'auth_token':users_map[feed['creator']['id']]['login_token']})
+    r = requests.post(rest_api + 'activity', data=json.dumps(activity_payload), 
+                      headers=header)                        
+    print (r)
+print ("=================")
+print ("=================")

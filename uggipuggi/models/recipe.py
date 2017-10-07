@@ -23,8 +23,8 @@ class Recipe(mongo.DynamicDocument):
     rating_count       = mongo.IntField(required=False, default=0)
     shares_count       = mongo.IntField(required=False, default=0)
     rating_total       = mongo.FloatField(required=False, default=0.0)
-    prep_time          = mongo.IntField(required=False, default=0) # In minutes   
-    cook_time          = mongo.IntField(required=False, default=0) # In minutes   
+    prep_time          = mongo.IntField(required=False, default=15) # In minutes   
+    cook_time          = mongo.IntField(required=False, default=15) # In minutes   
     last_modified      = mongo.DateTimeField(required=False)
     
     @property

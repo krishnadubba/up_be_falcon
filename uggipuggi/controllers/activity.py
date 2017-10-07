@@ -6,18 +6,18 @@ import logging
 from bson import json_util, ObjectId
 from uggipuggi import constants
 from uggipuggi.controllers.hooks import deserialize, serialize
-from uggipuggi.controllers.schema.activity import CookingActivitySchema, CookingActivityCreateSchema
+#from uggipuggi.controllers.schema.activity import CookingActivitySchema, CookingActivityCreateSchema
 from uggipuggi.models.cooking_activity import CookingActivity
 from uggipuggi.libs.error import HTTPBadRequest
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError
 
 
 # -------- BEFORE_HOOK functions
-def deserialize_create(req, res, resource, kwargs):
-    deserialize(req, res, resource, schema=CookingActivitySchema())
+#def deserialize_create(req, res, resource, kwargs):
+    #deserialize(req, res, resource, schema=CookingActivitySchema())
 
-def deserialize_update(req, res, id, resource):
-    deserialize(req, res, resource, schema=CookingActivitySchema())
+#def deserialize_update(req, res, id, resource):
+    #deserialize(req, res, resource, schema=CookingActivitySchema())
 
 # -------- END functions
 
@@ -77,10 +77,10 @@ class Collection(object):
         # save to DB
         activity = CookingActivity(**data)
         activity.save()
-        logger.debug("Recipe created with id: %s" %str(activity.id))
+        logger.debug("Cooking Activity created with id: %s" %str(activity.id))
         
         # return Recipe id
-        resp.body = {"recipe_id": str(activity.id)}
+        resp.body = {"activity_id": str(activity.id)}
 
 class Item(object):
     def __init__(self):
@@ -102,7 +102,7 @@ class Item(object):
         activity.delete()
 
     # TODO: handle PUT requests
-    @falcon.before(deserialize_update)
+    #@falcon.before(deserialize_update)
     @falcon.after(serialize)
     def on_post(self, req, resp, id):
         activity = self._try_get_activity(id)

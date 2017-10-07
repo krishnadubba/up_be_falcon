@@ -3,7 +3,7 @@
 from __future__ import absolute_import
 import falcon
 import logging
-from bson import json_util
+from bson import json_util, ObjectId
 from uggipuggi import constants
 from uggipuggi.controllers.hooks import deserialize, serialize
 from uggipuggi.controllers.schema.recipe import RecipeSchema, RecipeCreateSchema
@@ -58,19 +58,29 @@ class Collection(object):
         resp.body = json_util.dumps({'items': recipes, 'count': len(recipes)})
         resp.status = falcon.HTTP_FOUND
         
-    @falcon.before(deserialize_create)
+    #@falcon.before(deserialize_create)
     @falcon.after(serialize)
     def on_post(self, req, resp):
+        try:
+            req_stream = req.stream.read()
+            if isinstance(req_stream, bytes):
+                json_body = json_util.loads(req_stream.decode('utf8'))
+            else:
+                json_body = json_util.loads(req_stream)
+            req.params['body'] = json_body    
+        except Exception:
+            raise falcon.HTTPBadRequest(
+                "I don't understand", traceback.format_exc())        
+
         data = req.params.get('body')  # recipe data
-        logger.debug(data)
         
         # save to DB
         recipe = Recipe(**data)
         recipe.save()
+        logger.debug("Recipe created with id: %s" %str(recipe.id))
         
-        # return Recipe
-        recipe = Recipe.objects.get(id=recipe.id)
-        resp.body = recipe        
+        # return Recipe id
+        resp.body = {"recipe_id": str(recipe.id)}
 
 class Item(object):
     def __init__(self):
@@ -97,7 +107,8 @@ class Item(object):
     def on_post(self, req, resp, id):
         recipe = self._try_get_recipe(id)
         data = req.params.get('body')
-
+        logger.debug("=============")
+        logger.debug(data)
         # save to DB
         for key, value in data.iteritems():
             setattr(recipe, key, value)

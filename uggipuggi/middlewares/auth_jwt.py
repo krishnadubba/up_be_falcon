@@ -37,7 +37,15 @@ ACL_MAP = {
         'put': Role.OWNER,
         'delete': Role.OWNER
     },
-    
+    '/activity': {
+        'get': Role.USER,
+        'post': Role.USER
+    },
+    '/activity/+': {
+        'get': Role.USER,
+        'put': Role.OWNER,
+        'delete': Role.OWNER
+    },    
     '/users': {
         'get': Role.EMPLOYEE,
         'post': Role.EMPLOYEE,
