@@ -252,9 +252,10 @@ class RegisterResource(object):
         if self.token_opts.get('location', 'cookie') == 'cookie': # default to cookie
             resp.set_cookie(**self.token_opts)
         elif self.token_opts['location'] == 'header':
-            resp.body = json_util.dumps({
-                self.token_opts['name'] : self.token_opts['value']
-                })
+            resp.body = {self.token_opts['name'] : self.token_opts['value']}
+            #resp.body = json_util.dumps({
+                #self.token_opts['name'] : self.token_opts['value']
+                #})
         else:
             raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')
         resp.status = falcon.HTTP_CREATED #HTTP_201
@@ -329,10 +330,12 @@ class LoginResource(object):
         if self.token_opts.get('location', 'cookie') == 'cookie': # default to cookie
             resp.set_cookie(**self.token_opts)
         elif self.token_opts['location'] == 'header':
-            resp.body = json_util.dumps({
-                self.token_opts['name'] : self.token_opts['value'],
-                "user_identifier": user_identifier
-                })
+            resp.body = {self.token_opts['name'] : self.token_opts['value'],
+                         "user_identifier": user_identifier}
+            #resp.body = json_util.dumps({
+                #self.token_opts['name'] : self.token_opts['value'],
+                #"user_identifier": user_identifier
+                #})
         else:
             resp.status = falcon.HTTP_INTERNAL_SERVER_ERROR
             raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')
