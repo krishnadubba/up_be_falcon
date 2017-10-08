@@ -151,7 +151,12 @@ for feed in feeds:
     header = {'Content-Type':'application/json'}
     header.update({'auth_token':users_map[feed['creator']['id']]['login_token']})
     r = requests.post(rest_api + 'activity', data=json.dumps(activity_payload), 
-                      headers=header)                        
+                      headers=header)
+    
+    activity_Q_payload = {"user_id": user_mongo_id}
+    r = requests.get(rest_api + 'activity', params=activity_Q_payload, 
+                     headers=header)
+    results = json_util.loads(r.content.decode('utf-8'))['items']
     print (r)
 print ("=================")
 print ("=================")

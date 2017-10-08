@@ -35,8 +35,9 @@ class Collection(object):
             raise HTTPBadRequest(title='Invalid Value',
                                  description='Invalid arguments in URL query:\n{}'.format(e.message))
 
-        users = User.objects(**query_params)[start:end]
-        resp.body = {'items': users, 'count': len(users)}
+        users_qset = User.objects(**query_params)[start:end]
+        users = [obj.to_mongo() for obj in users_qset]
+        resp.body = {'items': [res.to_dict() for res in users], 'count': len(users)}
         resp.status = falcon.HTTP_FOUND
 
 class Item(object):

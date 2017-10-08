@@ -32,7 +32,8 @@ class Collection(object):
     @falcon.after(serialize)
     def on_get(self, req, resp):
         query_params = req.params.get('query')
-
+        logger.debug("Get query params:")
+        logger.debug(query_params)
         try:
             # get pagination limits
             start = int(query_params.pop('start', 0))
@@ -52,10 +53,20 @@ class Collection(object):
                 updated_params['{}__icontains'.format(item)] = item_val
 
         query_params.update(updated_params)  # update modified params for filtering
-
-        activities = CookingActivity.objects(**query_params)[start:end]
-
-        resp.body = json_util.dumps({'items': activities, 'count': len(activities)})
+        
+        logger.debug("Get updated query params:")
+        logger.debug(query_params)
+        logger.debug(start)
+        logger.debug(end)
+        activities_qset = CookingActivity.objects(**query_params)[start:end]
+        activities = [obj.to_mongo() for obj in activities_qset]
+        logger.debug("Query results: ")
+        for activity in activities:
+            logger.debug(activity.to_dict())
+        # No need to use json_util.dumps here (?)                             
+        resp.body = {'items': [res.to_dict() for res in activities],
+                     'count': len(activities)}
+                                    
         resp.status = falcon.HTTP_FOUND
         
     #@falcon.before(deserialize_create)

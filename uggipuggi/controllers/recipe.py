@@ -52,10 +52,12 @@ class Collection(object):
                 updated_params['{}__icontains'.format(item)] = item_val
 
         query_params.update(updated_params)  # update modified params for filtering
-
-        recipes = Recipe.objects(**query_params)[start:end]
-
-        resp.body = json_util.dumps({'items': recipes, 'count': len(recipes)})
+        recipes_qset = Recipe.objects(**query_params)[start:end]
+        recipes = [obj.to_mongo() for obj in recipes_qset]
+        
+        # No need to use json_util.dumps here (?)                             
+        resp.body = {'items': [res.to_dict() for res in recipes],
+                     'count': len(recipes)}
         resp.status = falcon.HTTP_FOUND
         
     #@falcon.before(deserialize_create)
