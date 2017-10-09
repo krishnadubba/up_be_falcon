@@ -10,6 +10,8 @@ class CookingActivity(mongo.DynamicDocument):
     likes_count  = mongo.IntField(required=True, default=0)
     description  = mongo.StringField(max_length=TWEET_CHAR_LENGTH)
     images       = mongo.ListField(mongo.URLField())  # list of urls
+    # If the recipe id is private recipe, then we give warning when sharing activity involving it
+    recipients   = mongo.ListField(mongo.StringField(default='*'))  # list of peolpe allowed to see
     tags         = mongo.ListField()
     category     = mongo.StringField()    
     shares_count = mongo.IntField(default=0)

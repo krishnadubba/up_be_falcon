@@ -53,7 +53,6 @@ class User(mongo.DynamicDocument):
     pw_last_changed = mongo.DateTimeField(required=True)
     phone_verified  = mongo.BooleanField(required=True, default=False)
     account_active  = mongo.BooleanField(required=True, default=False)
-    subscription    = mongo.IntField(required=True, default=Subscription.FREE)    
     # Not mandatory
     first_name      = mongo.StringField(required=False)
     last_name       = mongo.StringField(required=False)
@@ -62,6 +61,9 @@ class User(mongo.DynamicDocument):
     facebook_id     = mongo.LongField(required=False)  # Facebook ID is numeric but can be pretty big
     twitter_id      = mongo.StringField(required=False)  # Twitter ID is alphanumeric
     instagram_id    = mongo.StringField(required=False)  # Instagram ID is alphanumeric
+    subscription    = mongo.IntField(required=False, default=Subscription.FREE)    
+    searchable_by_display_name = mongo.BooleanField(required=False, default=False)
+    
     #online_status = mongo.IntField(required=True)
 
     @property

@@ -4,6 +4,23 @@ from __future__ import absolute_import
 import mongoengine as mongo
 from uggipuggi.constants import TWEET_CHAR_LENGTH
 
+class ExposeLevel(object):
+    # defines all available roles for users
+    # this will and should determine the access control permissions for each endpoint
+    PRIVATE = 10
+    FRIENDS = 5
+    PUBLIC  = 1
+    
+    EXPOSE_MAP = {
+        PRIVATE: 'private',
+        FRIENDS: 'friends',
+        PUBLIC : 'public',
+    }
+
+    @staticmethod
+    def get_expose_level(expose):
+        return ExposeLevel.EXPOSE_MAP.get(expose_level, 'private')
+    
 class Recipe(mongo.DynamicDocument):
     recipe_name        = mongo.StringField(required=True)
     user_id            = mongo.StringField(required=True) #User phone number is used to identify owner
@@ -13,6 +30,8 @@ class Recipe(mongo.DynamicDocument):
     ingredients        = mongo.ListField(required=True) #Ingredients names
     ingredients_quant  = mongo.ListField(required=True) 
     ingredients_metric = mongo.ListField(required=True)
+    # This should be private by default
+    expose_level       = mongo.IntField(required=True, default=ExposeLevel.PUBLIC)
     ingredients_imgs   = mongo.ListField(mongo.URLField()) # list of urls of ingredients images
     ingredients_ids    = mongo.ListField(required=False) #Ingredients ids        
     tips               = mongo.ListField(required=False)    
