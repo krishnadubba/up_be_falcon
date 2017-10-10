@@ -13,6 +13,7 @@ import os
 import json
 import random
 import string
+import pickle
 import requests
 
 from random import randint
@@ -67,6 +68,7 @@ def get_dummy_display_name(count):
 count = 0
 users_map = {}
 recipe_map = {}
+activity_map = {}
 for user in users:
     current_author_id = user['id']
     print (user)
@@ -141,7 +143,10 @@ for user in users:
     count += 1
     print (r)
     
+print ('==================')    
+
 for feed in feeds:
+      
     user_mongo_id = users_map[feed['creator']['id']]['user_id']
     recipe_mongo_id = recipe_map[feed['recipe']['id']]['recipe_id']
     activity_payload = {"recipe_id": recipe_mongo_id,
@@ -152,11 +157,22 @@ for feed in feeds:
     header.update({'auth_token':users_map[feed['creator']['id']]['login_token']})
     r = requests.post(rest_api + 'activity', data=json.dumps(activity_payload), 
                       headers=header)
+    activity_payload.update({'activity_id':json_util.loads(r.content.decode('utf-8'))['activity_id']})
+    activity_map[feed['id']] = activity_payload   
     
-    activity_Q_payload = {"user_id": user_mongo_id}
+    #activity_Q_payload = {"user_id": user_mongo_id}
+    activity_Q_payload = {}
     r = requests.get(rest_api + 'activity', params=activity_Q_payload, 
                      headers=header)
     results = json_util.loads(r.content.decode('utf-8'))['items']
-    print (r)
+    
+    print (json_util.loads(r.content.decode('utf-8'))['count'])
+    
+all_data = {}
+all_data['users'] = users_map
+all_data['recipes'] = recipe_map
+all_data['activities'] = activity_map
+pickle.dump(all_data, open('/tmp/up_dummy_data.p','wb'))
+
 print ("=================")
 print ("=================")

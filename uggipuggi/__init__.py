@@ -150,6 +150,7 @@ class CorsMiddleware():
         self.logger.debug(origin)
         header = {'Access-Control-Allow-Headers': allowed_headers}
         if origin in allowed_origins:
+            self.logger.debug("This origin is allowed")
             header['Access-Control-Allow-Origin'] = origin
         header['Access-Control-Allow-Methods'] = allowed_methods
         header['Allow'] = allowed_methods

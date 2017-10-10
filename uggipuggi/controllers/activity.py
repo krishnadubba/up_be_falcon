@@ -59,8 +59,10 @@ class Collection(object):
         logger.debug(start)
         logger.debug(end)
         activities_qset = CookingActivity.objects(**query_params)[start:end]
+        # Is this faster?
+        # [obj._data for obj in activities_qset._iter_results()]
         activities = [obj.to_mongo() for obj in activities_qset]
-        logger.debug("Query results: ")
+        logger.debug("Query results: %d" %len(activities))
         for activity in activities:
             logger.debug(activity.to_dict())
         # No need to use json_util.dumps here (?)                             

@@ -7,6 +7,7 @@ import json
 import plivo
 import random
 import string
+from confluent_kafka import Producer
 
 from random import randint
 from bson import json_util, ObjectId
@@ -25,6 +26,7 @@ sms_auth_id = os.environ["SMS_AUTH_ID"]
 sms_auth_token = os.environ["SMS_AUTH_TOKEN"]
 sms = plivo.RestAPI(sms_auth_id, sms_auth_token)
 SERVER_SECURE_MODE = 'DEBUG'
+KAFKA_BOOTSTRAP_SERVERS = 'mybroker,mybroker2'
 
 # role-based permission control
 ACL_MAP = {
@@ -168,6 +170,14 @@ class RegisterResource(object):
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         self.verify_phone_token_expiration_seconds = verify_phone_token_expiration_seconds        
 
+    def kafka_register_producer(req, resp, resource, params):
+        parameters = [req, resp, resource, params]
+        logging.debug(parameters)
+        p = Producer({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
+        p.produce(repr(resource), req.encode('utf-8'))
+        p.flush()        
+        
+    @falcon.after(kafka_register_producer)
     def on_post(self, req, resp):
         # Should we check if the number supplied is same as the number verified?
         # Can we do this in client instead of server?
