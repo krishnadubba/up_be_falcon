@@ -7,13 +7,16 @@ import json
 import plivo
 import random
 import string
-from confluent_kafka import Producer
 
 from random import randint
 from bson import json_util, ObjectId
 from datetime import datetime, timedelta
 from passlib.hash import bcrypt as crypt
 from uggipuggi.models.user import Role, User, VerifyPhone
+from uggipuggi.messaging.authentication_kafka_producers import kafka_verify_post_producer,\
+                                kafka_register_post_producer, kafka_login_post_producer,\
+                                kafka_forgotpassword_post_producer, kafka_passwordchange_post_producer
+
 
 def random_with_N_digits(n):
     range_start = 10**(n-1)
@@ -23,7 +26,6 @@ def random_with_N_digits(n):
 DEFAULT_TOKEN_OPTS = {"name": "auth_token", "location": "header"}
 SRC_PHONE_NUM = '00447539020600'
 SERVER_SECURE_MODE = 'DEBUG'
-KAFKA_BOOTSTRAP_SERVERS = 'localhost:9092'
 
 if not SERVER_SECURE_MODE == 'DEBUG':
     sms_auth_id = os.environ["SMS_AUTH_ID"]
@@ -81,7 +83,8 @@ class VerifyPhoneResource(object):
         self.secret = secret
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         logging.debug(token_opts)
-
+        
+    @falcon.after(kafka_verify_post_producer)
     def on_post(self, req, resp):
         # Used to send the OTP for verificiation
         challenges = ['Hello="World"']
@@ -152,8 +155,7 @@ class VerifyPhoneResource(object):
                 logging.debug("Incorrect OTP code!")
                 description = ('Incorrect OTP code! Please try again.')
                 raise falcon.HTTPNotAcceptable(description,
-                                               href='http://docs.example.com/auth')
-                
+                                               href='http://docs.example.com/auth')                
                        
     def _token_is_valid(self, resp, token):
         try:
@@ -164,27 +166,17 @@ class VerifyPhoneResource(object):
             logging.debug("Token validation failed Error :{}".format(str(err)))
             return False        
 
-def kafka_register_producer(req, resp, resource):
-    parameters = [req.topic_name, req.body, resp, resource]
-    logging.debug("++++++++++++++++++++++")
-    logging.debug("++++++++++++++++++++++")
-    logging.debug(repr(parameters))
-    logging.debug("++++++++++++++++++++++")
-    logging.debug("++++++++++++++++++++++")    
-    p = Producer({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
-    p.produce(req.topic_name, repr(parameters)) #req.encode('utf-8'))
-    p.flush()
         
 class RegisterResource(object):
 
     def __init__(self, get_user, secret, verify_phone_token_expiration_seconds, **token_opts):
-        self.topic_name = 'register'
+        self.kafka_topic_name = 'register'
         self.get_user = get_user
         self.secret = secret
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         self.verify_phone_token_expiration_seconds = verify_phone_token_expiration_seconds        
        
-    @falcon.after(kafka_register_producer)
+    @falcon.after(kafka_register_post_producer)
     def on_post(self, req, resp):
         # Should we check if the number supplied is same as the number verified?
         # Can we do this in client instead of server?
@@ -205,7 +197,7 @@ class RegisterResource(object):
         
         logging.debug(data)
         req.body = data
-        req.topic_name = self.topic_name + '_post'
+        req.kafka_topic_name = self.kafka_topic_name + '_post'
         phone = data["phone"]
         user = self.get_user('phone', phone)
         
@@ -307,6 +299,7 @@ class LoginResource(object):
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         logging.debug(token_opts)
 
+    @falcon.after(kafka_login_post_producer)
     def on_post(self, req, resp):
         logging.debug("Reached on_post() in Login")
         resp.body = {}
@@ -387,6 +380,7 @@ class ForgotPasswordResource(object):
     def __init__(self, get_user):
         self.get_user = get_user
 
+    @falcon.after(kafka_forgotpassword_post_producer)
     def on_post(self, req, resp):
         # Should we check if the number supplied is same as the number verified?
         # Can we do this in client instead of server?
@@ -438,6 +432,7 @@ class PasswordChangeResource(object):
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         logging.debug(token_opts)
         
+    @falcon.after(kafka_passwordchange_post_producer)        
     def on_post(self, req, resp):
         logging.debug("Reached on_post() in PasswordChange")
         try:

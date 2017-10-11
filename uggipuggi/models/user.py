@@ -53,6 +53,7 @@ class User(mongo.DynamicDocument):
     pw_last_changed = mongo.DateTimeField(required=True)
     phone_verified  = mongo.BooleanField(required=True, default=False)
     account_active  = mongo.BooleanField(required=True, default=False)
+    app_platform    = mongo.StringField(required=True, default="android")
     # Not mandatory
     first_name      = mongo.StringField(required=False)
     last_name       = mongo.StringField(required=False)

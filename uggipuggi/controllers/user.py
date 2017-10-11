@@ -7,6 +7,8 @@ from uggipuggi import constants
 from uggipuggi.controllers.hooks import deserialize, serialize
 from uggipuggi.models.user import User, Role
 from uggipuggi.libs.error import HTTPBadRequest, HTTPUnauthorized
+from uggipuggi.messaging.user_kafka_producers import user_kafka_collection_post_producer,\
+                                                     user_kafka_item_get_producer
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError
 
 
@@ -50,6 +52,19 @@ class Item(object):
         except (ValidationError, DoesNotExist, MultipleObjectsReturned) as e:
             raise HTTPBadRequest(title='Invalid Value', description='Invalid userID provided. {}'.format(e.message))
 
+    # TODO: handle PUT requests
+    @falcon.after(serialize)
+    def on_post(self, req, resp, id):
+        user = self._try_get_user(id)
+        data = req.params.get('body')
+        logger.debug("Updating user data in database ...")
+        logger.debug(data)
+        # save to DB
+        for key, value in data.iteritems():
+            user.update(key, value)
+            
+        logger.debug("Updated user data in database")
+        
     @falcon.after(serialize)
     def on_get(self, req, resp, id):
         request_user_id = req.params[constants.AUTH_HEADER_USER_ID]

@@ -9,6 +9,7 @@ from uggipuggi.controllers.hooks import deserialize, serialize
 #from uggipuggi.controllers.schema.activity import CookingActivitySchema, CookingActivityCreateSchema
 from uggipuggi.models.cooking_activity import CookingActivity
 from uggipuggi.libs.error import HTTPBadRequest
+from uggipuggi.messaging.recipe_kafka_producers import activity_kafka_collection_post_producer
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError
 
 
@@ -111,8 +112,10 @@ class Item(object):
 
     @falcon.after(serialize)
     def on_delete(self, req, resp, id):
+        logger.debug("Deleting activity data in database ...")
         activity = self._try_get_activity(id)
         activity.delete()
+        logger.debug("Deleted activity data in database")
 
     # TODO: handle PUT requests
     #@falcon.before(deserialize_update)
@@ -120,12 +123,11 @@ class Item(object):
     def on_post(self, req, resp, id):
         activity = self._try_get_activity(id)
         data = req.params.get('body')
-        logger.debug("=============")
+        logger.debug("Updating activity data in database ...")
         logger.debug(data)
         # save to DB
         for key, value in data.iteritems():
-            setattr(activity, key, value)
-        activity.save()
-
-        activity = CookingActivity.objects.get(id=id)
-        resp.body = activity
+            activity.update(key, value)
+            
+        logger.debug("Updated activity data in database")
+        resp.body = activity.id
