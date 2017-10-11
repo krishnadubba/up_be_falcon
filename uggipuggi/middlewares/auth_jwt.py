@@ -22,11 +22,13 @@ def random_with_N_digits(n):
 
 DEFAULT_TOKEN_OPTS = {"name": "auth_token", "location": "header"}
 SRC_PHONE_NUM = '00447539020600'
-sms_auth_id = os.environ["SMS_AUTH_ID"]
-sms_auth_token = os.environ["SMS_AUTH_TOKEN"]
-sms = plivo.RestAPI(sms_auth_id, sms_auth_token)
 SERVER_SECURE_MODE = 'DEBUG'
-KAFKA_BOOTSTRAP_SERVERS = 'mybroker,mybroker2'
+KAFKA_BOOTSTRAP_SERVERS = 'localhost:9092'
+
+if not SERVER_SECURE_MODE == 'DEBUG':
+    sms_auth_id = os.environ["SMS_AUTH_ID"]
+    sms_auth_token = os.environ["SMS_AUTH_TOKEN"]
+    sms = plivo.RestAPI(sms_auth_id, sms_auth_token)
 
 # role-based permission control
 ACL_MAP = {
@@ -161,22 +163,27 @@ class VerifyPhoneResource(object):
         except jwt.DecodeError as err:
             logging.debug("Token validation failed Error :{}".format(str(err)))
             return False        
+
+def kafka_register_producer(req, resp, resource):
+    parameters = [req.topic_name, req.body, resp, resource]
+    logging.debug("++++++++++++++++++++++")
+    logging.debug("++++++++++++++++++++++")
+    logging.debug(repr(parameters))
+    logging.debug("++++++++++++++++++++++")
+    logging.debug("++++++++++++++++++++++")    
+    p = Producer({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
+    p.produce(req.topic_name, repr(parameters)) #req.encode('utf-8'))
+    p.flush()
         
 class RegisterResource(object):
 
     def __init__(self, get_user, secret, verify_phone_token_expiration_seconds, **token_opts):
+        self.topic_name = 'register'
         self.get_user = get_user
         self.secret = secret
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         self.verify_phone_token_expiration_seconds = verify_phone_token_expiration_seconds        
-
-    def kafka_register_producer(req, resp, resource, params):
-        parameters = [req, resp, resource, params]
-        logging.debug(parameters)
-        p = Producer({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
-        p.produce(repr(resource), req.encode('utf-8'))
-        p.flush()        
-        
+       
     @falcon.after(kafka_register_producer)
     def on_post(self, req, resp):
         # Should we check if the number supplied is same as the number verified?
@@ -197,6 +204,8 @@ class RegisterResource(object):
                 "I don't understand", traceback.format_exc())
         
         logging.debug(data)
+        req.body = data
+        req.topic_name = self.topic_name + '_post'
         phone = data["phone"]
         user = self.get_user('phone', phone)
         
@@ -227,18 +236,20 @@ class RegisterResource(object):
                 logging.warn("SERVER RUNNING in DEBUG Mode")
                 otpass = repr(9999)
             else:    
+                # Plivo does not accept 0044, only accepts +44
                 otpass = random_with_N_digits(4)
-            logging.debug(otpass)
-            # Plivo does not accept 0044, only accepts +44
-            plivo_valid_dst = '+' + phone[2:]
-            params = {
-                'src': SRC_PHONE_NUM, # Sender's phone number with country code
-                'dst' : plivo_valid_dst,  # Receiver's phone Number with country code
-                'text' : u"Your UggiPuggi OTP: %s" %otpass, # Your SMS Text Message - English
-            }
+                plivo_valid_dst = '+' + phone[2:]
+                params = {
+                    'src': SRC_PHONE_NUM, # Sender's phone number with country code
+                    'dst' : plivo_valid_dst,  # Receiver's phone Number with country code
+                    'text' : u"Your UggiPuggi OTP: %s" %otpass, # Your SMS Text Message - English
+                }
+                
+                response = sms.send_message(params)
+                logging.debug(response)                
+                
+            logging.debug(otpass)            
             
-            #response = sms.send_message(params)
-            #logging.debug(response)
             response = [202]            
             if response[0] == 202:
                 # See if there is a user with that phone in verify_user DB

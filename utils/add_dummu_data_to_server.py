@@ -2,7 +2,7 @@ import os, sys
 import builtins
 from mongoengine import connection
 
-sys.path.append('/home/krishna/work/app_dev/backend/up_be_falcon')
+sys.path.append('../')
 
 from uggipuggi.services.user import get_user
 from conf import get_config
