@@ -84,7 +84,8 @@ class Item(object):
     def _try_get_recipe(self, id):
         try:
             return Recipe.objects.get(id=id)
-        except (ValidationError, DoesNotExist, MultipleObjectsReturned) as e:            
+        except (ValidationError, DoesNotExist, MultipleObjectsReturned) as e:
+            logger.error('Invalid recipe ID provided. {}'.format(e.message))
             raise HTTPBadRequest(title='Invalid Value', description='Invalid recipe ID provided. {}'.format(e.message))
 
     @falcon.after(serialize)
@@ -104,23 +105,28 @@ class Item(object):
         resp.status = falcon.HTTP_OK
 
     # TODO: handle PUT requests
-    @falcon.before(deserialize_update)
+    #@falcon.before(deserialize_update)
+    @falcon.before(read_req_body)
     @falcon.after(serialize)
     def on_put(self, req, resp, id):
         req.kafka_topic_name = self.kafka_topic_name + '_post'
+        logger.debug("Finding recipe in database ... %s" %repr(id))
         recipe = self._try_get_recipe(id)
-        data = req.params.get('body')
+        #data = req.params.get('body')
         logger.debug("Updating recipe data in database ...")
-        logger.debug(data)
+        logger.debug(req.body)
         # save to DB
         try:            
-            for key, value in data.iteritems():
+            for key, value in req.body.items():
+                logger.debug("%s : %s" %(repr(key), repr(value)))
                 if key == 'comment':
                     comment = Comment(content=value['content'], user_id=value['user_id'])
                     recipe.comments.append(comment)
+                    recipe.save()
                 else:    
-                    recipe.update(key, value)
+                    recipe.update(key, value)                        
         except (ValidationError, KeyError) as e:
+            logger.error('Invalid fields provided for recipe. {}'.format(e.message))
             raise HTTPBadRequest(title='Invalid Value', 
                                  description='Invalid fields provided for recipe. {}'.format(e.message))            
         logger.debug("Updated recipe data in database")

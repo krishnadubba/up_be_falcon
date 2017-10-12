@@ -488,14 +488,14 @@ class AuthMiddleware(object):
             token = None
 
         if token is None:
-            logging.debug("Please provide an auth token as part of the request.")
+            logging.error("Please provide an auth token as part of the request.")
             description = ('Please provide an auth token as part of the request.')
             raise falcon.HTTPPreconditionFailed('Auth token required',
                                                 description,
                                                 href='http://docs.example.com/auth')
         
         if not self._token_is_valid(resp, token):
-            logging.debug('The provided auth token is not valid. Please request a new token and try again.')
+            logging.error('The provided auth token is not valid. Please request a new token and try again.')
             description = ('The provided auth token is not valid. '
                            'Please request a new token and try again.')
             resp.status = falcon.HTTP_UNAUTHORIZED
@@ -526,7 +526,7 @@ class AuthMiddleware(object):
             return True
         except jwt.DecodeError as err:
             resp.status = falcon.HTTP_UNAUTHORIZED
-            logging.debug("Token validation failed Error :{}".format(str(err)))
+            logging.error("Token validation failed Error :{}".format(str(err)))
             return False
 
     def _access_allowed(self, req, user):
@@ -551,7 +551,7 @@ class AuthMiddleware(object):
     def _is_user_authorized(self, req, user_id, pw_last_changed, user_id_type='phone'):
         user = self.get_user(user_id_type, user_id)
         if str(user.pw_last_changed) != pw_last_changed:
-            logging.debug("Supplied authentication token is expired. Please supply new token.")
+            logging.error("Supplied authentication token is expired. Please supply new token.")
             return False
         return user is not None and self._access_allowed(req, user)
 

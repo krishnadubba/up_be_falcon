@@ -96,7 +96,8 @@ class Item(object):
     def _try_get_activity(self, id):
         try:
             return CookingActivity.objects.get(id=id)
-        except (ValidationError, DoesNotExist, MultipleObjectsReturned) as e:            
+        except (ValidationError, DoesNotExist, MultipleObjectsReturned) as e:
+            logger.error('Invalid cooking actibity ID provided. {}'.format(e.message))
             raise HTTPBadRequest(title='Invalid Value', description='Invalid CookingActivity ID provided. {}'.format(e.message))
 
     @falcon.after(serialize)
@@ -117,22 +118,24 @@ class Item(object):
 
     # TODO: handle PUT requests
     #@falcon.before(deserialize_update)
+    @falcon.before(read_req_body)
     @falcon.after(serialize)
     def on_put(self, req, resp, id):
         req.kafka_topic_name = self.kafka_topic_name + '_post'
         activity = self._try_get_activity(id)
-        data = req.params.get('body')
         logger.debug("Updating activity data in database ...")
-        logger.debug(data)
+        logger.debug(req.body)
         # save to DB
         try:
-            for key, value in data.iteritems():
+            for key, value in req.body.items():
                 if key == 'comment':
                     comment = Comment(content=value['content'], user_id=value['user_id'])
                     activity.comments.append(comment)
+                    activity.save()
                 else:                    
                     activity.update(key, value)
-        except (ValidationError) as e:
+        except (ValidationError, KeyError) as e:
+            logger.error('Invalid fields provided for cooking activity. {}'.format(e.message))
             raise HTTPBadRequest(title='Invalid Value', 
                                  description='Invalid fields provided for cooking activity. {}'.format(e.message))
         logger.debug("Updated activity data in database")
