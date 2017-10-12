@@ -40,17 +40,17 @@ ACL_MAP = {
         'post': Role.USER
     },
     '/recipes/+': {
-        'get': Role.USER,
-        'put': Role.OWNER,
+        'get' : Role.USER,
+        'put' : Role.USER,
         'delete': Role.OWNER
     },
     '/activity': {
-        'get': Role.USER,
+        'get' : Role.USER,
         'post': Role.USER
     },
     '/activity/+': {
         'get': Role.USER,
-        'put': Role.OWNER,
+        'put': Role.USER,
         'delete': Role.OWNER
     },    
     '/users': {
@@ -488,12 +488,14 @@ class AuthMiddleware(object):
             token = None
 
         if token is None:
+            logging.debug("Please provide an auth token as part of the request.")
             description = ('Please provide an auth token as part of the request.')
             raise falcon.HTTPPreconditionFailed('Auth token required',
                                                 description,
                                                 href='http://docs.example.com/auth')
         
         if not self._token_is_valid(resp, token):
+            logging.debug('The provided auth token is not valid. Please request a new token and try again.')
             description = ('The provided auth token is not valid. '
                            'Please request a new token and try again.')
             resp.status = falcon.HTTP_UNAUTHORIZED

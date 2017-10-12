@@ -7,7 +7,7 @@ from bson import json_util, ObjectId
 from uggipuggi import constants
 from uggipuggi.controllers.hooks import deserialize, serialize, read_req_body
 from uggipuggi.controllers.schema.recipe import RecipeSchema, RecipeCreateSchema
-from uggipuggi.models.recipe import Recipe
+from uggipuggi.models.recipe import Comment, Recipe 
 from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.recipe_kafka_producers import recipe_kafka_collection_post_producer
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError
@@ -106,17 +106,21 @@ class Item(object):
     # TODO: handle PUT requests
     @falcon.before(deserialize_update)
     @falcon.after(serialize)
-    def on_post(self, req, resp, id):
+    def on_put(self, req, resp, id):
         req.kafka_topic_name = self.kafka_topic_name + '_post'
         recipe = self._try_get_recipe(id)
         data = req.params.get('body')
         logger.debug("Updating recipe data in database ...")
         logger.debug(data)
         # save to DB
-        try:
+        try:            
             for key, value in data.iteritems():
-                recipe.update(key, value)
-        except (ValidationError) as e:
+                if key == 'comment':
+                    comment = Comment(content=value['content'], user_id=value['user_id'])
+                    recipe.comments.append(comment)
+                else:    
+                    recipe.update(key, value)
+        except (ValidationError, KeyError) as e:
             raise HTTPBadRequest(title='Invalid Value', 
                                  description='Invalid fields provided for recipe. {}'.format(e.message))            
         logger.debug("Updated recipe data in database")

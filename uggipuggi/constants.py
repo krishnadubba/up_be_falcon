@@ -4,7 +4,7 @@ import sys
 
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
-TWEET_CHAR_LENGTH = 250
+TWEET_CHAR_LENGTH = 500
 #INTEGER_MAX = sys.maxint - 1
 INTEGER_MAX = sys.maxsize - 1
 

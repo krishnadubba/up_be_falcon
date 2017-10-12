@@ -21,7 +21,17 @@ class ExposeLevel(object):
     def get_expose_level(expose):
         return ExposeLevel.EXPOSE_MAP.get(expose_level, 'private')
     
-class Recipe(mongo.DynamicDocument):
+class Comment(mongo.EmbeddedDocument):
+    user_id = mongo.StringField(required=True)
+    content = mongo.StringField(required=True, max_length=TWEET_CHAR_LENGTH)
+    
+    @property
+    def creation_stamp(self):
+        # Time created can be obtained from the object _id attribute
+        # sort by field _id and you'll get documents in creation time order
+        return self.id.generation_time
+    
+class Recipe(mongo.Document):
     recipe_name        = mongo.StringField(required=True)
     user_id            = mongo.StringField(required=True) #User phone number is used to identify owner
     user_name          = mongo.StringField(required=True) #User display name
@@ -45,6 +55,8 @@ class Recipe(mongo.DynamicDocument):
     prep_time          = mongo.IntField(required=False, default=15) # In minutes   
     cook_time          = mongo.IntField(required=False, default=15) # In minutes   
     last_modified      = mongo.DateTimeField(required=False)
+    comments           = mongo.ListField(mongo.EmbeddedDocumentField(Comment), 
+                                         required=False)
     
     @property
     def rating(self):
@@ -57,19 +69,7 @@ class Recipe(mongo.DynamicDocument):
         # Time created can be obtained from the object _id attribute
         # sort by field _id and you'll get documents in creation time order
         return self.id.generation_time        
-    
-class Comment(mongo.DynamicDocument):
-    user_id      = mongo.StringField(required=True)
-    recipe_id    = mongo.StringField(required=True)
-    description  = mongo.StringField(max_length=TWEET_CHAR_LENGTH)
-    time_stamp   = mongo.DateTimeField()
-    
-    @property
-    def creation_stamp(self):
-        # Time created can be obtained from the object _id attribute
-        # sort by field _id and you'll get documents in creation time order
-        return self.id.generation_time
-    
+
 #class Ingredients(mongo.DynamicDocument):
     #recipe = mongo.ReferenceField(Recipe, dbref=True, reverse_delete_rule=mongo.CASCADE)
     #ingredients = mongo.ListField(required=True)

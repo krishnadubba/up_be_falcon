@@ -4,6 +4,16 @@ from __future__ import absolute_import
 import mongoengine as mongo
 from uggipuggi.constants import TWEET_CHAR_LENGTH
 
+class Comment(mongo.EmbeddedDocument):
+    user_id = mongo.StringField(required=True)
+    content = mongo.StringField(required=True, max_length=TWEET_CHAR_LENGTH)
+    
+    @property
+    def creation_stamp(self):
+        # Time created can be obtained from the object _id attribute
+        # sort by field _id and you'll get documents in creation time order
+        return self.id.generation_time
+    
 class CookingActivity(mongo.DynamicDocument):
     user_id      = mongo.StringField(required=True)
     recipe_id    = mongo.StringField(required=True)
@@ -18,6 +28,8 @@ class CookingActivity(mongo.DynamicDocument):
     prep_time    = mongo.IntField(default=15)    
     cook_time    = mongo.IntField(default=15)    
     activity_time_stamp = mongo.DateTimeField()
+    comments     = mongo.ListField(mongo.EmbeddedDocumentField(Comment), 
+                                   required=False)    
     
     @property
     def rating(self):

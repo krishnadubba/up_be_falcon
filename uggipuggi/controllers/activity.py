@@ -118,7 +118,7 @@ class Item(object):
     # TODO: handle PUT requests
     #@falcon.before(deserialize_update)
     @falcon.after(serialize)
-    def on_post(self, req, resp, id):
+    def on_put(self, req, resp, id):
         req.kafka_topic_name = self.kafka_topic_name + '_post'
         activity = self._try_get_activity(id)
         data = req.params.get('body')
@@ -127,7 +127,11 @@ class Item(object):
         # save to DB
         try:
             for key, value in data.iteritems():
-                activity.update(key, value)
+                if key == 'comment':
+                    comment = Comment(content=value['content'], user_id=value['user_id'])
+                    activity.comments.append(comment)
+                else:                    
+                    activity.update(key, value)
         except (ValidationError) as e:
             raise HTTPBadRequest(title='Invalid Value', 
                                  description='Invalid fields provided for cooking activity. {}'.format(e.message))

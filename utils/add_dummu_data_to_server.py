@@ -130,20 +130,35 @@ for user in users:
         recipe_payload.update({'ingredients':ingredients})
         recipe_payload.update({'ingredients_imgs':ingredients_imgs})
         recipe_payload.update({'ingredients_quant':ingredients_quant})
-        recipe_payload.update({'ingredients_metric':ingredients_metric})    
+        recipe_payload.update({'ingredients_metric':ingredients_metric})            
         
         recipe_map[recipe['id']] = recipe_payload
         
         header.update({'auth_token':login_token})
         r = requests.post(rest_api + 'recipes', data=json.dumps(recipe_payload), 
                           headers=header)    
-        
+                
         recipe_map[recipe['id']].update({'recipe_id':json.loads(r.content.decode('utf-8'))['recipe_id']})
                             
     count += 1
     print (r)
     
 print ('==================')    
+
+for recipe in recipes:
+    comment = {}
+    recipe_id = recipe_map[recipe['id']]['recipe_id']
+    for com in recipe['reviews']:                
+        comment['comment'] = {}
+        user_id = users_map[com['author']['id']]['user_id']
+        login_token = users_map[com['author']['id']]['login_token']
+        header = {'Content-Type':'application/json'}
+        header.update({'auth_token':login_token})        
+        comment['comment']['user_id'] = user_id
+        comment['comment']['content'] = com['content'] 
+        r = requests.put(rest_api + 'recipes/%s'%recipe_id, data=json.dumps(comment), 
+                         headers=header)        
+        print (r)
 
 for feed in feeds:
       
