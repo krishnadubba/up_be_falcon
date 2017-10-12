@@ -11,7 +11,9 @@ def activity_kafka_collection_post_producer(req, resp, resource):
     logging.debug("----------------------")
     logging.debug(repr(parameters))
     logging.debug("++++++++++++++++++++++")    
-    activity_kafka_producer.produce(req.kafka_topic_name, repr(parameters)) #req.encode('utf-8'))
+    activity_kafka_producer.produce(topic=req.kafka_topic_name, 
+                                    value=repr(parameters),
+                                    key=req.body['user_id']) #req.encode('utf-8'))
     activity_kafka_producer.flush()
     
 def activity_kafka_item_get_producer(req, resp, resource):
@@ -21,7 +23,9 @@ def activity_kafka_item_get_producer(req, resp, resource):
     logging.debug("----------------------")
     logging.debug(repr(parameters))
     logging.debug("++++++++++++++++++++++")    
-    activity_kafka_producer.produce(req.kafka_topic_name, repr(parameters)) #req.encode('utf-8'))
+    activity_kafka_producer.produce(topic=req.kafka_topic_name, 
+                                    value=repr(parameters),
+                                    key=req.body['user_id']) #req.encode('utf-8'))
     activity_kafka_producer.flush()
     
 def activity_kafka_item_post_producer(req, resp, resource):
@@ -31,7 +35,9 @@ def activity_kafka_item_post_producer(req, resp, resource):
     logging.debug("----------------------")
     logging.debug(repr(parameters))
     logging.debug("++++++++++++++++++++++")    
-    activity_kafka_producer.produce(req.kafka_topic_name, repr(parameters)) #req.encode('utf-8'))
+    activity_kafka_producer.produce(topic=req.kafka_topic_name, 
+                                    value=repr(parameters),
+                                    key=req.body['user_id']) #req.encode('utf-8'))
     activity_kafka_producer.flush()
     
 def activity_kafka_item_delete_producer(req, resp, resource):
@@ -41,6 +47,8 @@ def activity_kafka_item_delete_producer(req, resp, resource):
     logging.debug("----------------------")
     logging.debug(repr(parameters))
     logging.debug("++++++++++++++++++++++")
-    activity_kafka_producer.produce(req.kafka_topic_name, repr(parameters)) #req.encode('utf-8'))
+    activity_kafka_producer.produce(topic=req.kafka_topic_name, 
+                                    value=repr(parameters),
+                                    key=req.body['user_id']) #req.encode('utf-8'))
     activity_kafka_producer.flush()
     
