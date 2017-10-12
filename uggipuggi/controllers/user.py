@@ -7,8 +7,7 @@ from uggipuggi import constants
 from uggipuggi.controllers.hooks import deserialize, serialize
 from uggipuggi.models.user import User, Role
 from uggipuggi.libs.error import HTTPBadRequest, HTTPUnauthorized
-from uggipuggi.messaging.user_kafka_producers import user_kafka_collection_post_producer,\
-                                                     user_kafka_item_get_producer
+from uggipuggi.messaging.user_kafka_producers import user_kafka_item_get_producer
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError
 
 

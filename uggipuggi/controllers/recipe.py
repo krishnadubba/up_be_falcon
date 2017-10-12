@@ -5,7 +5,7 @@ import falcon
 import logging
 from bson import json_util, ObjectId
 from uggipuggi import constants
-from uggipuggi.controllers.hooks import deserialize, serialize
+from uggipuggi.controllers.hooks import deserialize, serialize, read_req_body
 from uggipuggi.controllers.schema.recipe import RecipeSchema, RecipeCreateSchema
 from uggipuggi.models.recipe import Recipe
 from uggipuggi.libs.error import HTTPBadRequest
@@ -27,11 +27,12 @@ logger = logging.getLogger(__name__)
 
 class Collection(object):
     def __init__(self):
-        pass
+        self.kafka_topic_name = 'recipe_collection'
 
     @falcon.before(deserialize)
     @falcon.after(serialize)
     def on_get(self, req, resp):
+        req.kafka_topic_name = self.kafka_topic_name + '_get'
         query_params = req.params.get('query')
 
         try:
@@ -62,23 +63,13 @@ class Collection(object):
         resp.status = falcon.HTTP_FOUND
         
     #@falcon.before(deserialize_create)
+    @falcon.before(read_req_body)
+    @falcon.after(recipe_kafka_collection_post_producer)
     @falcon.after(serialize)
     def on_post(self, req, resp):
-        try:
-            req_stream = req.stream.read()
-            if isinstance(req_stream, bytes):
-                json_body = json_util.loads(req_stream.decode('utf8'))
-            else:
-                json_body = json_util.loads(req_stream)
-            req.params['body'] = json_body    
-        except Exception:
-            raise falcon.HTTPBadRequest(
-                "I don't understand", traceback.format_exc())        
-
-        data = req.params.get('body')  # recipe data
-        
+        req.kafka_topic_name = self.kafka_topic_name + '_post'
         # save to DB
-        recipe = Recipe(**data)
+        recipe = Recipe(**req.body)
         recipe.save()
         logger.debug("Recipe created with id: %s" %str(recipe.id))
         
@@ -87,7 +78,7 @@ class Collection(object):
 
 class Item(object):
     def __init__(self):
-        pass
+        self.kafka_topic_name = 'recipe_item'
 
     def _try_get_recipe(self, id):
         try:
@@ -97,10 +88,12 @@ class Item(object):
 
     @falcon.after(serialize)
     def on_get(self, req, resp, id):
+        req.kafka_topic_name = self.kafka_topic_name + '_get'
         recipe = self._try_get_recipe(id)
 
     @falcon.after(serialize)
     def on_delete(self, req, resp, id):
+        req.kafka_topic_name = self.kafka_topic_name + '_delete'
         logger.debug("Deleting recipe data in database ...")
         recipe = self._try_get_recipe(id)
         recipe.delete()
@@ -110,6 +103,7 @@ class Item(object):
     @falcon.before(deserialize_update)
     @falcon.after(serialize)
     def on_post(self, req, resp, id):
+        req.kafka_topic_name = self.kafka_topic_name + '_post'
         recipe = self._try_get_recipe(id)
         data = req.params.get('body')
         logger.debug("Updating recipe data in database ...")

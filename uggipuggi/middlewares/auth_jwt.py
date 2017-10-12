@@ -13,6 +13,7 @@ from bson import json_util, ObjectId
 from datetime import datetime, timedelta
 from passlib.hash import bcrypt as crypt
 from uggipuggi.models.user import Role, User, VerifyPhone
+from uggipuggi.controllers.hooks import read_req_body
 from uggipuggi.messaging.authentication_kafka_producers import kafka_verify_post_producer,\
                                 kafka_register_post_producer, kafka_login_post_producer,\
                                 kafka_forgotpassword_post_producer, kafka_passwordchange_post_producer
@@ -75,12 +76,15 @@ ACL_MAP = {
     },     
 }
 
+      
+@falcon.before(read_req_body)    
 class VerifyPhoneResource(object):
 
     def __init__(self, get_user, secret, **token_opts):
         
         self.get_user = get_user
         self.secret = secret
+        self.kafka_topic_name = 'verify'
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         logging.debug(token_opts)
         
@@ -89,21 +93,9 @@ class VerifyPhoneResource(object):
         # Used to send the OTP for verificiation
         challenges = ['Hello="World"']
         logging.debug("Reached on_post() in VerifyPhone")
-        try:
-            req_stream = req.stream.read()
-            logging.debug("req_stream")
-            logging.debug(req_stream)
-            
-            if isinstance(req_stream, bytes):
-                data = json_util.loads(req_stream.decode('utf8'))
-            else:
-                data = json_util.loads(req_stream)
-        except Exception:
-            raise falcon.HTTPBadRequest(
-                "I don't understand", traceback.format_exc())
+        req.kafka_topic_name = self.kafka_topic_name + '_post'
         
-        logging.debug(data)
-        otp_code = data["code"]
+        otp_code = req.body["code"]
         
         logging.debug(req.get_header("auth_token"))
         logging.debug(self.token_opts['location'])
@@ -166,7 +158,8 @@ class VerifyPhoneResource(object):
             logging.debug("Token validation failed Error :{}".format(str(err)))
             return False        
 
-        
+
+@falcon.before(read_req_body)        
 class RegisterResource(object):
 
     def __init__(self, get_user, secret, verify_phone_token_expiration_seconds, **token_opts):
@@ -181,24 +174,10 @@ class RegisterResource(object):
         # Should we check if the number supplied is same as the number verified?
         # Can we do this in client instead of server?
         logging.debug("Reached on_post() in Register")
-        resp.body = {}
-        try:
-            req_stream = req.stream.read()
-            logging.debug("req_stream")
-            logging.debug(req_stream)
-            
-            if isinstance(req_stream, bytes):
-                data = json_util.loads(req_stream.decode('utf8'))
-            else:
-                data = json_util.loads(req_stream)
-        except Exception:
-            raise falcon.HTTPBadRequest(
-                "I don't understand", traceback.format_exc())
-        
-        logging.debug(data)
-        req.body = data
         req.kafka_topic_name = self.kafka_topic_name + '_post'
-        phone = data["phone"]
+        resp.body = {}
+      
+        phone = req.body["phone"]
         user = self.get_user('phone', phone)
         
         logging.debug("getting user")
@@ -210,18 +189,18 @@ class RegisterResource(object):
         else:
             logging.debug("Adding new user...")
             # We don't check of display name is unique. We only check for email and phone 
-            new_user = User(email=data["email"], 
-                            password=crypt.encrypt(data["password"]),
+            new_user = User(email=req.body["email"], 
+                            password=crypt.encrypt(req.body["password"]),
                             phone=phone, 
-                            country_code=data["country_code"],
-                            display_name=data["display_name"],
+                            country_code=req.body["country_code"],
+                            display_name=req.body["display_name"],
                             pw_last_changed=datetime.utcnow())
             new_user.save()
  
-            if 'gender' in data:
-                new_user.update(gender=data['gender'])
-            if 'display_pic' in data:
-                new_user.update(display_pic=data['display_pic'])
+            if 'gender' in req.body:
+                new_user.update(gender=req.body['gender'])
+            if 'display_pic' in req.body:
+                new_user.update(display_pic=req.body['display_pic'])
             
             logging.debug("Sending SMS to new user ...")
             if SERVER_SECURE_MODE == 'DEBUG':
@@ -290,11 +269,14 @@ class RegisterResource(object):
             raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')
         resp.status = falcon.HTTP_CREATED #HTTP_201
 
+
+@falcon.before(read_req_body)
 class LoginResource(object):
 
     def __init__(self, get_user, secret, token_expiration_seconds, **token_opts):
         self.get_user = get_user
         self.secret = secret
+        self.kafka_topic_name = 'login'
         self.token_expiration_seconds = token_expiration_seconds
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         logging.debug(token_opts)
@@ -302,23 +284,11 @@ class LoginResource(object):
     @falcon.after(kafka_login_post_producer)
     def on_post(self, req, resp):
         logging.debug("Reached on_post() in Login")
+        req.kafka_topic_name = self.kafka_topic_name + '_post'
         resp.body = {}
-        try:
-            req_stream = req.stream.read()
-            logging.debug("req_stream")
-            logging.debug(req_stream)
-            
-            if isinstance(req_stream, bytes):
-                data = json_util.loads(req_stream.decode('utf8'))
-            else:
-                data = json_util.loads(req_stream)
-        except Exception:
-            raise falcon.HTTPBadRequest(
-                "I don't understand", traceback.format_exc())
-        
-        logging.debug(data)
-        email = data["email"]
-        password = data["password"]
+
+        email = req.body["email"]
+        password = req.body["password"]
         logging.debug("getting user")
         user = self.get_user('email', email)
         if user:
@@ -375,31 +345,22 @@ class LoginResource(object):
             raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')
         resp.status = falcon.HTTP_ACCEPTED #HTTP_202
 
+
+@falcon.before(read_req_body)
 class ForgotPasswordResource(object):
 
     def __init__(self, get_user):
         self.get_user = get_user
+        self.kafka_topic_name = 'forgotpassword'
 
     @falcon.after(kafka_forgotpassword_post_producer)
     def on_post(self, req, resp):
         # Should we check if the number supplied is same as the number verified?
         # Can we do this in client instead of server?
         logging.debug("Reached on_post() in ForgotPassword")
-        try:
-            req_stream = req.stream.read()
-            logging.debug("req_stream")
-            logging.debug(req_stream)
-            
-            if isinstance(req_stream, bytes):
-                data = json_util.loads(req_stream.decode('utf8'))
-            else:
-                data = json_util.loads(req_stream)
-        except Exception:
-            raise falcon.HTTPBadRequest(
-                "I don't understand", traceback.format_exc())
-        
-        logging.debug(data)
-        email = data["email"]
+        req.kafka_topic_name = self.kafka_topic_name + '_post'
+
+        email = req.body["email"]
         user = self.get_user('email', email)
         
         logging.debug("getting user")
@@ -423,11 +384,13 @@ class ForgotPasswordResource(object):
                                           ['Hello="World!"'])
 
 
+@falcon.before(read_req_body)
 class PasswordChangeResource(object):
 
     def __init__(self, get_user, secret, token_expiration_seconds, **token_opts):
         self.get_user = get_user
         self.secret = secret
+        self.kafka_topic_name = 'passwordchange'
         self.token_expiration_seconds = token_expiration_seconds
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         logging.debug(token_opts)
@@ -435,23 +398,12 @@ class PasswordChangeResource(object):
     @falcon.after(kafka_passwordchange_post_producer)        
     def on_post(self, req, resp):
         logging.debug("Reached on_post() in PasswordChange")
-        try:
-            req_stream = req.stream.read()
-            logging.debug("req_stream")
-            logging.debug(req_stream)
-            
-            if isinstance(req_stream, bytes):
-                data = json_util.loads(req_stream.decode('utf8'))
-            else:
-                data = json_util.loads(req_stream)
-        except Exception:
-            raise falcon.HTTPBadRequest(
-                "I don't understand", traceback.format_exc())
+        req.kafka_topic_name = self.kafka_topic_name + '_post'
         
-        logging.debug(data)
-        email = data["email"]
-        password = data["password"]
-        new_password = data["new_password"]
+        logging.debug(req.body)
+        email = req.body["email"]
+        password = req.body["password"]
+        new_password = req.body["new_password"]
         logging.debug("getting user")
         user = self.get_user('email', email)
         if user:
@@ -506,6 +458,7 @@ class PasswordChangeResource(object):
             resp.status = falcon.HTTP_INTERNAL_SERVER_ERROR
             raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')
         resp.status = falcon.HTTP_ACCEPTED #HTTP_202
+
         
 class AuthMiddleware(object):
 
@@ -550,6 +503,7 @@ class AuthMiddleware(object):
                                           href='http://docs.example.com/auth')
         
         user_id = self.decoded.pop("user_identifier")
+        req.user_id = user_id
         pw_last_changed = self.decoded.pop("pw_last_changed")
         logging.debug("Password last changed recovered from auth_token:")
         logging.debug(pw_last_changed)
@@ -560,7 +514,7 @@ class AuthMiddleware(object):
             raise falcon.HTTPUnauthorized(
                 title='Authorization Failed',
                 description='User does not have privilege/permission to view requested resource.'
-            )        
+            )
 
     def _token_is_valid(self, resp, token):
         try:

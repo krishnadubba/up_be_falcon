@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-from uggipuggi.helpers.json import map_query
-from uggipuggi.libs.error import HTTPBadRequest, HTTPNotAcceptable
+import logging
+import colander
 import mongoengine as mongo
 from bson import json_util
-import colander
+from uggipuggi.helpers.json import map_query
+from uggipuggi.libs.error import HTTPBadRequest, HTTPNotAcceptable
 
 
 def deserialize(req, res, resource, schema=None):
@@ -92,3 +93,20 @@ def serialize(req, res, resource):
         return obj
 
     res.body = json_util.dumps(_to_json(res.body))
+
+
+def read_req_body(req, resp, resource, params):
+    try:
+        req_stream = req.stream.read()
+        logging.debug("req_stream")
+        logging.debug(req_stream)
+        
+        if isinstance(req_stream, bytes):
+            data = json_util.loads(req_stream.decode('utf8'))
+        else:
+            data = json_util.loads(req_stream)
+            
+        req.body = data
+    except Exception:
+        raise falcon.HTTPBadRequest(
+            "I don't understand the HTTP request body", traceback.format_exc())   
