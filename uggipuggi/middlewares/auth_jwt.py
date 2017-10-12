@@ -93,7 +93,7 @@ class VerifyPhoneResource(object):
         # Used to send the OTP for verificiation
         challenges = ['Hello="World"']
         logging.debug("Reached on_post() in VerifyPhone")
-        req.kafka_topic_name = self.kafka_topic_name + '_post'
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         
         otp_code = req.body["code"]
         
@@ -174,7 +174,7 @@ class RegisterResource(object):
         # Should we check if the number supplied is same as the number verified?
         # Can we do this in client instead of server?
         logging.debug("Reached on_post() in Register")
-        req.kafka_topic_name = self.kafka_topic_name + '_post'
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         resp.body = {}
       
         phone = req.body["phone"]
@@ -284,7 +284,7 @@ class LoginResource(object):
     @falcon.after(kafka_login_post_producer)
     def on_post(self, req, resp):
         logging.debug("Reached on_post() in Login")
-        req.kafka_topic_name = self.kafka_topic_name + '_post'
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         resp.body = {}
 
         email = req.body["email"]
@@ -358,7 +358,7 @@ class ForgotPasswordResource(object):
         # Should we check if the number supplied is same as the number verified?
         # Can we do this in client instead of server?
         logging.debug("Reached on_post() in ForgotPassword")
-        req.kafka_topic_name = self.kafka_topic_name + '_post'
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
 
         email = req.body["email"]
         user = self.get_user('email', email)
@@ -398,7 +398,7 @@ class PasswordChangeResource(object):
     @falcon.after(kafka_passwordchange_post_producer)        
     def on_post(self, req, resp):
         logging.debug("Reached on_post() in PasswordChange")
-        req.kafka_topic_name = self.kafka_topic_name + '_post'
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         
         logging.debug(req.body)
         email = req.body["email"]

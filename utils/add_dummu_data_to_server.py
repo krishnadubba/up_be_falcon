@@ -175,7 +175,6 @@ for feed in feeds:
     activity_payload.update({'activity_id':json_util.loads(r.content.decode('utf-8'))['activity_id']})
     activity_map[feed['id']] = activity_payload   
     
-    #activity_Q_payload = {"user_id": user_mongo_id}
     activity_Q_payload = {}
     r = requests.get(rest_api + 'activity', params=activity_Q_payload, 
                      headers=header)

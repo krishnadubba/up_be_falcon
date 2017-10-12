@@ -7,7 +7,7 @@ authentication_kafka_producer = Producer({'bootstrap.servers': KAFKA_BOOTSTRAP_S
 def kafka_verify_post_producer(req, resp, resource):
     parameters = [req.user_id, resp.status]
     logging.debug("++++++++++++++++++++++")
-    logging.debug("KAFKA_VERIFY_POST_PRODUCER")
+    logging.debug("KAFKA_VERIFY_POST_PRODUCER: %s" %req.kafka_topic_name)
     logging.debug("----------------------")
     logging.debug(repr(parameters))
     logging.debug("++++++++++++++++++++++")
@@ -17,7 +17,7 @@ def kafka_verify_post_producer(req, resp, resource):
 def kafka_register_post_producer(req, resp, resource):
     parameters = [req.body['phone'], resp.status]
     logging.debug("++++++++++++++++++++++")
-    logging.debug("KAFKA_REGISTER_POST_PRODUCER")
+    logging.debug("KAFKA_REGISTER_POST_PRODUCER: %s" %req.kafka_topic_name)
     logging.debug("----------------------")
     logging.debug(repr(parameters))
     logging.debug("++++++++++++++++++++++")    
@@ -27,7 +27,7 @@ def kafka_register_post_producer(req, resp, resource):
 def kafka_login_post_producer(req, resp, resource):
     parameters = [req.body["email"], resp.status]
     logging.debug("++++++++++++++++++++++")
-    logging.debug("KAFKA_LOGIN_POST_PRODUCER")
+    logging.debug("KAFKA_LOGIN_POST_PRODUCER: %s" %req.kafka_topic_name)
     logging.debug("----------------------")
     logging.debug(repr(parameters))
     logging.debug("++++++++++++++++++++++")    
@@ -37,7 +37,7 @@ def kafka_login_post_producer(req, resp, resource):
 def kafka_forgotpassword_post_producer(req, resp, resource):
     parameters = [req.body, resp.status]
     logging.debug("++++++++++++++++++++++")
-    logging.debug("KAFKA_FORGOTPASSWORD_POST_PRODUCER")
+    logging.debug("KAFKA_FORGOTPASSWORD_POST_PRODUCER: %s" %req.kafka_topic_name)
     logging.debug("----------------------")
     logging.debug(repr(parameters))
     logging.debug("++++++++++++++++++++++")    
@@ -46,7 +46,7 @@ def kafka_forgotpassword_post_producer(req, resp, resource):
 def kafka_passwordchange_post_producer(req, resp, resource):
     parameters = [req.body, resp.status]
     logging.debug("++++++++++++++++++++++")
-    logging.debug("KAFKA_PASSWORDCHANGE_POST_PRODUCER")
+    logging.debug("KAFKA_PASSWORDCHANGE_POST_PRODUCER: %s" %req.kafka_topic_name)
     logging.debug("----------------------")
     logging.debug(repr(parameters))
     logging.debug("++++++++++++++++++++++")

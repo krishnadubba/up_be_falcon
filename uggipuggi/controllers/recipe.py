@@ -9,7 +9,8 @@ from uggipuggi.controllers.hooks import deserialize, serialize, read_req_body
 from uggipuggi.controllers.schema.recipe import RecipeSchema, RecipeCreateSchema
 from uggipuggi.models.recipe import Comment, Recipe 
 from uggipuggi.libs.error import HTTPBadRequest
-from uggipuggi.messaging.recipe_kafka_producers import recipe_kafka_collection_post_producer
+from uggipuggi.messaging.recipe_kafka_producers import recipe_kafka_collection_post_producer,\
+                                                       recipe_kafka_item_put_producer
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError
 
 
@@ -32,7 +33,7 @@ class Collection(object):
     @falcon.before(deserialize)
     @falcon.after(serialize)
     def on_get(self, req, resp):
-        req.kafka_topic_name = self.kafka_topic_name + '_get'
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         query_params = req.params.get('query')
 
         try:
@@ -67,7 +68,7 @@ class Collection(object):
     @falcon.after(serialize)
     @falcon.after(recipe_kafka_collection_post_producer)
     def on_post(self, req, resp):
-        req.kafka_topic_name = self.kafka_topic_name + '_post'
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         # save to DB
         recipe = Recipe(**req.body)
         recipe.save()
@@ -90,14 +91,14 @@ class Item(object):
 
     @falcon.after(serialize)
     def on_get(self, req, resp, id):
-        req.kafka_topic_name = self.kafka_topic_name + '_get'
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         recipe = self._try_get_recipe(id)
         resp.body = recipe.to_dict()
         resp.status = falcon.HTTP_FOUND
         
     @falcon.after(serialize)
     def on_delete(self, req, resp, id):
-        req.kafka_topic_name = self.kafka_topic_name + '_delete'
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         logger.debug("Deleting recipe data in database ...")
         recipe = self._try_get_recipe(id)
         recipe.delete()
@@ -108,8 +109,9 @@ class Item(object):
     #@falcon.before(deserialize_update)
     @falcon.before(read_req_body)
     @falcon.after(serialize)
+    @falcon.after(recipe_kafka_item_put_producer)
     def on_put(self, req, resp, id):
-        req.kafka_topic_name = self.kafka_topic_name + '_post'
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         logger.debug("Finding recipe in database ... %s" %repr(id))
         recipe = self._try_get_recipe(id)
         #data = req.params.get('body')
@@ -118,11 +120,11 @@ class Item(object):
         # save to DB
         try:            
             for key, value in req.body.items():
-                logger.debug("%s : %s" %(repr(key), repr(value)))
                 if key == 'comment':
                     comment = Comment(content=value['content'], user_id=value['user_id'])
                     recipe.comments.append(comment)
                     recipe.save()
+                    resp.recipe_author_id = recipe.user_id
                 else:    
                     recipe.update(key, value)                        
         except (ValidationError, KeyError) as e:
