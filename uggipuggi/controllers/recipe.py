@@ -64,8 +64,8 @@ class Collection(object):
         
     #@falcon.before(deserialize_create)
     @falcon.before(read_req_body)
-    @falcon.after(recipe_kafka_collection_post_producer)
     @falcon.after(serialize)
+    @falcon.after(recipe_kafka_collection_post_producer)
     def on_post(self, req, resp):
         req.kafka_topic_name = self.kafka_topic_name + '_post'
         # save to DB
@@ -75,6 +75,7 @@ class Collection(object):
         
         # return Recipe id
         resp.body = {"recipe_id": str(recipe.id)}
+        resp.status = falcon.HTTP_CREATED
 
 class Item(object):
     def __init__(self):
@@ -90,7 +91,9 @@ class Item(object):
     def on_get(self, req, resp, id):
         req.kafka_topic_name = self.kafka_topic_name + '_get'
         recipe = self._try_get_recipe(id)
-
+        resp.body = recipe.to_dict()
+        resp.status = falcon.HTTP_FOUND
+        
     @falcon.after(serialize)
     def on_delete(self, req, resp, id):
         req.kafka_topic_name = self.kafka_topic_name + '_delete'
@@ -98,6 +101,7 @@ class Item(object):
         recipe = self._try_get_recipe(id)
         recipe.delete()
         logger.debug("Deleted recipe data in database")
+        resp.status = falcon.HTTP_OK
 
     # TODO: handle PUT requests
     @falcon.before(deserialize_update)
@@ -109,8 +113,12 @@ class Item(object):
         logger.debug("Updating recipe data in database ...")
         logger.debug(data)
         # save to DB
-        for key, value in data.iteritems():
-            recipe.update(key, value)
-            
+        try:
+            for key, value in data.iteritems():
+                recipe.update(key, value)
+        except (ValidationError) as e:
+            raise HTTPBadRequest(title='Invalid Value', 
+                                 description='Invalid fields provided for recipe. {}'.format(e.message))            
         logger.debug("Updated recipe data in database")
         resp.body = recipe.id
+        resp.status = falcon.HTTP_OK

@@ -65,8 +65,8 @@ class Collection(object):
         # [obj._data for obj in activities_qset._iter_results()]
         activities = [obj.to_mongo() for obj in activities_qset]
         logger.debug("Query results: %d" %len(activities))
-        for activity in activities:
-            logger.debug(activity.to_dict())
+        logger.debug("Sample result:")
+        logger.debug(activities[0].to_dict())
         # No need to use json_util.dumps here (?)                             
         resp.body = {'items': [res.to_dict() for res in activities],
                      'count': len(activities)}
@@ -76,6 +76,7 @@ class Collection(object):
     #@falcon.before(deserialize_create)
     @falcon.before(read_req_body)
     @falcon.after(serialize)
+    @falcon.after(activity_kafka_collection_post_producer)
     def on_post(self, req, resp):
         req.kafka_topic_name = self.kafka_topic_name + '_post'
         
@@ -86,6 +87,7 @@ class Collection(object):
         
         # return Recipe id
         resp.body = {"activity_id": str(activity.id)}
+        resp.status = falcon.HTTP_CREATED
 
 class Item(object):
     def __init__(self):
@@ -101,6 +103,8 @@ class Item(object):
     def on_get(self, req, resp, id):
         req.kafka_topic_name = self.kafka_topic_name + '_get'
         activity = self._try_get_activity(id)
+        resp.body = activity.to_dict()
+        resp.status = falcon.HTTP_FOUND
 
     @falcon.after(serialize)
     def on_delete(self, req, resp, id):
@@ -109,6 +113,7 @@ class Item(object):
         activity = self._try_get_activity(id)
         activity.delete()
         logger.debug("Deleted activity data in database")
+        resp.status = falcon.HTTP_OK
 
     # TODO: handle PUT requests
     #@falcon.before(deserialize_update)
@@ -120,8 +125,12 @@ class Item(object):
         logger.debug("Updating activity data in database ...")
         logger.debug(data)
         # save to DB
-        for key, value in data.iteritems():
-            activity.update(key, value)
-            
+        try:
+            for key, value in data.iteritems():
+                activity.update(key, value)
+        except (ValidationError) as e:
+            raise HTTPBadRequest(title='Invalid Value', 
+                                 description='Invalid fields provided for cooking activity. {}'.format(e.message))
         logger.debug("Updated activity data in database")
         resp.body = activity.id
+        resp.status = falcon.HTTP_OK

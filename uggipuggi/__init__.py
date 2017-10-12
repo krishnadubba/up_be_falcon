@@ -147,6 +147,7 @@ class CorsMiddleware():
         allowed_methods = config['allowed_methods']
 
         origin = req.get_header('Origin')
+        self.logger.debug("Request origin URL:")
         self.logger.debug(origin)
         header = {'Access-Control-Allow-Headers': allowed_headers}
         if origin in allowed_origins:

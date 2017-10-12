@@ -98,8 +98,7 @@ def serialize(req, res, resource):
 def read_req_body(req, resp, resource, params):
     try:
         req_stream = req.stream.read()
-        logging.debug("req_stream")
-        logging.debug(req_stream)
+        logging.debug("Read request stream")
         
         if isinstance(req_stream, bytes):
             data = json_util.loads(req_stream.decode('utf8'))

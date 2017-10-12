@@ -125,7 +125,7 @@ class VerifyPhoneResource(object):
                                           href='http://docs.example.com/auth')
         
         phone_number = self.decoded.pop("user_identifier")        
-
+        req.user_id = phone_number
         # Use VerifyUser database instead of normal User database
         user = self.get_user('phone', phone_number, verify=True)
         logging.debug("getting user from VerifyUser database")
