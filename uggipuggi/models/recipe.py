@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-import mongoengine as mongo
+from mongoengine import Document, EmbeddedDocument, StringField, EmailField, IntField,\
+                        DateTimeField, BooleanField, LongField, FloatField, URLField, ListField
 from uggipuggi.constants import TWEET_CHAR_LENGTH
 
 class ExposeLevel(object):
@@ -21,9 +22,9 @@ class ExposeLevel(object):
     def get_expose_level(expose):
         return ExposeLevel.EXPOSE_MAP.get(expose_level, 'private')
     
-class Comment(mongo.EmbeddedDocument):
-    user_id = mongo.StringField(required=True)
-    content = mongo.StringField(required=True, max_length=TWEET_CHAR_LENGTH)
+class Comment(EmbeddedDocument):
+    user_id = StringField(required=True)
+    content = StringField(required=True, max_length=TWEET_CHAR_LENGTH)
     
     @property
     def creation_stamp(self):
@@ -31,32 +32,31 @@ class Comment(mongo.EmbeddedDocument):
         # sort by field _id and you'll get documents in creation time order
         return self.id.generation_time
     
-class Recipe(mongo.Document):
-    recipe_name        = mongo.StringField(required=True)
-    user_id            = mongo.StringField(required=True) #User phone number is used to identify owner
-    user_name          = mongo.StringField(required=True) #User display name
-    steps              = mongo.ListField(required=True)
-    likes_count        = mongo.IntField(required=True, default=0)
-    ingredients        = mongo.ListField(required=True) #Ingredients names
-    ingredients_quant  = mongo.ListField(required=True) 
-    ingredients_metric = mongo.ListField(required=True)
+class Recipe(Document):
+    recipe_name        = StringField(required=True)
+    user_id            = StringField(required=True) #User phone number is used to identify owner
+    user_name          = StringField(required=True) #User display name
+    steps              = ListField(required=True)
+    likes_count        = IntField(required=True, default=0)
+    ingredients        = ListField(required=True) #Ingredients names
+    ingredients_quant  = ListField(required=True) 
+    ingredients_metric = ListField(required=True)
     # This should be private by default
-    expose_level       = mongo.IntField(required=True, default=ExposeLevel.PUBLIC)
-    ingredients_imgs   = mongo.ListField(mongo.URLField()) # list of urls of ingredients images
-    ingredients_ids    = mongo.ListField(required=False) #Ingredients ids        
-    tips               = mongo.ListField(required=False)    
-    description        = mongo.StringField(required=False, max_length=TWEET_CHAR_LENGTH)
-    images             = mongo.ListField(mongo.URLField())  # list of urls
-    tags               = mongo.ListField(required=False)
-    category           = mongo.ListField(required=False)         # Should this be a class?
-    rating_count       = mongo.IntField(required=False, default=0)
-    shares_count       = mongo.IntField(required=False, default=0)
-    rating_total       = mongo.FloatField(required=False, default=0.0)
-    prep_time          = mongo.IntField(required=False, default=15) # In minutes   
-    cook_time          = mongo.IntField(required=False, default=15) # In minutes   
-    last_modified      = mongo.DateTimeField(required=False)
-    comments           = mongo.ListField(mongo.EmbeddedDocumentField(Comment), 
-                                         required=False)
+    expose_level       = IntField(required=True, default=ExposeLevel.PUBLIC)
+    ingredients_imgs   = ListField(URLField()) # list of urls of ingredients images
+    ingredients_ids    = ListField(required=False) #Ingredients ids        
+    tips               = ListField(required=False)    
+    description        = StringField(required=False, max_length=TWEET_CHAR_LENGTH)
+    images             = ListField(URLField())  # list of urls
+    tags               = ListField(required=False)
+    category           = ListField(required=False)         # Should this be a class?
+    rating_count       = IntField(required=False, default=0)
+    shares_count       = IntField(required=False, default=0)
+    rating_total       = FloatField(required=False, default=0.0)
+    prep_time          = IntField(required=False, default=15) # In minutes   
+    cook_time          = IntField(required=False, default=15) # In minutes   
+    last_modified      = DateTimeField(required=False)
+    comments           = ListField(EmbeddedDocumentField(Comment), required=False)
     
     @property
     def rating(self):

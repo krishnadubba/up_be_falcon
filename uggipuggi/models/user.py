@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-import mongoengine as mongo
-
+from mongoengine import Document, StringField, EmailField, IntField, DateTimeField,\
+                        BooleanField, LongField, URLField, ListField
 
 class Role(object):
     # defines all available roles for users
@@ -42,28 +42,28 @@ class Subscription(object):
     def get_subscription_type(subscription):
         return Subscription.SUBSCRIPTION_MAP.get(subscription, 'free')
 
-class User(mongo.DynamicDocument):
+class User(Document):
 
-    display_name    = mongo.StringField(required=True, min_length=4, max_length=20)
-    email           = mongo.EmailField(required=True, unique=True)
-    role            = mongo.IntField(required=True, default=Role.USER)
-    country_code    = mongo.StringField(min_length=2, max_length=2, required=True)  # follows ISO_3166-1
-    phone           = mongo.StringField(required=True, unique=True)  # contact number
-    password        = mongo.StringField(required=True, min_length=8)
-    pw_last_changed = mongo.DateTimeField(required=True)
-    phone_verified  = mongo.BooleanField(required=True, default=False)
-    account_active  = mongo.BooleanField(required=True, default=False)
-    app_platform    = mongo.StringField(required=True, default="android")
+    display_name    = StringField(required=True, min_length=4, max_length=20)
+    email           = EmailField(required=True, unique=True)
+    role            = IntField(required=True, default=Role.USER)
+    country_code    = StringField(min_length=2, max_length=2, required=True)  # follows ISO_3166-1
+    phone           = StringField(required=True, unique=True)  # contact number
+    password        = StringField(required=True, min_length=8)
+    pw_last_changed = DateTimeField(required=True)
+    phone_verified  = BooleanField(required=True, default=False)
+    account_active  = BooleanField(required=True, default=False)
+    app_platform    = StringField(required=True, default="android")
     # Not mandatory
-    first_name      = mongo.StringField(required=False)
-    last_name       = mongo.StringField(required=False)
-    display_pic     = mongo.URLField(required=False)
-    gender          = mongo.StringField(required=False, min_length=4, max_length=6)        
-    facebook_id     = mongo.LongField(required=False)  # Facebook ID is numeric but can be pretty big
-    twitter_id      = mongo.StringField(required=False)  # Twitter ID is alphanumeric
-    instagram_id    = mongo.StringField(required=False)  # Instagram ID is alphanumeric
-    subscription    = mongo.IntField(required=False, default=Subscription.FREE)    
-    searchable_by_display_name = mongo.BooleanField(required=False, default=False)
+    first_name      = StringField(required=False)
+    last_name       = StringField(required=False)
+    display_pic     = URLField(required=False)
+    gender          = StringField(required=False, min_length=4, max_length=6)        
+    facebook_id     = LongField(required=False)  # Facebook ID is numeric but can be pretty big
+    twitter_id      = StringField(required=False)  # Twitter ID is alphanumeric
+    instagram_id    = StringField(required=False)  # Instagram ID is alphanumeric
+    subscription    = IntField(required=False, default=Subscription.FREE)    
+    searchable_by_display_name = BooleanField(required=False, default=False)
     
     #online_status = mongo.IntField(required=True)
 
@@ -81,7 +81,19 @@ class User(mongo.DynamicDocument):
     def role_satisfy(self, role):
         return self.role >= role
 
-class VerifyPhone(mongo.DynamicDocument):
+class Group(Document):
+    group_name = StringField(required=True, max_length=25)
+    admins     = ListField(StringField)
+    members    = ListField(StringField)
+    group_pic  = URLField(required=False)
+    @property
+    def creation_stamp(self):
+        # Time created can be obtained from the object _id attribute
+        # sort by field _id and you'll get documents in creation time order
+        return self.id.generation_time
+    
+class VerifyPhone(Document):
 
-    phone = mongo.StringField(required=True, unique=True)  # contact number
-    otp = mongo.StringField(required=True, min_length=4, max_length=5)
+    phone = StringField(required=True, unique=True)  # contact number
+    otp   = StringField(required=True, min_length=4, max_length=5)
+
