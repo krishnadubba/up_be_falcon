@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import
 from mongoengine import Document, StringField, EmailField, IntField, DateTimeField,\
-                        BooleanField, LongField, URLField, ListField
+                        BooleanField, LongField, URLField, ListField, DictField
 
 class Role(object):
     # defines all available roles for users
@@ -62,10 +62,13 @@ class User(Document):
     facebook_id     = LongField(required=False)  # Facebook ID is numeric but can be pretty big
     twitter_id      = StringField(required=False)  # Twitter ID is alphanumeric
     instagram_id    = StringField(required=False)  # Instagram ID is alphanumeric
-    subscription    = IntField(required=False, default=Subscription.FREE)    
-    searchable_by_display_name = BooleanField(required=False, default=False)
-    
-    #online_status = mongo.IntField(required=True)
+    subscription    = IntField(required=False, default=Subscription.FREE)
+    groups          = DictField(required=False)
+    contacts        = DictField(required=False)
+    followers       = DictField(required=False) # Those who follow this user
+    following       = DictField(required=False) # Those this user follows
+    searchable_by_display_name = BooleanField(required=False, default=False)    
+    #online_status = IntField(required=False)
 
     @property
     def subscription_type(self):
@@ -83,9 +86,10 @@ class User(Document):
 
 class Group(Document):
     group_name = StringField(required=True, max_length=25)
-    admins     = ListField(StringField)
-    members    = ListField(StringField)
+    admins     = DictField(StringField)
+    members    = DictField(StringField)
     group_pic  = URLField(required=False)
+    
     @property
     def creation_stamp(self):
         # Time created can be obtained from the object _id attribute
@@ -93,7 +97,6 @@ class Group(Document):
         return self.id.generation_time
     
 class VerifyPhone(Document):
-
     phone = StringField(required=True, unique=True)  # contact number
     otp   = StringField(required=True, min_length=4, max_length=5)
 

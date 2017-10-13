@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-from mongoengine import Document, EmbeddedDocument, StringField, EmailField, IntField,\
-                        DateTimeField, BooleanField, LongField, FloatField, URLField, ListField
+from mongoengine import Document, EmbeddedDocument, EmbeddedDocumentField, StringField, EmailField,\
+                 IntField, DateTimeField, BooleanField, LongField, FloatField, URLField, ListField
 from uggipuggi.constants import TWEET_CHAR_LENGTH
 
 class ExposeLevel(object):
