@@ -53,6 +53,7 @@ class User(Document):
     pw_last_changed = DateTimeField(required=True)
     phone_verified  = BooleanField(required=True, default=False)
     account_active  = BooleanField(required=True, default=False)
+    public_profile  = BooleanField(required=True, default=False) # Public or private profile?
     app_platform    = StringField(required=True, default="android")
     # Not mandatory
     first_name      = StringField(required=False)

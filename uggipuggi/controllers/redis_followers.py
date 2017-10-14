@@ -40,10 +40,10 @@ class Item(object):
             req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
             logger.debug("Deleting member from user followers in database ...")
             followers_id_name = 'followers:' + id
-            if 'follower_user_id' in req.params['body']:
-                req.redis_conn.sdel(followers_id_name, req.params['body']['follower_user_id'])
+            try:
+                req.redis_conn.srem(followers_id_name, req.params['query']['follower_user_id'])
                 logger.debug("Deleted member from user followers in database")
                 resp.status = falcon.HTTP_OK
-            else:
+            except KeyError:
                 logger.warn("Please provide contact_user_id to delete from users contact")
                 resp.status = falcon.HTTPMissingParam

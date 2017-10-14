@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
+import falcon
 import logging
 import colander
 import mongoengine as mongo
@@ -27,9 +28,6 @@ def deserialize(req, res, resource, params, schema=None):
     def _is_json_type(content_type):
         return content_type == 'application/json'
 
-    logging.info("%%%%%%%%%%%%%%%%%%")
-    logging.info(schema)
-    logging.info("%%%%%%%%%%%%%%%%%%")
     if req.method.upper() in ['POST', 'PUT', 'PATCH']:
 
         if not _is_json_type(req.content_type):
@@ -44,6 +42,11 @@ def deserialize(req, res, resource, params, schema=None):
                 json_body = json_util.loads(req_stream.decode('utf8'))
             else:
                 json_body = json_util.loads(req_stream)
+                
+            logging.info("%%%%%%%%%%%%%%%%%%")
+            logging.info(json_body)
+            logging.info("%%%%%%%%%%%%%%%%%%")
+                
         except Exception:
             raise falcon.HTTPBadRequest(
                 "I don't understand the HTTP request body", traceback.format_exc())
@@ -65,6 +68,10 @@ def deserialize(req, res, resource, params, schema=None):
         if not req.query_string:
             return
 
+        logging.info("%%%%%%%%%%%%%%%%%%")
+        logging.info(req.query_string)
+        logging.info("%%%%%%%%%%%%%%%%%%")
+        
         query = map_query(req.query_string, ignores=['token'])
 
         if schema:
@@ -76,7 +83,9 @@ def deserialize(req, res, resource, params, schema=None):
                                                  'in params:\n{}'.format(e.asdict()))
 
         req.params['query'] = query
-
+        logging.info("%%%%%%%%%%%%%%%%%%")
+        logging.info(req.params['query'])
+        logging.info("%%%%%%%%%%%%%%%%%%")
 
 def serialize(req, res, resource):
     """

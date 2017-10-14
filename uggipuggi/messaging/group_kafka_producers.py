@@ -7,7 +7,7 @@ group_producer = Producer({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
 def group_kafka_collection_post_producer(req, resp, resource):
     # Topic name is 'recipe' and partition is 'user_id'
     # Consumer reads pushes notifications to interested parties and feeds
-    parameters = [req.user_id, req.params['body']["group_id"], resp.status]
+    parameters = [req.user_id, resp.body["group_id"], resp.status]
     logging.debug("++++++++++++++++++++++")
     logging.debug("GROUP_KAFKA_COLLECTION_POST_PRODUCER: %s" %req.kafka_topic_name)
     logging.debug("----------------------")

@@ -326,8 +326,7 @@ class LoginResource(object):
                                               ['Hello="World!"'])                
             if crypt.verify(password, user["password"]):
                 logging.debug("Valid user, jwt'ing!")
-                resp.body.update({'user_id':str(user.id)})
-                self.add_new_jwtoken(resp, user.phone, user.pw_last_changed)                
+                self.add_new_jwtoken(resp, str(user.id), user.pw_last_changed)
                 resp.status = falcon.HTTP_ACCEPTED #HTTP_202
             else:
                 description = ('Password did not match, please try again')
@@ -366,7 +365,6 @@ class LoginResource(object):
         elif self.token_opts['location'] == 'header':
             resp.body.update({self.token_opts['name'] : self.token_opts['value'],
                               "user_identifier": user_identifier})
-            #resp.body = json_util.dumps(resp.body)
         else:
             resp.status = falcon.HTTP_INTERNAL_SERVER_ERROR
             raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')
@@ -532,13 +530,14 @@ class AuthMiddleware(object):
                                           challenges,
                                           href='http://docs.example.com/auth')
         
+        # we used user mongo object id as user identifier
         user_id = self.decoded.pop("user_identifier")
         req.user_id = user_id
         pw_last_changed = self.decoded.pop("pw_last_changed")
         logging.debug("Password last changed recovered from auth_token:")
         logging.debug(pw_last_changed)
         # check if user is authorized to this request
-        if not self._is_user_authorized(req, user_id, pw_last_changed, user_id_type='phone'):
+        if not self._is_user_authorized(req, user_id, pw_last_changed, user_id_type='id'):
             resp.status = falcon.HTTP_UNAUTHORIZED
             logging.error("Authorization Failed: User does not have privilege/permission or supplied expired token.")
             raise falcon.HTTPUnauthorized(

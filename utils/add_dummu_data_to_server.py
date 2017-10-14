@@ -20,7 +20,7 @@ from random import randint
 from bson import json_util
 from datetime import datetime, timedelta
 from passlib.hash import bcrypt as crypt
-from dummy_data import feeds, materials, users, recipes
+from dummy_data import feeds, materials, users, recipes, groups, contacts, following
 
 food_gcs_base = 'https://storage.googleapis.com/up_food_pics/'
 users_gcs_base = 'https://storage.googleapis.com/up_users_avatars/'
@@ -95,7 +95,7 @@ for user in users:
                                                            "password":users_map[user['id']]["password"]}), headers=header)
     
     login_token   = json.loads(r.content.decode('utf-8'))['auth_token']
-    user_mongo_id = json.loads(r.content.decode('utf-8'))['user_id']
+    user_mongo_id = json.loads(r.content.decode('utf-8'))['user_identifier']
     users_map[user['id']].update({'login_token':login_token})
     users_map[user['id']].update({'user_id':user_mongo_id})
     
@@ -144,6 +144,32 @@ for user in users:
     print (r)
     
 print ('==================')    
+
+for group in groups:
+    header = {'Content-Type':'application/json'}    
+    group_payload = {}
+    group_payload['group_name'] = group['group_name']
+    group_payload['group_pic'] = group['group_pic']
+    login_token = users_map[group['admin']]['login_token']
+    header.update({'auth_token':login_token})
+    r = requests.post(rest_api + 'groups', data=json.dumps(group_payload), 
+                      headers=header)
+    group_id = json.loads(r.content.decode('utf-8'))['group_id']
+    print ("group_id: %s" %group_id)
+    
+    # First memeber is the admin
+    for member in group['members'][1:]:    
+        member_payload = {'member_id':[users_map[member]['user_id']]}
+        r = requests.post(rest_api + 'groups/%s'%group_id, data=json.dumps(member_payload), 
+                          headers=header)
+        
+    r = requests.get(rest_api + 'groups/%s?members=True'%group_id,  
+                     headers=header)
+    
+    print (r)
+    print (r.content)
+
+print ('==================')  
 
 for recipe in recipes:
     comment = {}

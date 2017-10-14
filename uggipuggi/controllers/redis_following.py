@@ -41,12 +41,12 @@ class Item(object):
             req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
             logger.debug("Deleting member from user following in database ...")
             following_id_name = 'following:' + id
-            if 'following_user_id' in req.params['body']:
-                req.redis_conn.sdel(following_id_name, req.params['body']['following_user_id'])
+            if 'following_user_id' in req.params['query']:
+                req.redis_conn.srem(following_id_name, req.params['query']['following_user_id'])
                 logger.debug("Deleted member from user following in database")
                 
-                followers_id_name = 'followers:' + req.params['body']['follower_user_id']
-                req.redis_conn.sdel(followers_id_name, id)
+                followers_id_name = 'followers:' + req.params['query']['follower_user_id']
+                req.redis_conn.srem(followers_id_name, id)
                 logger.debug("Added user to following followers in database")                            
                 resp.status = falcon.HTTP_OK
             else:

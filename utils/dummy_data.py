@@ -1,12 +1,4 @@
-users = [
-        {
-            'id': 'U0016',
-            'name': 'Jeniffer Cruise',
-            'avatar': 'assets/img/jeniffer.png',
-            'sex': 'female',
-            'rank': 'popular',
-            'repicies': 7120
-            },
+users = [    
         {
             'id': 'U0001',
             'name': 'Abbie Pratt',
@@ -127,7 +119,30 @@ users = [
             'rank': 'recent',
             'repicies': 7120
             },
+        {
+            'id': 'U0016',
+            'name': 'Jeniffer Cruise',
+            'avatar': 'assets/img/jeniffer.png',
+            'sex': 'female',
+            'rank': 'popular',
+            'repicies': 7120
+            },        
         ];
+
+groups = [{'group_name':'Alpha', 'group_pic':'', 'admin':'U0001', 'members':['U0002','U0006','U0007','U0008','U0010']},
+          {'group_name':'Beta',  'group_pic':'', 'admin':'U0002', 'members':['U0011','U0016','U0009']},
+          {'group_name':'Theta', 'group_pic':'', 'admin':'U0003', 'members':['U0015','U0016','U0012']},
+          {'group_name':'Gamma', 'group_pic':'', 'admin':'U0004', 'members':['U0005','U0016','U0010']},]
+
+contacts = [('U0001','U0002','U0006','U0007','U0008','U0010'),
+            ('U0002','U0014','U0011','U0016','U0009','U0012',),
+            ('U0003','U0015','U0016','U0012'),
+            ('U0004','U0002','U0001','U0005','U0016','U0010')]
+
+following = [('U0001','U0014','U0016','U0015','U0008','U0010'),
+            ('U0002','U0004','U0001','U0013','U0009','U0011',),
+            ('U0003','U0005','U0006','U0012'),
+            ('U0004','U0002','U0001','U0005','U0016','U0010')]
 
 materials = [
     {

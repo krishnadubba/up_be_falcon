@@ -17,3 +17,6 @@ def map_query(string, ignores=[]):
             query_map[k] = v[0]  # 'unlist' values when they are a list of 1 item
 
     return query_map
+
+if __name__ == "__main__":
+    map_query('members=-1', ignores=['token'])

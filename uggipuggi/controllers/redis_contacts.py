@@ -41,11 +41,11 @@ class Item(object):
             req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
             logger.debug("Deleting member from user contacts in database ...")
             contacts_id_name = 'contacts:' + id
-            if 'contact_user_id' in req.params['body']:
-                req.redis_conn.sdel(contacts_id_name, req.params['body']['contact_user_id'])
+            try:
+                req.redis_conn.srem(contacts_id_name, req.params['query']['contact_user_id'])
                 logger.debug("Deleted member from user contacts in database")
                 resp.status = falcon.HTTP_OK
-            else:
+            except KeyError:
                 logger.warn("Please provide contact_user_id to delete from users contact")
                 resp.status = falcon.HTTPMissingParam                
 
