@@ -62,6 +62,30 @@ ACL_MAP = {
         'put': Role.EMPLOYEE,
         'delete': Role.ADMIN
     },
+    '/groups': {
+        'get': Role.USER,
+        'post': Role.USER,
+    },
+    '/groups/+': {
+        'get': Role.USER,
+        'put': Role.USER,
+        'delete': Role.USER
+    },
+    '/contacts/+': {
+        'get': Role.USER,
+        'put': Role.USER,
+        'delete': Role.USER
+    },
+    '/followers/+': {
+        'get': Role.USER,
+        'put': Role.USER,
+        'delete': Role.USER
+    },
+    '/following/+': {
+        'get': Role.USER,
+        'put': Role.USER,
+        'delete': Role.USER
+    },    
     '/verify': {
         'get': Role.USER,
         'post': Role.USER,

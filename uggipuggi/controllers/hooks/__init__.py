@@ -8,6 +8,8 @@ from bson import json_util
 from uggipuggi.helpers.json import map_query
 from uggipuggi.libs.error import HTTPBadRequest, HTTPNotAcceptable
 
+import redis
+redis_conn = redis.Redis(host='localhost', port=6379, db=0)
 
 def deserialize(req, res, resource, schema=None):
     """
@@ -108,4 +110,7 @@ def read_req_body(req, resp, resource, params):
         req.body = data
     except Exception:
         raise falcon.HTTPBadRequest(
-            "I don't understand the HTTP request body", traceback.format_exc())   
+            "I don't understand the HTTP request body", traceback.format_exc())
+    
+def supply_redis_conn(req, resp, resource, params):
+    req.redis_conn = redis_conn

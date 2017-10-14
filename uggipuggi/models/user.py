@@ -63,10 +63,10 @@ class User(Document):
     twitter_id      = StringField(required=False)  # Twitter ID is alphanumeric
     instagram_id    = StringField(required=False)  # Instagram ID is alphanumeric
     subscription    = IntField(required=False, default=Subscription.FREE)
-    groups          = DictField(required=False)
-    contacts        = DictField(required=False)
-    followers       = DictField(required=False) # Those who follow this user
-    following       = DictField(required=False) # Those this user follows
+    #groups          = DictField(required=False)
+    #contacts        = DictField(required=False)
+    #followers       = DictField(required=False) # Those who follow this user
+    #following       = DictField(required=False) # Those this user follows
     searchable_by_display_name = BooleanField(required=False, default=False)    
     #online_status = IntField(required=False)
 
@@ -86,8 +86,8 @@ class User(Document):
 
 class Group(Document):
     group_name = StringField(required=True, max_length=25)
-    admins     = DictField(StringField)
-    members    = DictField(StringField)
+    admins     = DictField(required=True)
+    members    = DictField(required=False)
     group_pic  = URLField(required=False)
     
     @property
