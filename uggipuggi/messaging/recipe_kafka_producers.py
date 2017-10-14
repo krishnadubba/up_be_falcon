@@ -28,12 +28,12 @@ def recipe_kafka_item_get_producer(req, resp, resource):
     logging.debug("++++++++++++++++++++++")    
     recipe_producer.produce(topic=req.kafka_topic_name, 
                             value=repr(parameters),
-                            key=req.body['user_id']) #req.encode('utf-8'))
+                            key=req.params['body']['user_id']) #req.encode('utf-8'))
     recipe_producer.flush()
     
 def recipe_kafka_item_put_producer(req, resp, resource):
     # Recipe updated, night not be useful
-    if 'comment' in req.body:
+    if 'comment' in req.params['body']:
         parameters = [req.user_id, resp.recipe_author_id, resp.status]
         logging.debug("++++++++++++++++++++++")
         logging.debug("RECIPE_KAFKA_ITEM_PUT_PRODUCER: %s" %req.kafka_topic_name)
@@ -54,6 +54,6 @@ def recipe_kafka_item_delete_producer(req, resp, resource):
     logging.debug("++++++++++++++++++++++")
     recipe_producer.produce(topic=req.kafka_topic_name, 
                             value=repr(parameters),
-                            key=req.body['user_id']) #req.encode('utf-8'))
+                            key=req.params['body']['user_id']) #req.encode('utf-8'))
     recipe_producer.flush()
     

@@ -5,7 +5,7 @@ import falcon
 import logging
 from bson import json_util, ObjectId
 from uggipuggi import constants
-from uggipuggi.controllers.hooks import deserialize, serialize, read_req_body
+from uggipuggi.controllers.hooks import deserialize, serialize
 #from uggipuggi.controllers.schema.activity import CookingActivitySchema, CookingActivityCreateSchema
 from uggipuggi.models.cooking_activity import CookingActivity
 from uggipuggi.libs.error import HTTPBadRequest
@@ -25,13 +25,12 @@ from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, Validation
 
 logger = logging.getLogger(__name__)
 
-
+@falcon.after(serialize)
 class Collection(object):
     def __init__(self):
         self.kafka_topic_name = 'activity_collection'
 
     @falcon.before(deserialize)
-    @falcon.after(serialize)
     def on_get(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         query_params = req.params.get('query')
@@ -75,14 +74,13 @@ class Collection(object):
         resp.status = falcon.HTTP_FOUND
         
     #@falcon.before(deserialize_create)
-    @falcon.before(read_req_body)
-    @falcon.after(serialize)
+    @falcon.before(deserialize)    
     @falcon.after(activity_kafka_collection_post_producer)
     def on_post(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         
         # save to DB
-        activity = CookingActivity(**req.body)
+        activity = CookingActivity(**req.params['body'])
         activity.save()
         logger.debug("Cooking Activity created with id: %s" %str(activity.id))
         
@@ -90,6 +88,8 @@ class Collection(object):
         resp.body = {"activity_id": str(activity.id)}
         resp.status = falcon.HTTP_CREATED
 
+
+@falcon.after(serialize)
 class Item(object):
     def __init__(self):
         self.kafka_topic_name = 'activity_item'
@@ -100,15 +100,15 @@ class Item(object):
         except (ValidationError, DoesNotExist, MultipleObjectsReturned) as e:
             logger.error('Invalid cooking actibity ID provided. {}'.format(e.message))
             raise HTTPBadRequest(title='Invalid Value', description='Invalid CookingActivity ID provided. {}'.format(e.message))
-
-    @falcon.after(serialize)
+    
+    @falcon.before(deserialize)    
     def on_get(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         activity = self._try_get_activity(id)
         resp.body = activity.to_dict()
         resp.status = falcon.HTTP_FOUND
 
-    @falcon.after(serialize)
+    @falcon.before(deserialize)
     def on_delete(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         logger.debug("Deleting activity data in database ...")
@@ -119,18 +119,17 @@ class Item(object):
 
     # TODO: handle PUT requests
     #@falcon.before(deserialize_update)
-    @falcon.before(read_req_body)
-    @falcon.after(serialize)
+    @falcon.before(deserialize)
     @falcon.after(activity_kafka_item_put_producer)
     def on_put(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         logger.debug("Finding activity in database ... %s" %repr(id))
         activity = self._try_get_activity(id)
         logger.debug("Updating activity data in database ...")
-        logger.debug(req.body)
+        logger.debug(req.params['body'])
         # save to DB
         try:
-            for key, value in req.body.items():
+            for key, value in req.params['body'].items():
                 if key == 'comment':
                     comment = Comment(content=value['content'], user_id=value['user_id'])
                     activity.comments.append(comment)

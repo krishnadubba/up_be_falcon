@@ -15,7 +15,7 @@ def kafka_verify_post_producer(req, resp, resource):
     authentication_kafka_producer.flush()
     
 def kafka_register_post_producer(req, resp, resource):
-    parameters = [req.body['phone'], resp.status]
+    parameters = [req.params['body']['phone'], resp.status]
     logging.debug("++++++++++++++++++++++")
     logging.debug("KAFKA_REGISTER_POST_PRODUCER: %s" %req.kafka_topic_name)
     logging.debug("----------------------")
@@ -25,7 +25,7 @@ def kafka_register_post_producer(req, resp, resource):
     authentication_kafka_producer.flush()
     
 def kafka_login_post_producer(req, resp, resource):
-    parameters = [req.body["email"], resp.status]
+    parameters = [req.params['body']["email"], resp.status]
     logging.debug("++++++++++++++++++++++")
     logging.debug("KAFKA_LOGIN_POST_PRODUCER: %s" %req.kafka_topic_name)
     logging.debug("----------------------")
@@ -35,7 +35,7 @@ def kafka_login_post_producer(req, resp, resource):
     authentication_kafka_producer.flush()
     
 def kafka_forgotpassword_post_producer(req, resp, resource):
-    parameters = [req.body, resp.status]
+    parameters = [req.params['body'], resp.status]
     logging.debug("++++++++++++++++++++++")
     logging.debug("KAFKA_FORGOTPASSWORD_POST_PRODUCER: %s" %req.kafka_topic_name)
     logging.debug("----------------------")
@@ -44,7 +44,7 @@ def kafka_forgotpassword_post_producer(req, resp, resource):
     authentication_kafka_producer.produce(req.kafka_topic_name, repr(parameters)) #req.encode('utf-8'))
     authentication_kafka_producer.flush()
 def kafka_passwordchange_post_producer(req, resp, resource):
-    parameters = [req.body, resp.status]
+    parameters = [req.params['body'], resp.status]
     logging.debug("++++++++++++++++++++++")
     logging.debug("KAFKA_PASSWORDCHANGE_POST_PRODUCER: %s" %req.kafka_topic_name)
     logging.debug("----------------------")

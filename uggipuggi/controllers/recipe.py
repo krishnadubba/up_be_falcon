@@ -5,7 +5,7 @@ import falcon
 import logging
 from bson import json_util, ObjectId
 from uggipuggi import constants
-from uggipuggi.controllers.hooks import deserialize, serialize, read_req_body
+from uggipuggi.controllers.hooks import deserialize, serialize
 from uggipuggi.controllers.schema.recipe import RecipeSchema, RecipeCreateSchema
 from uggipuggi.models.recipe import Comment, Recipe 
 from uggipuggi.libs.error import HTTPBadRequest
@@ -15,23 +15,26 @@ from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, Validation
 
 
 # -------- BEFORE_HOOK functions
-def deserialize_create(req, res, resource, kwargs):
-    deserialize(req, res, resource, schema=RecipeSchema())
+def deserialize_create(req, res, resource, params):
+    deserialize(req, res, resource, params, schema=RecipeSchema())
 
-def deserialize_update(req, res, id, resource):
-    deserialize(req, res, resource, schema=RecipeSchema())
+def deserialize_update(req, res, resource, params):
+    deserialize(req, res, resource, params, schema=RecipeSchema())
+
+
+#def deserialize_update(req, res, id, resource):
+    #deserialize(req, res, resource, schema=RecipeSchema())
 
 # -------- END functions
 
 logger = logging.getLogger(__name__)
 
-
+@falcon.after(serialize)
 class Collection(object):
     def __init__(self):
         self.kafka_topic_name = 'recipe_collection'
-
+        
     @falcon.before(deserialize)
-    @falcon.after(serialize)
     def on_get(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         query_params = req.params.get('query')
@@ -64,13 +67,13 @@ class Collection(object):
         resp.status = falcon.HTTP_FOUND
         
     #@falcon.before(deserialize_create)
-    @falcon.before(read_req_body)
-    @falcon.after(serialize)
+    @falcon.before(deserialize)    
     @falcon.after(recipe_kafka_collection_post_producer)
     def on_post(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         # save to DB
-        recipe = Recipe(**req.body)
+        #recipe = Recipe(**req.body)
+        recipe = Recipe(**req.params['body'])
         recipe.save()
         logger.debug("Recipe created with id: %s" %str(recipe.id))
         
@@ -78,6 +81,8 @@ class Collection(object):
         resp.body = {"recipe_id": str(recipe.id)}
         resp.status = falcon.HTTP_CREATED
 
+
+@falcon.after(serialize)
 class Item(object):
     def __init__(self):
         self.kafka_topic_name = 'recipe_item'
@@ -89,14 +94,14 @@ class Item(object):
             logger.error('Invalid recipe ID provided. {}'.format(e.message))
             raise HTTPBadRequest(title='Invalid Value', description='Invalid recipe ID provided. {}'.format(e.message))
 
-    @falcon.after(serialize)
+    @falcon.before(deserialize)
     def on_get(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         recipe = self._try_get_recipe(id)
         resp.body = recipe.to_dict()
         resp.status = falcon.HTTP_FOUND
         
-    @falcon.after(serialize)
+    @falcon.before(deserialize)        
     def on_delete(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         logger.debug("Deleting recipe data in database ...")
@@ -105,10 +110,8 @@ class Item(object):
         logger.debug("Deleted recipe data in database")
         resp.status = falcon.HTTP_OK
 
-    # TODO: handle PUT requests
     #@falcon.before(deserialize_update)
-    @falcon.before(read_req_body)
-    @falcon.after(serialize)
+    @falcon.before(deserialize)    
     @falcon.after(recipe_kafka_item_put_producer)
     def on_put(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
@@ -116,10 +119,10 @@ class Item(object):
         recipe = self._try_get_recipe(id)
         #data = req.params.get('body')
         logger.debug("Updating recipe data in database ...")
-        logger.debug(req.body)
+        logger.debug(req.params['body'])
         # save to DB
         try:            
-            for key, value in req.body.items():
+            for key, value in req.params['body'].items():
                 if key == 'comment':
                     comment = Comment(content=value['content'], user_id=value['user_id'])
                     recipe.comments.append(comment)

@@ -6,7 +6,7 @@ import falcon
 import logging
 from bson import json_util, ObjectId
 from uggipuggi import constants
-from uggipuggi.controllers.hooks import deserialize, serialize, read_req_body, supply_redis_conn
+from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.group_kafka_producers import group_kafka_item_put_producer, group_kafka_item_post_producer,\
        group_kafka_item_delete_producer, group_kafka_collection_post_producer, group_kafka_collection_delete_producer 
@@ -15,19 +15,18 @@ from uggipuggi.messaging.group_kafka_producers import group_kafka_item_put_produ
 logger = logging.getLogger(__name__)
 
 @falcon.before(supply_redis_conn)
+@falcon.after(serialize)
 class Collection(object):
     def __init__(self):
         self.kafka_topic_name = 'group_collection'
 
     @falcon.before(deserialize)
-    @falcon.after(serialize)
     def on_get(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         resp.status = falcon.HTTP_FOUND
         
     #@falcon.before(deserialize_create)
-    @falcon.before(read_req_body)
-    @falcon.after(serialize)
+    @falcon.before(deserialize)
     @falcon.after(group_kafka_collection_post_producer)
     def on_post(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
@@ -36,8 +35,8 @@ class Collection(object):
         group_id_name = 'group:' + group_id
         
         req.redis_conn.hmset(group_id_name, {
-            'group_name': req.body['group_name'],
-            'group_pic' : req.body['group_pic'],
+            'group_name': req.params['body']['group_name'],
+            'group_pic' : req.params['body']['group_pic'],
             'created_time': time.time(),
             'admin'       : req.user_id
         })
@@ -45,13 +44,12 @@ class Collection(object):
         resp.body = {"group_id": group_id_name}
         resp.status = falcon.HTTP_CREATED
         
-    @falcon.before(read_req_body)
-    @falcon.after(serialize)
+    @falcon.before(deserialize)
     @falcon.after(group_kafka_collection_delete_producer)
     def on_delete(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         logger.debug("Deleting group data in database ...")
-        group_id_name = 'group:' + req.body['group_id']
+        group_id_name = 'group:' + req.params['body']['group_id']
         admin = req.redis_conn.hget(group_id_name, 'admin')
         if admin != req.user_id:
             logger.debug("User is not the admin: %s , %s" %(admin, req.user_id))
@@ -67,26 +65,26 @@ class Collection(object):
             logger.debug("Deleted group data in database")
             resp.status = falcon.HTTP_OK        
 
+
 @falcon.before(supply_redis_conn)
+@falcon.after(serialize)
 class Item(object):
     def __init__(self):
         self.kafka_topic_name = 'group_item'
 
-    @falcon.before(read_req_body)
-    @falcon.after(serialize)
+    @falcon.before(deserialize)
     #@falcon.after(group_kafka_item_get_producer)
     def on_get(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         group_id_name = 'group:' + id
         resp.body = req.redis_conn.hgetall(group_id_name)
         # Should we also get members?
-        if 'members' in req.body:
+        if 'members' in req.params['body']:
             resp.body['members'] = list(req.redis_conn.smembers(group_id_name))
                 
         resp.status = falcon.HTTP_FOUND
         
-    @falcon.before(read_req_body)    
-    @falcon.after(serialize)
+    @falcon.before(deserialize)
     @falcon.after(group_kafka_item_delete_producer)    
     def on_delete(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
@@ -99,13 +97,12 @@ class Item(object):
             return
         else:
             group_members_id_name = 'group_members:' + group_id
-            req.redis_conn.hdel(group_members_id_name, req.body['member_id'])
+            req.redis_conn.hdel(group_members_id_name, req.params['body']['member_id'])
             logger.debug("Deleted member from group data in database")
             resp.status = falcon.HTTP_OK
 
     #@falcon.before(deserialize_update)
-    @falcon.before(read_req_body)
-    @falcon.after(serialize)
+    @falcon.before(deserialize)
     @falcon.after(group_kafka_item_put_producer)
     def on_put(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
@@ -117,14 +114,13 @@ class Item(object):
             resp.status = falcon.HTTP_UNAUTHORIZED
             return
         else:
-            for key in req.body:
-                req.redis_conn.hget(group_id_name, key, req.body[key])
+            for key in req.params['body']:
+                req.redis_conn.hget(group_id_name, key, req.params['body'][key])
             
         logger.debug("Updated recipe data in database")
         resp.status = falcon.HTTP_OK
 
-    @falcon.before(read_req_body)
-    @falcon.after(serialize)
+    @falcon.before(deserialize)
     @falcon.after(group_kafka_item_post_producer)
     def on_post(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
@@ -138,8 +134,8 @@ class Item(object):
         else:
             group_members_id_name = 'group_members:' + group_id
             # Can I do this?
-            #req.redis_conn.sadd(group_members_id_name, *req.body['member_id'])
-            for member in req.body['member_id']:
+            #req.redis_conn.sadd(group_members_id_name, *req.params['body']['member_id'])
+            for member in req.params['body']['member_id']:
                 req.redis_conn.sadd(group_members_id_name, member)
             
         logger.debug("Added members to group in database")

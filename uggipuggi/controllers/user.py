@@ -52,6 +52,7 @@ class Item(object):
             raise HTTPBadRequest(title='Invalid Value', description='Invalid userID provided. {}'.format(e.message))
 
     # TODO: handle PUT requests
+    @falcon.before(deserialize)
     @falcon.after(serialize)
     def on_post(self, req, resp, id):
         user = self._try_get_user(id)
@@ -64,6 +65,7 @@ class Item(object):
             
         logger.debug("Updated user data in database")
         
+    @falcon.before(deserialize)    
     @falcon.after(serialize)
     def on_get(self, req, resp, id):
         request_user_id = req.params[constants.AUTH_HEADER_USER_ID]

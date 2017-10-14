@@ -4,7 +4,7 @@ from confluent_kafka import Producer
 KAFKA_BOOTSTRAP_SERVERS = 'localhost:9092'
    
 def user_kafka_item_get_producer(req, resp, resource):
-    parameters = [req.kafka_topic_name, req.body, resp, resource]
+    parameters = [req.kafka_topic_name, req.params['body'], resp, resource]
     logging.debug("++++++++++++++++++++++")
     logging.debug("USER_KAFKA_ITEM_GET_PRODUCER")
     logging.debug("++++++++++++++++++++++")
@@ -15,7 +15,7 @@ def user_kafka_item_get_producer(req, resp, resource):
     p.flush()
     
 def user_kafka_item_post_producer(req, resp, resource):
-    parameters = [req.kafka_topic_name, req.body, resp, resource]
+    parameters = [req.kafka_topic_name, req.params['body'], resp, resource]
     logging.debug("++++++++++++++++++++++")
     logging.debug("USER_KAFKA_ITEM_POST_PRODUCER")
     logging.debug("++++++++++++++++++++++")

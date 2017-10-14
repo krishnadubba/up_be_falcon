@@ -13,7 +13,7 @@ from bson import json_util, ObjectId
 from datetime import datetime, timedelta
 from passlib.hash import bcrypt as crypt
 from uggipuggi.models.user import Role, User, VerifyPhone
-from uggipuggi.controllers.hooks import read_req_body
+from uggipuggi.controllers.hooks import deserialize, serialize
 from uggipuggi.messaging.authentication_kafka_producers import kafka_verify_post_producer,\
                                 kafka_register_post_producer, kafka_login_post_producer,\
                                 kafka_forgotpassword_post_producer, kafka_passwordchange_post_producer
@@ -101,7 +101,8 @@ ACL_MAP = {
 }
 
       
-@falcon.before(read_req_body)    
+@falcon.before(deserialize)
+@falcon.after(serialize)
 class VerifyPhoneResource(object):
 
     def __init__(self, get_user, secret, **token_opts):
@@ -119,7 +120,7 @@ class VerifyPhoneResource(object):
         logging.debug("Reached on_post() in VerifyPhone")
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         
-        otp_code = req.body["code"]
+        otp_code = req.params['body']["code"]
         
         logging.debug(req.get_header("auth_token"))
         logging.debug(self.token_opts['location'])
@@ -183,7 +184,8 @@ class VerifyPhoneResource(object):
             return False        
 
 
-@falcon.before(read_req_body)        
+@falcon.before(deserialize)
+@falcon.after(serialize)
 class RegisterResource(object):
 
     def __init__(self, get_user, secret, verify_phone_token_expiration_seconds, **token_opts):
@@ -201,7 +203,7 @@ class RegisterResource(object):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         resp.body = {}
       
-        phone = req.body["phone"]
+        phone = req.params['body']["phone"]
         user = self.get_user('phone', phone)
         
         logging.debug("getting user")
@@ -213,18 +215,18 @@ class RegisterResource(object):
         else:
             logging.debug("Adding new user...")
             # We don't check of display name is unique. We only check for email and phone 
-            new_user = User(email=req.body["email"], 
-                            password=crypt.encrypt(req.body["password"]),
+            new_user = User(email=req.params['body']["email"], 
+                            password=crypt.encrypt(req.params['body']["password"]),
                             phone=phone, 
-                            country_code=req.body["country_code"],
-                            display_name=req.body["display_name"],
+                            country_code=req.params['body']["country_code"],
+                            display_name=req.params['body']["display_name"],
                             pw_last_changed=datetime.utcnow())
             new_user.save()
  
-            if 'gender' in req.body:
-                new_user.update(gender=req.body['gender'])
-            if 'display_pic' in req.body:
-                new_user.update(display_pic=req.body['display_pic'])
+            if 'gender' in req.params['body']:
+                new_user.update(gender=req.params['body']['gender'])
+            if 'display_pic' in req.params['body']:
+                new_user.update(display_pic=req.params['body']['display_pic'])
             
             logging.debug("Sending SMS to new user ...")
             if SERVER_SECURE_MODE == 'DEBUG':
@@ -288,13 +290,14 @@ class RegisterResource(object):
             resp.set_cookie(**self.token_opts)
         elif self.token_opts['location'] == 'header':
             resp.body.update({self.token_opts['name'] : self.token_opts['value']})
-            resp.body = json_util.dumps(resp.body)
+            #resp.body = json_util.dumps(resp.body)
         else:
             raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')
         resp.status = falcon.HTTP_CREATED #HTTP_201
 
 
-@falcon.before(read_req_body)
+@falcon.before(deserialize)
+@falcon.after(serialize)
 class LoginResource(object):
 
     def __init__(self, get_user, secret, token_expiration_seconds, **token_opts):
@@ -311,8 +314,8 @@ class LoginResource(object):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         resp.body = {}
 
-        email = req.body["email"]
-        password = req.body["password"]
+        email = req.params['body']["email"]
+        password = req.params['body']["password"]
         logging.debug("getting user")
         user = self.get_user('email', email)
         if user:
@@ -363,14 +366,15 @@ class LoginResource(object):
         elif self.token_opts['location'] == 'header':
             resp.body.update({self.token_opts['name'] : self.token_opts['value'],
                               "user_identifier": user_identifier})
-            resp.body = json_util.dumps(resp.body)
+            #resp.body = json_util.dumps(resp.body)
         else:
             resp.status = falcon.HTTP_INTERNAL_SERVER_ERROR
             raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')
         resp.status = falcon.HTTP_ACCEPTED #HTTP_202
 
 
-@falcon.before(read_req_body)
+@falcon.before(deserialize)
+@falcon.after(serialize)
 class ForgotPasswordResource(object):
 
     def __init__(self, get_user):
@@ -384,7 +388,7 @@ class ForgotPasswordResource(object):
         logging.debug("Reached on_post() in ForgotPassword")
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
 
-        email = req.body["email"]
+        email = req.params['body']["email"]
         user = self.get_user('email', email)
         
         logging.debug("getting user")
@@ -408,7 +412,8 @@ class ForgotPasswordResource(object):
                                           ['Hello="World!"'])
 
 
-@falcon.before(read_req_body)
+@falcon.before(deserialize)
+@falcon.after(serialize)
 class PasswordChangeResource(object):
 
     def __init__(self, get_user, secret, token_expiration_seconds, **token_opts):
@@ -424,10 +429,10 @@ class PasswordChangeResource(object):
         logging.debug("Reached on_post() in PasswordChange")
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         
-        logging.debug(req.body)
-        email = req.body["email"]
-        password = req.body["password"]
-        new_password = req.body["new_password"]
+        logging.debug(req.params['body'])
+        email = req.params['body']["email"]
+        password = req.params['body']["password"]
+        new_password = req.params['body']["new_password"]
         logging.debug("getting user")
         user = self.get_user('email', email)
         if user:
@@ -474,10 +479,9 @@ class PasswordChangeResource(object):
         if self.token_opts.get('location', 'cookie') == 'cookie': # default to cookie
             resp.set_cookie(**self.token_opts)
         elif self.token_opts['location'] == 'header':
-            resp.body = json_util.dumps({
-                self.token_opts['name'] : self.token_opts['value'],
-                "user_identifier": user_identifier
-                })
+            resp.body = {self.token_opts['name'] : self.token_opts['value'],
+                         "user_identifier": user_identifier
+                        }
         else:
             resp.status = falcon.HTTP_INTERNAL_SERVER_ERROR
             raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')

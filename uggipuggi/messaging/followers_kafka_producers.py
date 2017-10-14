@@ -14,7 +14,7 @@ def followers_kafka_item_get_producer(req, resp, resource):
     logging.debug("++++++++++++++++++++++")    
     followers_producer.produce(topic=req.kafka_topic_name, 
                             value=repr(parameters),
-                            key=req.body['user_id']) #req.encode('utf-8'))
+                            key=req.params['body']['user_id']) #req.encode('utf-8'))
     followers_producer.flush()
        
 def followers_kafka_item_delete_producer(req, resp, resource):
@@ -26,6 +26,6 @@ def followers_kafka_item_delete_producer(req, resp, resource):
     logging.debug("++++++++++++++++++++++")
     followers_producer.produce(topic=req.kafka_topic_name, 
                             value=repr(parameters),
-                            key=req.body['user_id']) #req.encode('utf-8'))
+                            key=req.params['body']['user_id']) #req.encode('utf-8'))
     followers_producer.flush()
     

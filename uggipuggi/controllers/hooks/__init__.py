@@ -11,7 +11,7 @@ from uggipuggi.libs.error import HTTPBadRequest, HTTPNotAcceptable
 import redis
 redis_conn = redis.Redis(host='localhost', port=6379, db=0, charset="utf-8", decode_responses=True)
 
-def deserialize(req, res, resource, schema=None):
+def deserialize(req, res, resource, params, schema=None):
     """
     A BEFORE hook function
     Deserializes data from the request object based on HTTP method
@@ -20,12 +20,16 @@ def deserialize(req, res, resource, schema=None):
     :param req: request object
     :param res: response object
     :param resource: response pbject
+    :param params: parameters dict supplied by falcon
     :param schema: colander Schema object
     """
 
     def _is_json_type(content_type):
         return content_type == 'application/json'
 
+    logging.info("%%%%%%%%%%%%%%%%%%")
+    logging.info(schema)
+    logging.info("%%%%%%%%%%%%%%%%%%")
     if req.method.upper() in ['POST', 'PUT', 'PATCH']:
 
         if not _is_json_type(req.content_type):
@@ -42,17 +46,17 @@ def deserialize(req, res, resource, schema=None):
                 json_body = json_util.loads(req_stream)
         except Exception:
             raise falcon.HTTPBadRequest(
-                "I don't understand", traceback.format_exc())
+                "I don't understand the HTTP request body", traceback.format_exc())
         
         if schema:
             try:
-                body = schema.deserialize(json_body)
+                json_body = schema.deserialize(json_body)
             except colander.Invalid as e:
                 raise HTTPBadRequest(title='Invalid Value',
                                      description='Invalid arguments '
                                                  'in params:\n{}'.format(e.asdict()))
 
-        req.params['body'] = body
+        req.params['body'] = json_body
 
     elif req.method.upper() in ['OPTIONS', 'HEAD', 'GET', 'DELETE']:
 
@@ -95,22 +99,6 @@ def serialize(req, res, resource):
         return obj
 
     res.body = json_util.dumps(_to_json(res.body))
-
-
-def read_req_body(req, resp, resource, params):
-    try:
-        req_stream = req.stream.read()
-        logging.debug("Read request stream")
-        
-        if isinstance(req_stream, bytes):
-            data = json_util.loads(req_stream.decode('utf8'))
-        else:
-            data = json_util.loads(req_stream)
-            
-        req.body = data
-    except Exception:
-        raise falcon.HTTPBadRequest(
-            "I don't understand the HTTP request body", traceback.format_exc())
     
 def supply_redis_conn(req, resp, resource, params):
     req.redis_conn = redis_conn
