@@ -7,9 +7,9 @@ import logging
 from bson import json_util, ObjectId
 from uggipuggi import constants
 from uggipuggi.controllers.hooks import deserialize, serialize, read_req_body, supply_redis_conn
-from uggipuggi.libs.error import HTTPBadRequest, HTTP_UNAUTHORIZED
+from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.group_kafka_producers import group_kafka_item_put_producer, group_kafka_item_post_producer,\
-                                             group_kafka_item_delete_producer, group_kafka_collection_post_producer
+       group_kafka_item_delete_producer, group_kafka_collection_post_producer, group_kafka_collection_delete_producer 
 
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ class Collection(object):
         admin = req.redis_conn.hget(group_id_name, 'admin')
         if admin != req.user_id:
             logger.debug("User is not the admin: %s , %s" %(admin, req.user_id))
-            resp.status = HTTP_UNAUTHORIZED
+            resp.status = falcon.HTTP_UNAUTHORIZED
             return
         else:            
             group_keys = list(req.redis_conn.hgetall(group_id_name).keys())
@@ -67,25 +67,22 @@ class Collection(object):
             logger.debug("Deleted group data in database")
             resp.status = falcon.HTTP_OK        
 
+@falcon.before(supply_redis_conn)
 class Item(object):
     def __init__(self):
         self.kafka_topic_name = 'group_item'
 
     @falcon.before(read_req_body)
     @falcon.after(serialize)
+    #@falcon.after(group_kafka_item_get_producer)
     def on_get(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         group_id_name = 'group:' + id
-        response = {}
-        for key in req.body:
-            if key == 'group_id':
-                continue
-            if key != 'members':
-                response[key] = req.redis_conn.hget(group_id_name, key)
-            else:
-                response[key] = list(req.redis_conn.smembers(group_id_name))
+        resp.body = req.redis_conn.hgetall(group_id_name)
+        # Should we also get members?
+        if 'members' in req.body:
+            resp.body['members'] = list(req.redis_conn.smembers(group_id_name))
                 
-        resp.body = response
         resp.status = falcon.HTTP_FOUND
         
     @falcon.before(read_req_body)    
@@ -98,7 +95,7 @@ class Item(object):
         admin = req.redis_conn.hget(group_id_name, 'admin')
         if admin != req.user_id:
             logger.debug("User is not the admin: %s , %s" %(admin, req.user_id))
-            resp.status = HTTP_UNAUTHORIZED
+            resp.status = falcon.HTTP_UNAUTHORIZED
             return
         else:
             group_members_id_name = 'group_members:' + group_id
@@ -109,7 +106,7 @@ class Item(object):
     #@falcon.before(deserialize_update)
     @falcon.before(read_req_body)
     @falcon.after(serialize)
-    @falcon.after(recipe_kafka_item_put_producer)
+    @falcon.after(group_kafka_item_put_producer)
     def on_put(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         logger.debug("Finding group in database ... %s" %repr(id))
@@ -117,7 +114,7 @@ class Item(object):
         admin = req.redis_conn.hget(group_id_name, 'admin')
         if admin != req.user_id:
             logger.debug("User is not the admin: %s , %s" %(admin, req.user_id))
-            resp.status = HTTP_UNAUTHORIZED
+            resp.status = falcon.HTTP_UNAUTHORIZED
             return
         else:
             for key in req.body:
@@ -128,7 +125,7 @@ class Item(object):
 
     @falcon.before(read_req_body)
     @falcon.after(serialize)
-    @falcon.after(recipe_kafka_item_post_producer)
+    @falcon.after(group_kafka_item_post_producer)
     def on_post(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         logger.debug("Adding member to group in database ... %s" %repr(id))
@@ -136,7 +133,7 @@ class Item(object):
         admin = req.redis_conn.hget(group_id_name, 'admin')
         if admin != req.user_id:
             logger.debug("User is not the admin: %s , %s" %(admin, req.user_id))
-            resp.status = HTTP_UNAUTHORIZED
+            resp.status = falcon.HTTP_UNAUTHORIZED
             return
         else:
             group_members_id_name = 'group_members:' + group_id

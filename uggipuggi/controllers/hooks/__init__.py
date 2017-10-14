@@ -9,7 +9,7 @@ from uggipuggi.helpers.json import map_query
 from uggipuggi.libs.error import HTTPBadRequest, HTTPNotAcceptable
 
 import redis
-redis_conn = redis.Redis(host='localhost', port=6379, db=0)
+redis_conn = redis.Redis(host='localhost', port=6379, db=0, charset="utf-8", decode_responses=True)
 
 def deserialize(req, res, resource, schema=None):
     """
