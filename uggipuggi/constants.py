@@ -19,3 +19,11 @@ VERIFY_PHONE_TOKEN_EXPIRATION_SECS = 86400
 AUTH_SERVER_NAME = "bouncer"
 AUTH_HEADER_USER_ID = "X-Gobbl-User-ID"
 AUTH_SHARED_SECRET_ENV = "DUBBA_SECRET"
+
+# REDIS namespaces
+GROUP         = 'group:'
+GROUP_MEMBERS = 'group_members:'
+USER_GROUPS   = 'user_groups:'
+CONTACTS      = 'contacts:'
+FOLLOWING     = 'following:'
+FOLLOWERS     = 'followers:'

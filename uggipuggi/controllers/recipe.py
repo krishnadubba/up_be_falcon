@@ -70,6 +70,7 @@ class Collection(object):
     @falcon.before(deserialize)    
     @falcon.after(recipe_kafka_collection_post_producer)
     def on_post(self, req, resp):
+        # Add recipe
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         # save to DB
         #recipe = Recipe(**req.body)

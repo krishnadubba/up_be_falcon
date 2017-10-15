@@ -5,7 +5,7 @@ import time
 import falcon
 import logging
 from bson import json_util, ObjectId
-from uggipuggi import constants
+from uggipuggi.constants import FOLLOWERS
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.followers_kafka_producers import followers_kafka_item_delete_producer
@@ -27,7 +27,7 @@ class Item(object):
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:    
             req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
-            followers_id_name = 'followers:' + id
+            followers_id_name = FOLLOWERS + id
             resp.body = req.redis_conn.smembers(followers_id_name)
             resp.status = falcon.HTTP_FOUND
         
@@ -39,7 +39,7 @@ class Item(object):
         else:    
             req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
             logger.debug("Deleting member from user followers in database ...")
-            followers_id_name = 'followers:' + id
+            followers_id_name = FOLLOWERS + id
             try:
                 req.redis_conn.srem(followers_id_name, req.params['query']['follower_user_id'])
                 logger.debug("Deleted member from user followers in database")

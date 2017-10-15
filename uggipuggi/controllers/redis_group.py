@@ -5,7 +5,7 @@ import time
 import falcon
 import logging
 from bson import json_util, ObjectId
-from uggipuggi import constants
+from uggipuggi.constants import GROUP, GROUP_MEMBERS, USER_GROUPS
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.group_kafka_producers import group_kafka_item_put_producer, group_kafka_item_post_producer,\
@@ -24,7 +24,7 @@ class Collection(object):
     def on_get(self, req, resp):
         # Get all groups of user
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
-        user_groups_id = 'user_groups:' + req.user_id
+        user_groups_id = USER_GROUPS + req.user_id
         resp.body['user_groups'] = list(req.redis_conn.smembers(user_groups_id))
         resp.status = falcon.HTTP_FOUND
         
@@ -34,9 +34,9 @@ class Collection(object):
     def on_post(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         # Get new group ID
-        group_id = str(req.redis_conn.incr('group:'))
+        group_id = str(req.redis_conn.incr(GROUP))
         logger.debug('New group id created: %s' %group_id)
-        group_id_name = 'group:' + group_id
+        group_id_name = GROUP + group_id
         
         req.redis_conn.hmset(group_id_name, {
             'group_name': req.params['body']['group_name'],
@@ -46,11 +46,11 @@ class Collection(object):
         })
         
         # Add admin (current user) to group_members
-        group_members_id_name = 'group_members:' + group_id
+        group_members_id_name = GROUP_MEMBERS + group_id
         req.redis_conn.sadd(group_members_id_name, req.user_id)
         
         # Add this group to set of groups a user belongs to
-        user_groups_id = 'user_groups:' + req.user_id
+        user_groups_id = USER_GROUPS + req.user_id
         req.redis_conn.sadd(user_groups_id, group_id_name)
         
         resp.body = {"group_id": group_id}
@@ -61,7 +61,7 @@ class Collection(object):
     def on_delete(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         logger.debug("Deleting group data in database ...")
-        group_id_name = 'group:' + req.params['query']['group_id']
+        group_id_name = GROUP + req.params['query']['group_id']
         admin = req.redis_conn.hget(group_id_name, 'admin')
         if admin != req.user_id:
             logger.debug("User is not the admin: %s , %s" %(admin, req.user_id))
@@ -71,12 +71,12 @@ class Collection(object):
             group_keys = list(req.redis_conn.hgetall(group_id_name).keys())
             req.redis_conn.hdel(group_id_name, *group_keys)
             
-            group_members_id_name = 'group_members:' + group_id
+            group_members_id_name = GROUP_MEMBERS + group_id
             group_members = list(req.redis_conn.smembers(group_members_id_name))
             
             # Remove this group from all members group list
             for member in group_members:
-                user_groups_id = 'user_groups:' + member
+                user_groups_id = USER_GROUPS + member
                 req.redis_conn.srem(user_groups_id, group_id_name)
             
             # Now remove all group members
@@ -95,10 +95,10 @@ class Item(object):
     #@falcon.after(group_kafka_item_get_producer)
     def on_get(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
-        group_id_name = 'group:' + id
+        group_id_name = GROUP + id
         resp.body = req.redis_conn.hgetall(group_id_name)
         # Should we also get members?        
-        group_members_id_name = 'group_members:' + id
+        group_members_id_name = GROUP_MEMBERS + id
         # This is a get request, so body in req.params
         if 'members' in req.params['query']:
             resp.body['members'] = list(req.redis_conn.smembers(group_members_id_name))
@@ -111,18 +111,18 @@ class Item(object):
         # Delete a member
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         logger.debug("Deleting member from group data in database ...")
-        group_id_name = 'group:' + id
+        group_id_name = GROUP + id
         admin = req.redis_conn.hget(group_id_name, 'admin')
         if admin != req.user_id:
             logger.debug("User is not the admin: %s , %s" %(admin, req.user_id))
             resp.status = falcon.HTTP_UNAUTHORIZED
             return
         else:
-            group_members_id_name = 'group_members:' + group_id
+            group_members_id_name = GROUP_MEMBERS + group_id
             req.redis_conn.srem(group_members_id_name, req.params['query']['member_id'])
             
             # Remove this group from this member's group list
-            user_groups_id = 'user_groups:' + req.params['query']['member_id']
+            user_groups_id = USER_GROUPS + req.params['query']['member_id']
             req.redis_conn.srem(user_groups_id, group_id_name)            
 
             logger.debug("Deleted member from group data in database")
@@ -135,7 +135,7 @@ class Item(object):
         
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         logger.debug("Finding group in database ... %s" %repr(id))
-        group_id_name = 'group:' + id
+        group_id_name = GROUP + id
         admin = req.redis_conn.hget(group_id_name, 'admin')
         if admin != req.user_id:
             logger.debug("User is not the admin: %s , %s" %(admin, req.user_id))
@@ -154,19 +154,19 @@ class Item(object):
         # Add a member to group
         req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
         logger.debug("Adding member to group in database ... %s" %repr(id))
-        group_id_name = 'group:' + id
+        group_id_name = GROUP + id
         admin = req.redis_conn.hget(group_id_name, 'admin')
         if admin != req.user_id:
             logger.debug("User is not the admin: %s , %s" %(admin, req.user_id))
             resp.status = falcon.HTTP_UNAUTHORIZED
             return
         else:
-            group_members_id_name = 'group_members:' + id
+            group_members_id_name = GROUP_MEMBERS + id
             logger.debug("Adding members to the group: ")
             req.redis_conn.sadd(group_members_id_name, *req.params['body']['member_id'])
             
             for member in req.params['body']['member_id']:
-                user_groups_id = 'user_groups:' + member
+                user_groups_id = USER_GROUPS + member
                 req.redis_conn.srem(user_groups_id, group_id_name)                            
             
         logger.debug("Added members to group in database")

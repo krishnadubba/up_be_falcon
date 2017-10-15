@@ -43,10 +43,6 @@ def deserialize(req, res, resource, params, schema=None):
             else:
                 json_body = json_util.loads(req_stream)
                 
-            logging.info("%%%%%%%%%%%%%%%%%%")
-            logging.info(json_body)
-            logging.info("%%%%%%%%%%%%%%%%%%")
-                
         except Exception:
             raise falcon.HTTPBadRequest(
                 "I don't understand the HTTP request body", traceback.format_exc())
@@ -68,9 +64,10 @@ def deserialize(req, res, resource, params, schema=None):
         if not req.query_string:
             return
 
-        logging.info("%%%%%%%%%%%%%%%%%%")
-        logging.info(req.query_string)
-        logging.info("%%%%%%%%%%%%%%%%%%")
+        logging.debug("%%%%%%%%%%%%%%%%%%")
+        logging.debug("Query String")
+        logging.debug(req.query_string)
+        logging.debug("%%%%%%%%%%%%%%%%%%")
         
         query = map_query(req.query_string, ignores=['token'])
 

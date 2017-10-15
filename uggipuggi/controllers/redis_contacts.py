@@ -5,7 +5,7 @@ import time
 import falcon
 import logging
 from bson import json_util, ObjectId
-from uggipuggi import constants
+from uggipuggi.constants import CONTACTS
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.contacts_kafka_producers import contacts_kafka_item_post_producer,\
@@ -28,7 +28,7 @@ class Item(object):
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:    
             req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
-            contacts_id_name = 'contacts:' + id
+            contacts_id_name = CONTACTS + id
             resp.body = req.redis_conn.smembers(contacts_id_name)
             resp.status = falcon.HTTP_FOUND
         
@@ -40,7 +40,7 @@ class Item(object):
         else:    
             req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
             logger.debug("Deleting member from user contacts in database ...")
-            contacts_id_name = 'contacts:' + id
+            contacts_id_name = CONTACTS + id
             try:
                 req.redis_conn.srem(contacts_id_name, req.params['query']['contact_user_id'])
                 logger.debug("Deleted member from user contacts in database")
@@ -57,7 +57,7 @@ class Item(object):
         else:
             req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
             logger.debug("Adding member to user contacts in database ... %s" %repr(id))
-            contacts_id_name = 'contacts:' + id
+            contacts_id_name = CONTACTS + id
             if 'contact_user_id' in req.params['body']:
                 req.redis_conn.sadd(contacts_id_name, req.params['body']['contact_user_id'])
                 logger.debug("Added member to user contacts in database")
