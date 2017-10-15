@@ -5,6 +5,7 @@ KAFKA_BOOTSTRAP_SERVERS = 'localhost:9092'
 recipe_producer = Producer({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
 
 def recipe_kafka_collection_post_producer(req, resp, resource):
+    # Publish that a recipe has been added
     # Topic name is 'recipe' and partition is 'user_id'
     # Consumer reads pushes notifications to interested parties and feeds
     parameters = [req.user_id, resp.body["recipe_id"], resp.status]
@@ -32,7 +33,7 @@ def recipe_kafka_item_get_producer(req, resp, resource):
     recipe_producer.flush()
     
 def recipe_kafka_item_put_producer(req, resp, resource):
-    # Recipe updated, night not be useful
+    # Publish that a comment has been added to recipe
     if 'comment' in req.params['body']:
         parameters = [req.user_id, resp.recipe_author_id, resp.status]
         logging.debug("++++++++++++++++++++++")
