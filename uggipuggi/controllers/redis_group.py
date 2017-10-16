@@ -23,7 +23,7 @@ class Collection(object):
     @falcon.before(deserialize)
     def on_get(self, req, resp):
         # Get all groups of user
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         user_groups_id = USER_GROUPS + req.user_id
         resp.body['user_groups'] = list(req.redis_conn.smembers(user_groups_id))
         resp.status = falcon.HTTP_FOUND
@@ -32,7 +32,7 @@ class Collection(object):
     @falcon.before(deserialize)
     @falcon.after(group_kafka_collection_post_producer)
     def on_post(self, req, resp):
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         # Get new group ID
         group_id = str(req.redis_conn.incr(GROUP))
         logger.debug('New group id created: %s' %group_id)
@@ -59,7 +59,7 @@ class Collection(object):
     @falcon.before(deserialize)
     @falcon.after(group_kafka_collection_delete_producer)
     def on_delete(self, req, resp):
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Deleting group data in database ...")
         group_id_name = GROUP + req.params['query']['group_id']
         admin = req.redis_conn.hget(group_id_name, 'admin')
@@ -94,7 +94,7 @@ class Item(object):
     @falcon.before(deserialize)
     #@falcon.after(group_kafka_item_get_producer)
     def on_get(self, req, resp, id):
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         group_id_name = GROUP + id
         resp.body = req.redis_conn.hgetall(group_id_name)
         # Should we also get members?        
@@ -109,7 +109,7 @@ class Item(object):
     @falcon.after(group_kafka_item_delete_producer)    
     def on_delete(self, req, resp, id):
         # Delete a member
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Deleting member from group data in database ...")
         group_id_name = GROUP + id
         admin = req.redis_conn.hget(group_id_name, 'admin')
@@ -133,7 +133,7 @@ class Item(object):
     @falcon.after(group_kafka_item_put_producer)
     def on_put(self, req, resp, id):
         
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Finding group in database ... %s" %repr(id))
         group_id_name = GROUP + id
         admin = req.redis_conn.hget(group_id_name, 'admin')
@@ -152,7 +152,7 @@ class Item(object):
     @falcon.after(group_kafka_item_post_producer)
     def on_post(self, req, resp, id):
         # Add a member to group
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Adding member to group in database ... %s" %repr(id))
         group_id_name = GROUP + id
         admin = req.redis_conn.hget(group_id_name, 'admin')

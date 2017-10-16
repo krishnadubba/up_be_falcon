@@ -26,7 +26,7 @@ class Item(object):
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:    
-            req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+            req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
             followers_id_name = FOLLOWERS + id
             resp.body = req.redis_conn.smembers(followers_id_name)
             resp.status = falcon.HTTP_FOUND
@@ -37,7 +37,7 @@ class Item(object):
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:    
-            req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+            req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
             logger.debug("Deleting member from user followers in database ...")
             followers_id_name = FOLLOWERS + id
             try:

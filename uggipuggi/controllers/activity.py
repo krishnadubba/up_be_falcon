@@ -32,7 +32,7 @@ class Collection(object):
 
     @falcon.before(deserialize)
     def on_get(self, req, resp):
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         query_params = req.params.get('query')
         logger.debug("Get query params:")
         logger.debug(query_params)
@@ -77,7 +77,7 @@ class Collection(object):
     @falcon.before(deserialize)    
     @falcon.after(activity_kafka_collection_post_producer)
     def on_post(self, req, resp):
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         
         # save to DB
         activity = CookingActivity(**req.params['body'])
@@ -103,14 +103,14 @@ class Item(object):
     
     @falcon.before(deserialize)    
     def on_get(self, req, resp, id):
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         activity = self._try_get_activity(id)
         resp.body = activity.to_dict()
         resp.status = falcon.HTTP_FOUND
 
     @falcon.before(deserialize)
     def on_delete(self, req, resp, id):
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Deleting activity data in database ...")
         activity = self._try_get_activity(id)
         activity.delete()
@@ -122,7 +122,7 @@ class Item(object):
     @falcon.before(deserialize)
     @falcon.after(activity_kafka_item_put_producer)
     def on_put(self, req, resp, id):
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Finding activity in database ... %s" %repr(id))
         activity = self._try_get_activity(id)
         logger.debug("Updating activity data in database ...")

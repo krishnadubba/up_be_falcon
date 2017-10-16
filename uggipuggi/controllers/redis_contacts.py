@@ -27,7 +27,7 @@ class Item(object):
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:    
-            req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+            req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
             contacts_id_name = CONTACTS + id
             resp.body = req.redis_conn.smembers(contacts_id_name)
             resp.status = falcon.HTTP_FOUND
@@ -38,7 +38,7 @@ class Item(object):
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:    
-            req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+            req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
             logger.debug("Deleting member from user contacts in database ...")
             contacts_id_name = CONTACTS + id
             try:
@@ -55,7 +55,7 @@ class Item(object):
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:
-            req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+            req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
             logger.debug("Adding member to user contacts in database ... %s" %repr(id))
             contacts_id_name = CONTACTS + id
             if 'contact_user_id' in req.params['body']:

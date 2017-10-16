@@ -36,7 +36,7 @@ class Collection(object):
         
     @falcon.before(deserialize)
     def on_get(self, req, resp):
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         query_params = req.params.get('query')
 
         try:
@@ -71,7 +71,7 @@ class Collection(object):
     @falcon.after(recipe_kafka_collection_post_producer)
     def on_post(self, req, resp):
         # Add recipe
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         # save to DB
         #recipe = Recipe(**req.body)
         recipe = Recipe(**req.params['body'])
@@ -97,14 +97,14 @@ class Item(object):
 
     @falcon.before(deserialize)
     def on_get(self, req, resp, id):
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         recipe = self._try_get_recipe(id)
         resp.body = recipe.to_dict()
         resp.status = falcon.HTTP_FOUND
         
     @falcon.before(deserialize)        
     def on_delete(self, req, resp, id):
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Deleting recipe data in database ...")
         recipe = self._try_get_recipe(id)
         recipe.delete()
@@ -115,7 +115,7 @@ class Item(object):
     @falcon.before(deserialize)    
     @falcon.after(recipe_kafka_item_put_producer)
     def on_put(self, req, resp, id):
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Finding recipe in database ... %s" %repr(id))
         recipe = self._try_get_recipe(id)
         #data = req.params.get('body')

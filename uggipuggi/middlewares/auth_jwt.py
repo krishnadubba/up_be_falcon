@@ -36,12 +36,12 @@ if not SERVER_SECURE_MODE == 'DEBUG':
 # role-based permission control
 ACL_MAP = {
     '/recipes': {
-        'get': Role.USER,
+        'get':  Role.USER,
         'post': Role.USER
     },
     '/recipes/+': {
-        'get' : Role.USER,
-        'put' : Role.USER,
+        'get' :   Role.USER,
+        'put' :   Role.USER,
         'delete': Role.OWNER
     },
     '/activity': {
@@ -49,53 +49,53 @@ ACL_MAP = {
         'post': Role.USER
     },
     '/activity/+': {
-        'get': Role.USER,
-        'put': Role.USER,
+        'get':    Role.USER,
+        'put':    Role.USER,
         'delete': Role.OWNER
     },    
     '/users': {
-        'get': Role.EMPLOYEE,
+        'get':  Role.EMPLOYEE,
         'post': Role.EMPLOYEE,
     },
     '/users/+': {
-        'get': Role.USER,
-        'put': Role.EMPLOYEE,
+        'get':    Role.USER,
+        'put':    Role.USER,
         'delete': Role.ADMIN
     },
     '/groups': {
-        'get': Role.USER,
+        'get':  Role.USER,
         'post': Role.USER,
     },
     '/groups/+': {
-        'get': Role.USER,
-        'put': Role.USER,
+        'get':    Role.USER,
+        'put':    Role.USER,
         'delete': Role.USER
     },
     '/contacts/+': {
-        'get': Role.USER,
-        'put': Role.USER,
+        'get':    Role.USER,
+        'put':    Role.USER,
         'delete': Role.USER
     },
     '/followers/+': {
-        'get': Role.USER,
-        'put': Role.USER,
+        'get':    Role.USER,
+        'put':    Role.USER,
         'delete': Role.USER
     },
     '/following/+': {
-        'get': Role.USER,
-        'put': Role.USER,
+        'get':    Role.USER,
+        'put':    Role.USER,
         'delete': Role.USER
     },    
     '/verify': {
-        'get': Role.USER,
+        'get':  Role.USER,
         'post': Role.USER,
     },    
     '/login': {
-        'get': Role.USER,
+        'get':  Role.USER,
         'post': Role.USER,
     },
     '/register': {
-        'get': Role.USER,
+        'get':  Role.USER,
         'post': Role.USER,
     },     
 }
@@ -118,7 +118,7 @@ class VerifyPhoneResource(object):
         # Used to send the OTP for verificiation
         challenges = ['Hello="World"']
         logging.debug("Reached on_post() in VerifyPhone")
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         
         otp_code = req.params['body']["code"]
         
@@ -200,7 +200,7 @@ class RegisterResource(object):
         # Should we check if the number supplied is same as the number verified?
         # Can we do this in client instead of server?
         logging.debug("Reached on_post() in Register")
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         resp.body = {}
       
         phone = req.params['body']["phone"]
@@ -311,7 +311,7 @@ class LoginResource(object):
     @falcon.after(kafka_login_post_producer)
     def on_post(self, req, resp):
         logging.debug("Reached on_post() in Login")
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         resp.body = {}
 
         email = req.params['body']["email"]
@@ -384,7 +384,7 @@ class ForgotPasswordResource(object):
         # Should we check if the number supplied is same as the number verified?
         # Can we do this in client instead of server?
         logging.debug("Reached on_post() in ForgotPassword")
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
 
         email = req.params['body']["email"]
         user = self.get_user('email', email)
@@ -425,7 +425,7 @@ class PasswordChangeResource(object):
     @falcon.after(kafka_passwordchange_post_producer)        
     def on_post(self, req, resp):
         logging.debug("Reached on_post() in PasswordChange")
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         
         logging.debug(req.params['body'])
         email = req.params['body']["email"]

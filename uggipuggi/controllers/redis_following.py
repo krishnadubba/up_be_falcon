@@ -27,7 +27,7 @@ class Item(object):
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:    
-            req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+            req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
             following_id_name = FOLLOWING + id
             resp.body = req.redis_conn.smembers(following_id_name)
             resp.status = falcon.HTTP_FOUND
@@ -38,7 +38,7 @@ class Item(object):
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:    
-            req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+            req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
             logger.debug("Deleting member from user following in database ...")
             following_id_name = FOLLOWING + id
             if 'following_user_id' in req.params['query']:
@@ -58,7 +58,7 @@ class Item(object):
     def on_post(self, req, resp, id):
         # No need for authorization, anyone can follow anyone
         # We need to call this when user follows someone
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name + req.method.lower()])
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Adding member to user following in database ... %s" %repr(id))
         following_id_name = FOLLOWING + id        
         if 'follower_user_id' in req.params['body']:
