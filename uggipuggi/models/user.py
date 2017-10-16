@@ -55,6 +55,7 @@ class User(Document):
     account_active  = BooleanField(required=True, default=False)
     public_profile  = BooleanField(required=True, default=False) # Public or private profile?
     app_platform    = StringField(required=True, default="android")
+    
     # Not mandatory
     first_name      = StringField(required=False)
     last_name       = StringField(required=False)
@@ -64,6 +65,8 @@ class User(Document):
     twitter_id      = StringField(required=False)  # Twitter ID is alphanumeric
     instagram_id    = StringField(required=False)  # Instagram ID is alphanumeric
     subscription    = IntField(required=False, default=Subscription.FREE)
+    # For Firebase Clound Messaging
+    device_registration_id = StringField(required=False)    
     #groups          = DictField(required=False)
     #contacts        = DictField(required=False)
     #followers       = DictField(required=False) # Those who follow this user

@@ -35,7 +35,8 @@ def recipe_kafka_item_get_producer(req, resp, resource):
 def recipe_kafka_item_put_producer(req, resp, resource):
     # Publish that a comment has been added to recipe
     if 'comment' in req.params['body']:
-        parameters = [req.user_id, resp.recipe_author_id, resp.status]
+        parameters = [req.user_id, resp.recipe_author_id, req.params['body']['recipe_id'], 
+                      req.params['body']['comment'], resp.status]
         logging.debug("++++++++++++++++++++++")
         logging.debug("RECIPE_KAFKA_ITEM_PUT_PRODUCER: %s" %req.kafka_topic_name)
         logging.debug("----------------------")

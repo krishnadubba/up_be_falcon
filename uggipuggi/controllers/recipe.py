@@ -118,6 +118,7 @@ class Item(object):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Finding recipe in database ... %s" %repr(id))
         recipe = self._try_get_recipe(id)
+        req.params['body']['recipe_id'] = id
         #data = req.params.get('body')
         logger.debug("Updating recipe data in database ...")
         logger.debug(req.params['body'])

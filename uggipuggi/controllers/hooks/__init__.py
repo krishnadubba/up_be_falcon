@@ -108,3 +108,6 @@ def serialize(req, res, resource):
     
 def supply_redis_conn(req, resp, resource, params):
     req.redis_conn = redis_conn
+    
+def get_redis_conn():
+    return redis_conn
