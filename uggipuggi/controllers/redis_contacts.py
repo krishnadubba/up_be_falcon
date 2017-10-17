@@ -42,7 +42,8 @@ class Item(object):
             logger.debug("Deleting member from user contacts in database ...")
             contacts_id_name = CONTACTS + id
             try:
-                req.redis_conn.srem(contacts_id_name, req.params['query']['contact_user_id'])
+                # req.params['query']['contact_user_id'] is a list
+                req.redis_conn.srem(contacts_id_name, *req.params['query']['contact_user_id'])
                 logger.debug("Deleted member from user contacts in database")
                 resp.status = falcon.HTTP_OK
             except KeyError:
@@ -59,7 +60,8 @@ class Item(object):
             logger.debug("Adding member to user contacts in database ... %s" %repr(id))
             contacts_id_name = CONTACTS + id
             if 'contact_user_id' in req.params['body']:
-                req.redis_conn.sadd(contacts_id_name, req.params['body']['contact_user_id'])
+                # req.params['body']['contact_user_id'] is a LIST of contacts
+                req.redis_conn.sadd(contacts_id_name, *req.params['body']['contact_user_id'])
                 logger.debug("Added member to user contacts in database: %s"  %repr(req.params['body']['contact_user_id']))
                 resp.status = falcon.HTTP_OK
                 resp.body = req.params['body']['contact_user_id']

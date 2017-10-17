@@ -41,7 +41,8 @@ class Item(object):
             logger.debug("Deleting member from user followers in database ...")
             followers_id_name = FOLLOWERS + id
             try:
-                req.redis_conn.srem(followers_id_name, req.params['query']['follower_user_id'])
+                # req.params['query']['follower_user_id'] is a list
+                req.redis_conn.srem(followers_id_name, *req.params['query']['follower_user_id'])
                 logger.debug("Deleted member from user followers in database")
                 resp.status = falcon.HTTP_OK
             except KeyError:

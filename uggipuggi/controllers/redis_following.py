@@ -43,12 +43,16 @@ class Item(object):
             logger.debug("Deleting member from user following in database ...")
             following_id_name = FOLLOWING + id
             if 'following_user_id' in req.params['query']:
-                req.redis_conn.srem(following_id_name, req.params['query']['following_user_id'])
+                # req.params['query']['following_user_id'] is a LIST
+                req.redis_conn.srem(following_id_name, *req.params['query']['following_user_id'])
                 logger.debug("Deleted member from user following in database")
                 
-                followers_id_name = FOLLOWERS + req.params['query']['follower_user_id']
-                req.redis_conn.srem(followers_id_name, id)
-                logger.debug("Added user to following followers in database")                            
+                pipeline = req.redis_conn.pipeline(True)
+                for follower in req.params['query']['follower_user_id']:
+                    followers_id_name = FOLLOWERS + follower
+                    pipeline.srem(followers_id_name, id)
+                    logger.debug("Removed user to following followers in database")                            
+                pipeline.execute()    
                 resp.status = falcon.HTTP_OK
             else:
                 logger.warn("Please provide following_user_id to delete from users following list")

@@ -118,14 +118,17 @@ for group in groups:
     print ("group_id: %s" %group_id)
     
     # First memeber is the admin
+    member_payload = {}
+    member_payload['member_id'] = []
     for member in group['members'][1:]:    
-        member_payload = {'member_id':[users_map[member]['user_id']]}
-        r = requests.post(rest_api + 'groups/%s'%group_id, data=json.dumps(member_payload), 
-                          headers=header)
-        
+        member_payload['member_id'].append(users_map[member]['user_id'])
+    r = requests.post(rest_api + 'groups/%s'%group_id, data=json.dumps(member_payload), 
+                      headers=header)
+    print (r)
+    print (r.content)    
+    print ('#############')
     r = requests.get(rest_api + 'groups/%s?members=True'%group_id,  
-                     headers=header)
-    
+                     headers=header)    
     print (r)
     print (r.content)
 
@@ -135,14 +138,15 @@ for contact in contacts:
     header = {'Content-Type':'application/json'}        
     login_token = users_map[contact[0]]['login_token']
     header.update({'auth_token':login_token})
-    for cont in contact[1:]:
-        contact_payload = {}
-        contact_payload['contact_user_id'] = users_map[cont]['user_id']
-        r = requests.post(rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
-                          data=json.dumps(contact_payload), 
-                          headers=header)
-        
-        print (r, r.content)
+    contact_payload = {}
+    contact_payload['contact_user_id'] = []
+    for cont in contact[1:]:        
+        contact_payload['contact_user_id'].append(users_map[cont]['user_id'])
+    r = requests.post(rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
+                      data=json.dumps(contact_payload), 
+                      headers=header)
+    
+    print (r, r.content)
 
 print ('======= Adding Following ===========')
 
@@ -150,6 +154,7 @@ for contact in following:
     header = {'Content-Type':'application/json'}        
     login_token = users_map[contact[0]]['login_token']
     header.update({'auth_token':login_token})
+    contact_payload = {}
     for cont in contact[1:]:
         contact_payload = {}
         contact_payload['follower_user_id'] = users_map[cont]['user_id']

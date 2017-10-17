@@ -37,22 +37,23 @@ class Collection(object):
         group_id = str(req.redis_conn.incr(GROUP))
         logger.debug('New group id created: %s' %group_id)
         group_id_name = GROUP + group_id
+        user_groups_id = USER_GROUPS + req.user_id
+        group_members_id_name = GROUP_MEMBERS + group_id
         
-        req.redis_conn.hmset(group_id_name, {
+        pipeline = req.redis_conn.pipeline(True)        
+        pipeline.hmset(group_id_name, {
             'group_name': req.params['body']['group_name'],
             'group_pic' : req.params['body']['group_pic'],
             'created_time': time.time(),
             'admin'       : req.user_id
         })
         
-        # Add admin (current user) to group_members
-        group_members_id_name = GROUP_MEMBERS + group_id
-        req.redis_conn.sadd(group_members_id_name, req.user_id)
+        # Add admin (current user) to group_members        
+        pipeline.sadd(group_members_id_name, req.user_id)
         
-        # Add this group to set of groups a user belongs to
-        user_groups_id = USER_GROUPS + req.user_id
-        req.redis_conn.sadd(user_groups_id, group_id_name)
-        
+        # Add this group to set of groups a user belongs to        
+        pipeline.sadd(user_groups_id, group_id_name)
+        pipeline.execute()
         resp.body = {"group_id": group_id}
         resp.status = falcon.HTTP_CREATED
         
@@ -67,20 +68,21 @@ class Collection(object):
             logger.debug("User is not the admin: %s , %s" %(admin, req.user_id))
             resp.status = falcon.HTTP_UNAUTHORIZED
             return
-        else:            
+        else:
+            group_members_id_name = GROUP_MEMBERS + group_id
+            pipeline = req.redis_conn.pipeline(True)
             group_keys = list(req.redis_conn.hgetall(group_id_name).keys())
             req.redis_conn.hdel(group_id_name, *group_keys)
-            
-            group_members_id_name = GROUP_MEMBERS + group_id
             group_members = list(req.redis_conn.smembers(group_members_id_name))
             
             # Remove this group from all members group list
             for member in group_members:
                 user_groups_id = USER_GROUPS + member
-                req.redis_conn.srem(user_groups_id, group_id_name)
+                pipeline.srem(user_groups_id, group_id_name)
             
             # Now remove all group members
-            req.redis_conn.srem(group_members_id_name, *group_members)
+            pipeline.srem(group_members_id_name, *group_members)
+            pipeline.execute()
             logger.debug("Deleted group data in database")
             resp.status = falcon.HTTP_OK        
 
@@ -96,9 +98,9 @@ class Item(object):
     def on_get(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         group_id_name = GROUP + id
-        resp.body = req.redis_conn.hgetall(group_id_name)
-        # Should we also get members?        
         group_members_id_name = GROUP_MEMBERS + id
+        resp.body = req.redis_conn.hgetall(group_id_name)
+        # Should we also get members?                
         # This is a get request, so body in req.params
         if 'members' in req.params['query']:
             resp.body['members'] = list(req.redis_conn.smembers(group_members_id_name))
@@ -118,21 +120,21 @@ class Item(object):
             resp.status = falcon.HTTP_UNAUTHORIZED
             return
         else:
-            group_members_id_name = GROUP_MEMBERS + group_id
-            req.redis_conn.srem(group_members_id_name, req.params['query']['member_id'])
-            
+            group_members_id_name = GROUP_MEMBERS + group_id            
+            pipeline = req.redis_conn.pipeline(True)
+            pipeline.srem(group_members_id_name, *req.params['query']['member_id'])
             # Remove this group from this member's group list
-            user_groups_id = USER_GROUPS + req.params['query']['member_id']
-            req.redis_conn.srem(user_groups_id, group_id_name)            
-
+            for group_member in req.params['query']['member_id']:
+                user_groups_id = USER_GROUPS + group_member
+                pipeline.srem(user_groups_id, group_id_name)
+            pipeline.execute()
             logger.debug("Deleted member from group data in database")
             resp.status = falcon.HTTP_OK
 
     #@falcon.before(deserialize_update)
     @falcon.before(deserialize)
     @falcon.after(group_kafka_item_put_producer)
-    def on_put(self, req, resp, id):
-        
+    def on_put(self, req, resp, id):        
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Finding group in database ... %s" %repr(id))
         group_id_name = GROUP + id
@@ -142,10 +144,11 @@ class Item(object):
             resp.status = falcon.HTTP_UNAUTHORIZED
             return
         else:
+            pipeline = req.redis_conn.pipeline(True)
             for key in req.params['body']:
-                req.redis_conn.hset(group_id_name, key, req.params['body'][key])
-            
-        logger.debug("Updated recipe data in database")
+                pipeline.hset(group_id_name, key, req.params['body'][key])
+            pipeline.execute()
+        logger.debug("Updated group data in database")
         resp.status = falcon.HTTP_OK
 
     @falcon.before(deserialize)
@@ -163,11 +166,11 @@ class Item(object):
         else:
             group_members_id_name = GROUP_MEMBERS + id
             logger.debug("Adding members to the group: ")
-            req.redis_conn.sadd(group_members_id_name, *req.params['body']['member_id'])
-            
+            pipeline = req.redis_conn.pipeline(True)
+            pipeline.sadd(group_members_id_name, *req.params['body']['member_id'])
             for member in req.params['body']['member_id']:
                 user_groups_id = USER_GROUPS + member
-                req.redis_conn.srem(user_groups_id, group_id_name)                            
-            
+                pipeline.srem(user_groups_id, group_id_name)                            
+            pipeline.execute()
         logger.debug("Added members to group in database")
         resp.status = falcon.HTTP_OK
