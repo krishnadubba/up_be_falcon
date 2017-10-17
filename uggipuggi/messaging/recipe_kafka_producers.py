@@ -21,7 +21,7 @@ def recipe_kafka_collection_post_producer(req, resp, resource):
     
 def recipe_kafka_item_get_producer(req, resp, resource):
     # This might be useful for number of views for recipe
-    parameters = [req.user_id, resp.status]
+    parameters = [req.user_id, resp.body["recipe_id"], resp.status]
     logging.debug("++++++++++++++++++++++")
     logging.debug("RECIPE_KAFKA_ITEM_GET_PRODUCER: %s" %req.kafka_topic_name)
     logging.debug("----------------------")
@@ -35,7 +35,7 @@ def recipe_kafka_item_get_producer(req, resp, resource):
 def recipe_kafka_item_put_producer(req, resp, resource):
     # Publish that a comment has been added to recipe
     if 'comment' in req.params['body']:
-        parameters = [req.user_id, resp.recipe_author_id, req.params['body']['recipe_id'], 
+        parameters = [req.user_id, resp.recipe_author_id, resp.body["recipe_id"], 
                       req.params['body']['comment'], resp.status]
         logging.debug("++++++++++++++++++++++")
         logging.debug("RECIPE_KAFKA_ITEM_PUT_PRODUCER: %s" %req.kafka_topic_name)
@@ -48,7 +48,7 @@ def recipe_kafka_item_put_producer(req, resp, resource):
         recipe_producer.flush()
     
 def recipe_kafka_item_delete_producer(req, resp, resource):
-    parameters = [req.user_id, resp.status]
+    parameters = [req.user_id, resp.body["recipe_id"], resp.status]
     logging.debug("++++++++++++++++++++++")
     logging.debug("RECIPE_KAFKA_ITEM_DELETE_PRODUCER: %s" %req.kafka_topic_name)
     logging.debug("----------------------")

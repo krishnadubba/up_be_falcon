@@ -118,7 +118,6 @@ class Item(object):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Finding recipe in database ... %s" %repr(id))
         recipe = self._try_get_recipe(id)
-        req.params['body']['recipe_id'] = id
         #data = req.params.get('body')
         logger.debug("Updating recipe data in database ...")
         logger.debug(req.params['body'])
@@ -131,11 +130,11 @@ class Item(object):
                     recipe.save()
                     resp.recipe_author_id = recipe.user_id
                 else:    
-                    recipe.update(key, value)                        
+                    recipe.update(key=value)                        
         except (ValidationError, KeyError) as e:
             logger.error('Invalid fields provided for recipe. {}'.format(e.message))
             raise HTTPBadRequest(title='Invalid Value', 
                                  description='Invalid fields provided for recipe. {}'.format(e.message))            
         logger.debug("Updated recipe data in database")
-        resp.body = recipe.id
+        resp.body = {"recipe_id": str(recipe.id)}
         resp.status = falcon.HTTP_OK

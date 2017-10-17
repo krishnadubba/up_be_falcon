@@ -25,20 +25,28 @@ c = Consumer({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS, 'group.id': 'mygroup
 c.subscribe(['recipe_collection_post'])
 running = True	
 
-while running:
-    try:
+try:
+    while running:
         msg = c.poll(timeout=1.0)
-        if msg is not None:
-            if not msg.error():
-                print('Received message: %s' % msg.value().decode('utf-8'))
-                user_feed_add_recipe.delay(msg.value().decode('utf-8'))
-            elif msg.error().code() != KafkaError._PARTITION_EOF:
-                print(msg.error())
-                running = False
+        if msg is None:
+            continue
+        if msg.error():
+            # Error or event
+            if msg.error().code() == KafkaError._PARTITION_EOF:
+                # End of partition event
+                sys.stderr.write('%% %s [%d] reached end at offset %d\n' %
+                                 (msg.topic(), msg.partition(), msg.offset()))
+            elif msg.error():
+                # Error
+                raise KafkaException(msg.error())
+        else:
+            print('Received message: %s' % msg.value().decode('utf-8'))
+            user_feed_add_recipe.delay(msg.value().decode('utf-8'))
             
-    except KeyboardInterrupt:
-        # quit
-        c.close()
-        sys.exit()
+except KeyboardInterrupt:
+    sys.stderr.write('%% Aborted by user\n')
+    
+    # quit
+c.close()
             
 

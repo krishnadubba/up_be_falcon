@@ -136,11 +136,11 @@ class Item(object):
                     activity.save()
                     resp.activity_author_id = activity.user_id
                 else:                    
-                    activity.update(key, value)
+                    activity.update(key=value)
         except (ValidationError, KeyError) as e:
             logger.error('Invalid fields provided for cooking activity. {}'.format(e.message))
             raise HTTPBadRequest(title='Invalid Value', 
                                  description='Invalid fields provided for cooking activity. {}'.format(e.message))
         logger.debug("Updated activity data in database")
-        resp.body = activity.id
+        resp.body = {"activity_id": str(activity.id)}
         resp.status = falcon.HTTP_OK

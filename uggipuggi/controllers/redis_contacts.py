@@ -60,8 +60,9 @@ class Item(object):
             contacts_id_name = CONTACTS + id
             if 'contact_user_id' in req.params['body']:
                 req.redis_conn.sadd(contacts_id_name, req.params['body']['contact_user_id'])
-                logger.debug("Added member to user contacts in database")
+                logger.debug("Added member to user contacts in database: %s"  %repr(req.params['body']['contact_user_id']))
                 resp.status = falcon.HTTP_OK
+                resp.body = req.params['body']['contact_user_id']
             else:
                 logger.warn("Please provide contact_user_id to add to users contacts")
                 resp.status = falcon.HTTPMissingParam

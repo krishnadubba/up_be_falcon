@@ -60,19 +60,19 @@ class Item(object):
         # No need for authorization, anyone can follow anyone
         # We need to call this when user follows someone
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
-        follower_user = get_user('id', req.params['body']['follower_user_id'])
-        # If user profile is not public, no followers
-        if not follower_user.public_profile:
-            logger.warn("Cannot follow this user as the profile is not public")
-            resp.status = falcon.HTTP_UNAUTHORIZED
-            description = ('Cannot follow this user as the profile is not public')
-            raise falcon.HTTPForbidden('Cannot follow this user as the profile is not public',
-                                       description
-                                       )            
             
         logger.debug("Adding member to user following in database ... %s" %repr(id))
-        following_id_name = FOLLOWING + id        
-        if 'follower_user_id' in req.params['body']:
+        if 'follower_user_id' in req.params['body']:                        
+            follower_user = get_user('id', req.params['body']['follower_user_id'])
+            # If user profile is not public, no followers
+            if not follower_user.public_profile:
+                logger.warn("Cannot follow this user as the profile is not public")
+                resp.status = falcon.HTTP_UNAUTHORIZED
+                description = ('Cannot follow this user as the profile is not public')
+                raise falcon.HTTPForbidden('Cannot follow this user as the profile is not public',
+                                           description
+                                           )            
+            following_id_name = FOLLOWING + id        
             # Add celebrity to user's following list
             req.redis_conn.sadd(following_id_name, req.params['body']['follower_user_id'])
             logger.debug("Added member to user following in database")

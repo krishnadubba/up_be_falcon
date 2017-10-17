@@ -81,7 +81,7 @@ for user in users:
                'display_pic': users_gcs_base + user['avatar'].split('/')[-1]
               }
     
-    users_map[user['id']] = payload
+    users_map[current_author_id] = payload
     r = requests.post(rest_api + 'register', data=json.dumps(payload), 
                       headers=header)
     verify_token = json.loads(r.content.decode('utf-8'))['auth_token']
@@ -91,55 +91,15 @@ for user in users:
                           headers=header)
     
     header = {'Content-Type':'application/json'}
-    r = requests.post(rest_api + 'login', data=json.dumps({'email':users_map[user['id']]["email"], 
-                                                           "password":users_map[user['id']]["password"]}), headers=header)
+    r = requests.post(rest_api + 'login', data=json.dumps({'email':users_map[current_author_id]["email"], 
+                                                           "password":users_map[current_author_id]["password"]}), 
+                      headers=header)
     
     login_token   = json.loads(r.content.decode('utf-8'))['auth_token']
     user_mongo_id = json.loads(r.content.decode('utf-8'))['user_identifier']
-    users_map[user['id']].update({'login_token':login_token})
-    users_map[user['id']].update({'user_id':user_mongo_id})
+    users_map[current_author_id].update({'login_token':login_token})
+    users_map[current_author_id].update({'user_id':user_mongo_id})
     
-    # Add all the recipes authored by this user
-    for recipe in recipes:
-        if recipe['author']['id'] != current_author_id:
-            continue
-    
-        recipe_payload = {"recipe_name": recipe['name'],
-                          "user_id": user_mongo_id,
-                          "likes_count": 0,
-                          "user_name": users_map[user['id']]['display_name'],
-                          "images":[food_gcs_base+recipe['image'].split('/')[-1]],                      
-                          }
-        steps = []
-        for direction in recipe['direction'].split('\n'):
-            if direction == '':
-                continue
-            steps.append(direction)
-        recipe_payload.update({"steps":steps})
-        
-        ingredients = []
-        ingredients_imgs   = []
-        ingredients_quant  = []
-        ingredients_metric = []
-        for ig in recipe['ingredients']:
-            ingredients_metric.append(ig['unit'])
-            ingredients_quant.append(ig['quantity'])
-            ingredients_imgs.append(food_gcs_base+ig['material']['image'].split('/')[-1])
-            ingredients.append(ig['material']['name'])
-            
-        recipe_payload.update({'ingredients':ingredients})
-        recipe_payload.update({'ingredients_imgs':ingredients_imgs})
-        recipe_payload.update({'ingredients_quant':ingredients_quant})
-        recipe_payload.update({'ingredients_metric':ingredients_metric})            
-        
-        recipe_map[recipe['id']] = recipe_payload
-        
-        header.update({'auth_token':login_token})
-        r = requests.post(rest_api + 'recipes', data=json.dumps(recipe_payload), 
-                          headers=header)    
-                
-        recipe_map[recipe['id']].update({'recipe_id':json.loads(r.content.decode('utf-8'))['recipe_id']})
-                            
     count += 1
     print (r)
     
@@ -169,50 +129,123 @@ for group in groups:
     print (r)
     print (r.content)
 
-print ('==================')  
+print ('======= Adding contacts ===========')
 
-for recipe in recipes:
-    comment = {}
-    recipe_id = recipe_map[recipe['id']]['recipe_id']
-    for com in recipe['reviews']:                
-        comment['comment'] = {}
-        user_id = users_map[com['author']['id']]['user_id']
-        login_token = users_map[com['author']['id']]['login_token']
-        header = {'Content-Type':'application/json'}
-        header.update({'auth_token':login_token})        
-        comment['comment']['user_id'] = user_id
-        comment['comment']['content'] = com['content'] 
-        r = requests.put(rest_api + 'recipes/%s'%recipe_id, data=json.dumps(comment), 
-                         headers=header)        
-        print (r)
+for contact in contacts:
+    header = {'Content-Type':'application/json'}        
+    login_token = users_map[contact[0]]['login_token']
+    header.update({'auth_token':login_token})
+    for cont in contact[1:]:
+        contact_payload = {}
+        contact_payload['contact_user_id'] = users_map[cont]['user_id']
+        r = requests.post(rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
+                          data=json.dumps(contact_payload), 
+                          headers=header)
+        
+        print (r, r.content)
 
-for feed in feeds:
+print ('======= Adding Following ===========')
+
+for contact in following:
+    header = {'Content-Type':'application/json'}        
+    login_token = users_map[contact[0]]['login_token']
+    header.update({'auth_token':login_token})
+    for cont in contact[1:]:
+        contact_payload = {}
+        contact_payload['follower_user_id'] = users_map[cont]['user_id']
+        r = requests.post(rest_api + '/following/%s'%users_map[contact[0]]['user_id'], 
+                          data=json.dumps(contact_payload), 
+                          headers=header)
+        
+        print (r, r.content)
+
+for user in users:
+    current_author_id = user['id']
+    # Add all the recipes authored by this user
+    for recipe in recipes:
+        if recipe['author']['id'] != current_author_id:
+            continue
+    
+        login_token = users_map[current_author_id]['login_token']
+        recipe_payload = {"recipe_name": recipe['name'],
+                          "user_id": users_map[current_author_id]['user_id'],
+                          "likes_count": 0,
+                          "user_name": users_map[current_author_id]['display_name'],
+                          "images":[food_gcs_base+recipe['image'].split('/')[-1]],                      
+                          }
+        steps = []
+        for direction in recipe['direction'].split('\n'):
+            if direction == '':
+                continue
+            steps.append(direction)
+        recipe_payload.update({"steps":steps})
+        
+        ingredients = []
+        ingredients_imgs   = []
+        ingredients_quant  = []
+        ingredients_metric = []
+        for ig in recipe['ingredients']:
+            ingredients_metric.append(ig['unit'])
+            ingredients_quant.append(ig['quantity'])
+            ingredients_imgs.append(food_gcs_base+ig['material']['image'].split('/')[-1])
+            ingredients.append(ig['material']['name'])
+            
+        recipe_payload.update({'ingredients':ingredients})
+        recipe_payload.update({'ingredients_imgs':ingredients_imgs})
+        recipe_payload.update({'ingredients_quant':ingredients_quant})
+        recipe_payload.update({'ingredients_metric':ingredients_metric})            
+        
+        recipe_map[recipe['id']] = recipe_payload
+        
+        header.update({'auth_token':login_token})
+        r = requests.post(rest_api + 'recipes', data=json.dumps(recipe_payload), 
+                          headers=header)    
+        print (r, r.content)        
+        recipe_map[recipe['id']].update({'recipe_id':json.loads(r.content.decode('utf-8'))['recipe_id']})
+                                
+
+#for recipe in recipes:
+    #comment = {}
+    #recipe_id = recipe_map[recipe['id']]['recipe_id']
+    #for com in recipe['reviews']:                
+        #comment['comment'] = {}
+        #user_id = users_map[com['author']['id']]['user_id']
+        #login_token = users_map[com['author']['id']]['login_token']
+        #header = {'Content-Type':'application/json'}
+        #header.update({'auth_token':login_token})        
+        #comment['comment']['user_id'] = user_id
+        #comment['comment']['content'] = com['content'] 
+        #r = requests.put(rest_api + 'recipes/%s'%recipe_id, data=json.dumps(comment), 
+                         #headers=header)        
+        #print (r)
+
+#for feed in feeds:
       
-    user_mongo_id = users_map[feed['creator']['id']]['user_id']
-    recipe_mongo_id = recipe_map[feed['recipe']['id']]['recipe_id']
-    activity_payload = {"recipe_id": recipe_mongo_id,
-                        "user_id": user_mongo_id,
-                        "likes_count": 0,
-                        }
-    header = {'Content-Type':'application/json'}
-    header.update({'auth_token':users_map[feed['creator']['id']]['login_token']})
-    r = requests.post(rest_api + 'activity', data=json.dumps(activity_payload), 
-                      headers=header)
-    activity_payload.update({'activity_id':json_util.loads(r.content.decode('utf-8'))['activity_id']})
-    activity_map[feed['id']] = activity_payload   
+    #user_mongo_id = users_map[feed['creator']['id']]['user_id']
+    #recipe_mongo_id = recipe_map[feed['recipe']['id']]['recipe_id']
+    #activity_payload = {"recipe_id": recipe_mongo_id,
+                        #"user_id": user_mongo_id,
+                        #"likes_count": 0,
+                        #}
+    #header = {'Content-Type':'application/json'}
+    #header.update({'auth_token':users_map[feed['creator']['id']]['login_token']})
+    #r = requests.post(rest_api + 'activity', data=json.dumps(activity_payload), 
+                      #headers=header)
+    #activity_payload.update({'activity_id':json_util.loads(r.content.decode('utf-8'))['activity_id']})
+    #activity_map[feed['id']] = activity_payload   
     
-    activity_Q_payload = {}
-    r = requests.get(rest_api + 'activity', params=activity_Q_payload, 
-                     headers=header)
-    results = json_util.loads(r.content.decode('utf-8'))['items']
+    #activity_Q_payload = {}
+    #r = requests.get(rest_api + 'activity', params=activity_Q_payload, 
+                     #headers=header)
+    #results = json_util.loads(r.content.decode('utf-8'))['items']
     
-    print (json_util.loads(r.content.decode('utf-8'))['count'])
+    #print (json_util.loads(r.content.decode('utf-8'))['count'])
     
-all_data = {}
-all_data['users'] = users_map
-all_data['recipes'] = recipe_map
-all_data['activities'] = activity_map
-pickle.dump(all_data, open('/tmp/up_dummy_data.p','wb'))
+#all_data = {}
+#all_data['users'] = users_map
+#all_data['recipes'] = recipe_map
+#all_data['activities'] = activity_map
+#pickle.dump(all_data, open('/tmp/up_dummy_data.p','wb'))
 
 print ("=================")
 print ("=================")
