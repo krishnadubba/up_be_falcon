@@ -47,8 +47,17 @@ rest_api = 'http://0.0.0.0:8000/'
 
 #db = connection.connect(db_name, **kwargs)
 
-header = {'Content-Type':'application/json'}
-
+def curl_request(url,method,headers,payloads):
+    # construct the curl command from request
+    command = "curl -v -H {headers} {data} -X {method} {uri}"
+    data = "" 
+    if payloads:
+        payload_list = ['"{0}":"{1}"'.format(k,v) for k,v in payloads.items()]
+        data = " -d '{" + ", ".join(payload_list) + "}'"
+    header_list = ['"{0}: {1}"'.format(k, v) for k, v in headers.items()]
+    header = " -H ".join(header_list)
+    print (command.format(method=method, headers=header, data=data, uri=url))   
+    
 def get_dummy_email(count):
     base_email = 'dksreddy'
     return base_email + repr(count) + '@gmail.com'
@@ -65,10 +74,13 @@ def get_dummy_display_name(count):
     base_name = "dksreddy"
     return base_name + repr(count)
 
+
 count = 0
 users_map = {}
 recipe_map = {}
 activity_map = {}
+header = {'Content-Type':'application/json'}
+
 for user in users:
     current_author_id = user['id']
     print (user)
