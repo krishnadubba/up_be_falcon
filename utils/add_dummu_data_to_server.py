@@ -222,48 +222,65 @@ for user in users:
         recipe_map[recipe['id']].update({'recipe_id':json.loads(r.content.decode('utf-8'))['recipe_id']})
                                 
 
-#for recipe in recipes:
-    #comment = {}
-    #recipe_id = recipe_map[recipe['id']]['recipe_id']
-    #for com in recipe['reviews']:                
-        #comment['comment'] = {}
-        #user_id = users_map[com['author']['id']]['user_id']
-        #login_token = users_map[com['author']['id']]['login_token']
-        #header = {'Content-Type':'application/json'}
-        #header.update({'auth_token':login_token})        
-        #comment['comment']['user_id'] = user_id
-        #comment['comment']['content'] = com['content'] 
-        #r = requests.put(rest_api + 'recipes/%s'%recipe_id, data=json.dumps(comment), 
-                         #headers=header)        
-        #print (r)
+for recipe in recipes:
+    comment = {}
+    recipe_id = recipe_map[recipe['id']]['recipe_id']
+    for com in recipe['reviews']:                
+        comment['comment'] = {}
+        user_id = users_map[com['author']['id']]['user_id']
+        user_name = users_map[com['author']['id']]['display_name']
+        login_token = users_map[com['author']['id']]['login_token']
+        header = {'Content-Type':'application/json'}
+        header.update({'auth_token':login_token})        
+        comment['comment']['user_id'] = user_id
+        comment['comment']['user_name'] = user_name
+        comment['comment']['content'] = com['content'] 
+        r = requests.put(rest_api + 'recipes/%s'%recipe_id, data=json.dumps(comment), 
+                         headers=header)        
+        print (r)
 
-#for feed in feeds:
+for feed in feeds:
       
-    #user_mongo_id = users_map[feed['creator']['id']]['user_id']
-    #recipe_mongo_id = recipe_map[feed['recipe']['id']]['recipe_id']
-    #activity_payload = {"recipe_id": recipe_mongo_id,
-                        #"user_id": user_mongo_id,
-                        #"likes_count": 0,
-                        #}
-    #header = {'Content-Type':'application/json'}
-    #header.update({'auth_token':users_map[feed['creator']['id']]['login_token']})
-    #r = requests.post(rest_api + 'activity', data=json.dumps(activity_payload), 
-                      #headers=header)
-    #activity_payload.update({'activity_id':json_util.loads(r.content.decode('utf-8'))['activity_id']})
-    #activity_map[feed['id']] = activity_payload   
+    user_mongo_id = users_map[feed['creator']['id']]['user_id']
+    recipe_mongo_id = recipe_map[feed['recipe']['id']]['recipe_id']
+    activity_payload = {"recipe_id": recipe_mongo_id,
+                        "user_id": user_mongo_id,
+                        "user_name": users_map[feed['creator']['id']]['display_name'],
+                        "likes_count": 0,
+                        "images":recipe_map[feed['recipe']['id']]['images']
+                        }
+    header = {'Content-Type':'application/json'}
+    header.update({'auth_token':users_map[feed['creator']['id']]['login_token']})
+    r = requests.post(rest_api + 'activity', data=json.dumps(activity_payload), 
+                      headers=header)
+    activity_payload.update({'activity_id':json_util.loads(r.content.decode('utf-8'))['activity_id']})
+    activity_map[feed['id']] = activity_payload   
     
-    #activity_Q_payload = {}
-    #r = requests.get(rest_api + 'activity', params=activity_Q_payload, 
-                     #headers=header)
-    #results = json_util.loads(r.content.decode('utf-8'))['items']
+    activity_Q_payload = {}
+    r = requests.get(rest_api + 'activity', params=activity_Q_payload, 
+                     headers=header)
+    results = json_util.loads(r.content.decode('utf-8'))['items']
     
-    #print (json_util.loads(r.content.decode('utf-8'))['count'])
+    print (json_util.loads(r.content.decode('utf-8'))['count'])
     
-#all_data = {}
-#all_data['users'] = users_map
-#all_data['recipes'] = recipe_map
-#all_data['activities'] = activity_map
-#pickle.dump(all_data, open('/tmp/up_dummy_data.p','wb'))
+print ("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& User feed &&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+
+user_mongo_id = users_map['U0016']['user_id']
+login_token   =  users_map['U0016']['login_token']
+header = {'Content-Type':'application/json'}
+header.update({'auth_token':login_token})
+             
+r = requests.get(rest_api + 'feed/%s'%user_mongo_id, headers=header)
+
+print (r, r.content)    
+
+print ("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+
+all_data = {}
+all_data['users'] = users_map
+all_data['recipes'] = recipe_map
+all_data['activities'] = activity_map
+pickle.dump(all_data, open('/tmp/up_dummy_data.p','wb'))
 
 print ("=================")
 print ("=================")

@@ -10,7 +10,7 @@ import logging.config as logging_config
 import logging.handlers
 import time
 from mongoengine import connection
-from uggipuggi.controllers import recipe, tag, status, rating, user, batch, activity,\
+from uggipuggi.controllers import recipe, tag, status, rating, user, user_feed, batch, activity,\
                         redis_group, redis_contacts, redis_followers, redis_following
 from uggipuggi.services.user import get_user  
 from uggipuggi.middlewares import auth_jwt
@@ -66,7 +66,7 @@ class UggiPuggi(object):
         self.app.add_route('/users', user.Collection())
         self.app.add_route('/users/{id}', user.Item())
         
-        self.app.add_route('/feed/{id}', user.Item())
+        self.app.add_route('/feed/{id}', user_feed.Item())
         
         self.app.add_route('/groups', redis_group.Collection())
         self.app.add_route('/groups/{id}', redis_group.Item())

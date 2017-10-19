@@ -23,8 +23,9 @@ class ExposeLevel(object):
         return ExposeLevel.EXPOSE_MAP.get(expose_level, 'private')
     
 class Comment(EmbeddedDocument):
-    user_id = StringField(required=True)
-    content = StringField(required=True, max_length=TWEET_CHAR_LENGTH)
+    user_id   = StringField(required=True)
+    user_name = StringField(required=True)
+    content   = StringField(required=True, max_length=TWEET_CHAR_LENGTH)
     
     @property
     def creation_stamp(self):

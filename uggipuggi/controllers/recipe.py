@@ -125,7 +125,9 @@ class Item(object):
         try:            
             for key, value in req.params['body'].items():
                 if key == 'comment':
-                    comment = Comment(content=value['content'], user_id=value['user_id'])
+                    comment = Comment(content=value['content'], 
+                                      user_id=value['user_id'], 
+                                      user_name=value['user_name'])
                     recipe.comments.append(comment)
                     recipe.save()
                     resp.recipe_author_id = recipe.user_id

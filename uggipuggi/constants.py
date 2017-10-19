@@ -20,6 +20,10 @@ AUTH_SERVER_NAME = "bouncer"
 AUTH_HEADER_USER_ID = "X-Gobbl-User-ID"
 AUTH_SHARED_SECRET_ENV = "DUBBA_SECRET"
 
+# REDIS constants 
+MAX_USER_FEED_LENGTH = 500
+MAX_USER_FEED_LOAD   = 50
+
 # REDIS namespaces
 RECIPE        = 'recipe:'
 ACTIVITY      = 'activity:'
@@ -30,5 +34,6 @@ CONTACTS      = 'contacts:'
 FOLLOWING     = 'following:'
 FOLLOWERS     = 'followers:'
 USER_FEED     = 'user_feed:'
+USER          = 'user:'
 USER_NOTIFICATION_FEED = 'user_notification_feed:'
 RECIPE_COMMENTORS = 'recipe_commentors:'
