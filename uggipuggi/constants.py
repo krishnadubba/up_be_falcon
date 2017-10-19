@@ -21,6 +21,8 @@ AUTH_HEADER_USER_ID = "X-Gobbl-User-ID"
 AUTH_SHARED_SECRET_ENV = "DUBBA_SECRET"
 
 # REDIS namespaces
+RECIPE        = 'recipe:'
+ACTIVITY      = 'activity:'
 GROUP         = 'group:'
 GROUP_MEMBERS = 'group_members:'
 USER_GROUPS   = 'user_groups:'
@@ -28,4 +30,5 @@ CONTACTS      = 'contacts:'
 FOLLOWING     = 'following:'
 FOLLOWERS     = 'followers:'
 USER_FEED     = 'user_feed:'
+USER_NOTIFICATION_FEED = 'user_notification_feed:'
 RECIPE_COMMENTORS = 'recipe_commentors:'

@@ -26,7 +26,10 @@ Assuming you are already in the project directory, simply run the following comm
 
 ```
 $ gunicorn -b 0.0.0.0:8000 manage:uggipuggi.app
+$ celery -A uggipuggi.celery.celery worker -l debug -n worker.high -Q high
+$ python3 uggipuggi/messaging/subscriber/recipe_kafka_collection_post_subscriber.py
 ```
+Make sure you have mongodb, redis and kafka running already
 
 Point your browser to localhost:8000/recipes (thereby making a GET request).
 Try adding params in your URL, for instance, http://localhost:8000/recipes?title=egg_curry&tags=breakfast

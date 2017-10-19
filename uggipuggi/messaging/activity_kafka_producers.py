@@ -5,7 +5,8 @@ KAFKA_BOOTSTRAP_SERVERS = 'localhost:9092'
 activity_kafka_producer = Producer({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})     
 
 def activity_kafka_collection_post_producer(req, resp, resource):
-    parameters = [req.user_id, resp.body["activity_id"], resp.status]
+    parameters = [req.user_id, req.params['body']["recipe_id"], resp.body["activity_id"], 
+                  req.params['body']['images'][0], resp.status]
     logging.debug("++++++++++++++++++++++")
     logging.debug("ACTIVITY_KAFKA_COLLECTION_POST_PRODUCER: %s" %req.kafka_topic_name)
     logging.debug("----------------------")

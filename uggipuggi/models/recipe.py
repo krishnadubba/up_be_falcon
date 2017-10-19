@@ -42,7 +42,7 @@ class Recipe(Document):
     ingredients_quant  = ListField(required=True) 
     ingredients_metric = ListField(required=True)
     # This should be private by default
-    expose_level       = IntField(required=True, default=ExposeLevel.PUBLIC)
+    expose_level       = IntField(required=True, default=ExposeLevel.FRIENDS)
     ingredients_imgs   = ListField(URLField()) # list of urls of ingredients images
     ingredients_ids    = ListField(required=False) #Ingredients ids        
     tips               = ListField(required=False)    

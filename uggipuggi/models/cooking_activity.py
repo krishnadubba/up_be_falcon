@@ -17,6 +17,7 @@ class Comment(EmbeddedDocument):
     
 class CookingActivity(Document):
     user_id      = StringField(required=True)
+    user_name    = StringField(required=True)
     recipe_id    = StringField(required=True)
     likes_count  = IntField(required=True, default=0)
     description  = StringField(max_length=TWEET_CHAR_LENGTH)
@@ -28,7 +29,6 @@ class CookingActivity(Document):
     shares_count = IntField(default=0)
     prep_time    = IntField(default=15)    
     cook_time    = IntField(default=15)    
-    activity_time_stamp = DateTimeField()
     comments     = ListField(EmbeddedDocumentField(Comment), required=False)    
     
     @property

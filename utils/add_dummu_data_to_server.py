@@ -188,7 +188,8 @@ for user in users:
                           "user_id": users_map[current_author_id]['user_id'],
                           "likes_count": 0,
                           "user_name": users_map[current_author_id]['display_name'],
-                          "images":[food_gcs_base+recipe['image'].split('/')[-1]],                      
+                          "images":[food_gcs_base+recipe['image'].split('/')[-1]],
+                          "expose_level": 5,
                           }
         steps = []
         for direction in recipe['direction'].split('\n'):
