@@ -26,6 +26,22 @@ food_gcs_base = 'https://storage.googleapis.com/up_food_pics/'
 users_gcs_base = 'https://storage.googleapis.com/up_users_avatars/'
 rest_api = 'http://0.0.0.0:8000/'
 
+# set up logging to file - see previous section for more details
+logging.basicConfig(level=logging.DEBUG,
+                    #format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                    format='%(message)s',
+                    datefmt='%m-%d %H:%M',
+                    filename='/tmp/uggipuggi.log',
+                    filemode='w')
+# define a Handler which writes INFO messages or higher to the sys.stderr
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+# set a format which is simpler for console use
+formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+# tell the handler to use this format
+console.setFormatter(formatter)
+# add the handler to the root logger
+logging.getLogger('').addHandler(console)
 
 # load config via env
 #db_section='mongodb'
@@ -47,7 +63,7 @@ rest_api = 'http://0.0.0.0:8000/'
 
 #db = connection.connect(db_name, **kwargs)
 
-def curl_request(url,method,headers,payloads):
+def curl_request(url, method, headers, payloads=None):
     # construct the curl command from request
     command = "curl -v -H {headers} {data} -X {method} {uri}"
     data = "" 
@@ -56,7 +72,7 @@ def curl_request(url,method,headers,payloads):
         data = " -d '{" + ", ".join(payload_list) + "}'"
     header_list = ['"{0}: {1}"'.format(k, v) for k, v in headers.items()]
     header = " -H ".join(header_list)
-    print (command.format(method=method, headers=header, data=data, uri=url))   
+    logging.info(command.format(method=method, headers=header, data=data, uri=url))
     
 def get_dummy_email(count):
     base_email = 'dksreddy'
@@ -83,7 +99,7 @@ header = {'Content-Type':'application/json'}
 
 for user in users:
     current_author_id = user['id']
-    print (user)
+    logging.debug("User: %s" %user)
     payload = {"email": get_dummy_email(count),
                "password": get_dummy_password(count),
                "phone": get_dummy_phone(count),
@@ -96,26 +112,45 @@ for user in users:
     users_map[current_author_id] = payload
     r = requests.post(rest_api + 'register', data=json.dumps(payload), 
                       headers=header)
+    logging.info('Registering User:')    
+    curl_request(rest_api + 'register', 'post', header, payload)
+    logging.info('Response:')
+    logging.info(r)
+    logging.info(r.content)
+    
     verify_token = json.loads(r.content.decode('utf-8'))['auth_token']
     
     header.update({'auth_token':verify_token})
     r = requests.post(rest_api + 'verify', data=json.dumps({'code':'9999'}), 
                           headers=header)
     
+    logging.info('Verifying User:')    
+    curl_request(rest_api + 'verify', 'post', header, {'code':'9999'})
+    logging.info('Response:')
+    logging.info(r)
+    logging.info(r.content)    
+
     header = {'Content-Type':'application/json'}
     r = requests.post(rest_api + 'login', data=json.dumps({'email':users_map[current_author_id]["email"], 
                                                            "password":users_map[current_author_id]["password"]}), 
                       headers=header)
     
+    logging.info('Login User:')    
+    curl_request(rest_api + 'login', 'post', header, {'email':users_map[current_author_id]["email"], 
+                                                      "password":users_map[current_author_id]["password"]})
+    logging.info('Response:')
+    logging.info(r)
+    logging.info(r.content)        
+
     login_token   = json.loads(r.content.decode('utf-8'))['auth_token']
     user_mongo_id = json.loads(r.content.decode('utf-8'))['user_identifier']
     users_map[current_author_id].update({'login_token':login_token})
     users_map[current_author_id].update({'user_id':user_mongo_id})
     
     count += 1
-    print (r)
+    #logging.debug(r)
     
-print ('==================')    
+logging.info('======= Adding groups ===========')
 
 for group in groups:
     header = {'Content-Type':'application/json'}    
@@ -124,27 +159,44 @@ for group in groups:
     group_payload['group_pic'] = group['group_pic']
     login_token = users_map[group['admin']]['login_token']
     header.update({'auth_token':login_token})
+    
     r = requests.post(rest_api + 'groups', data=json.dumps(group_payload), 
                       headers=header)
+
+    logging.info('Creating Group:')    
+    curl_request(rest_api + 'groups', 'post', header, group_payload)
+    logging.info('Response:')
+    logging.info(r)
+    logging.info(r.content)        
+    
     group_id = json.loads(r.content.decode('utf-8'))['group_id']
-    print ("group_id: %s" %group_id)
+    logging.debug("group_id: %s" %group_id)
     
     # First memeber is the admin
     member_payload = {}
     member_payload['member_id'] = []
     for member in group['members'][1:]:    
         member_payload['member_id'].append(users_map[member]['user_id'])
+        
     r = requests.post(rest_api + 'groups/%s'%group_id, data=json.dumps(member_payload), 
                       headers=header)
-    print (r)
-    print (r.content)    
-    print ('#############')
-    r = requests.get(rest_api + 'groups/%s?members=True'%group_id,  
-                     headers=header)    
-    print (r)
-    print (r.content)
+    
+    logging.info('Adding member(s) to a group:')    
+    curl_request(rest_api + 'groups/%s'%group_id, 'post', header, member_payload)
+    logging.info('Response:')
+    logging.info(r)
+    logging.info(r.content)        
+    
+    r = requests.get(rest_api + 'groups/%s?members=True'%group_id, headers=header)    
+    
+    logging.info('Getting all members of a group:') 
+    curl_request(rest_api + 'groups/%s?members=True'%group_id, 'get', header)
+    logging.info('Response:')
+    logging.info(r)
+    logging.info(r.content)            
 
-print ('======= Adding contacts ===========')
+    
+logging.info('======= Adding contacts ===========')
 
 for contact in contacts:
     header = {'Content-Type':'application/json'}        
@@ -154,13 +206,17 @@ for contact in contacts:
     contact_payload['contact_user_id'] = []
     for cont in contact[1:]:        
         contact_payload['contact_user_id'].append(users_map[cont]['user_id'])
-    r = requests.post(rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
+    r = requests.post(rest_api + 'contacts/%s'%users_map[contact[0]]['user_id'], 
                       data=json.dumps(contact_payload), 
                       headers=header)
-    
-    print (r, r.content)
 
-print ('======= Adding Following ===========')
+    logging.info('Adding contacts of a user:') 
+    curl_request(rest_api + 'contacts/%s'%users_map[contact[0]]['user_id'], 'post', header, contact_payload)
+    logging.info('Response:')
+    logging.info(r)
+    logging.info(r.content)
+
+logging.debug('======= Adding Following ===========')
 
 for contact in following:
     header = {'Content-Type':'application/json'}        
@@ -170,11 +226,15 @@ for contact in following:
     for cont in contact[1:]:
         contact_payload = {}
         contact_payload['follower_user_id'] = users_map[cont]['user_id']
-        r = requests.post(rest_api + '/following/%s'%users_map[contact[0]]['user_id'], 
+        r = requests.post(rest_api + 'following/%s'%users_map[contact[0]]['user_id'], 
                           data=json.dumps(contact_payload), 
                           headers=header)
         
-        print (r, r.content)
+        logging.info('Adding user following another user:') 
+        curl_request(rest_api + 'following/%s'%users_map[contact[0]]['user_id'], 'post', header, contact_payload)
+        logging.info('Response:')
+        logging.info(r)
+        logging.info(r.content)        
 
 for user in users:
     current_author_id = user['id']
@@ -216,9 +276,16 @@ for user in users:
         recipe_map[recipe['id']] = recipe_payload
         
         header.update({'auth_token':login_token})
+        
         r = requests.post(rest_api + 'recipes', data=json.dumps(recipe_payload), 
                           headers=header)    
-        print (r, r.content)        
+        
+        logging.info('Adding a recipe by a user:') 
+        curl_request(rest_api + 'recipes', 'post', header, recipe_payload)
+        logging.info('Response:')
+        logging.info(r)
+        logging.info(r.content)      
+        
         recipe_map[recipe['id']].update({'recipe_id':json.loads(r.content.decode('utf-8'))['recipe_id']})
                                 
 
@@ -236,8 +303,13 @@ for recipe in recipes:
         comment['comment']['user_name'] = user_name
         comment['comment']['content'] = com['content'] 
         r = requests.put(rest_api + 'recipes/%s'%recipe_id, data=json.dumps(comment), 
-                         headers=header)        
-        print (r)
+                         headers=header)
+        
+        logging.info('Adding comment to a recipe by a user:') 
+        curl_request(rest_api + 'recipes/%s'%recipe_id, 'put', header, comment)
+        logging.info('Response:')
+        logging.info(r)
+        logging.info(r.content) 
 
 for feed in feeds:
       
@@ -253,6 +325,13 @@ for feed in feeds:
     header.update({'auth_token':users_map[feed['creator']['id']]['login_token']})
     r = requests.post(rest_api + 'activity', data=json.dumps(activity_payload), 
                       headers=header)
+    
+    logging.info('Adding activity by a user (like cooked a recipe):') 
+    curl_request(rest_api + 'activity', 'post', header, activity_payload)
+    logging.info('Response:')
+    logging.info(r)
+    logging.info(r.content)    
+
     activity_payload.update({'activity_id':json_util.loads(r.content.decode('utf-8'))['activity_id']})
     activity_map[feed['id']] = activity_payload   
     
@@ -261,9 +340,9 @@ for feed in feeds:
                      headers=header)
     results = json_util.loads(r.content.decode('utf-8'))['items']
     
-    print (json_util.loads(r.content.decode('utf-8'))['count'])
+    #print (json_util.loads(r.content.decode('utf-8'))['count'])
     
-print ("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& User feed &&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+#print ("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& User feed &&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
 
 user_mongo_id = users_map['U0016']['user_id']
 login_token   =  users_map['U0016']['login_token']
@@ -272,9 +351,15 @@ header.update({'auth_token':login_token})
              
 r = requests.get(rest_api + 'feed/%s'%user_mongo_id, headers=header)
 
-print (r, r.content)    
+logging.info('Getting user feed to put on his wall:') 
+curl_request(rest_api + 'feed/%s'%user_mongo_id, 'get', header)
+logging.info('Response:')
+logging.info(r)
+logging.info(r.content)
 
-print ("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+#print (r, r.content)    
+
+#print ("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
 
 all_data = {}
 all_data['users'] = users_map
