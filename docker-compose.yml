@@ -1,0 +1,64 @@
+version: '2'
+
+services:
+    confluentinc-zookeeper:
+        image: confluentinc/zookeeper
+        environment:
+            zk_id: "1"
+
+    confluentinc-kafka:
+        image: confluentinc/kafka
+        depends_on:
+            - confluentinc-zookeeper
+        environment:
+            KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+            
+    mongo:
+        image: mongo:latest
+        ports:
+            - "27018:27017"
+    redis:
+        image: redis
+        command: redis-server --requirepass devpassword
+        volumes:
+            - 'redis:/var/lib/redis/data'
+        ports:
+            - "6379:6379"
+            
+celery:
+    build: .
+    command: celery worker -l debug -A snakeeyes.blueprints.contact.tasks -n worker.high -Q high
+    env_file:
+        - '.env'
+    volumes:
+        - '.:/uggipuggi'
+
+kafka_consumer:
+    build: .
+    links:
+        - confluentinc-kafka
+    command: python3 uggipuggi/messaging/subscriber/recipe_kafka_collection_post_subscriber.py
+
+nginx:
+    build: ./nginx
+    links:
+        - backend:backend
+    ports:
+        - "80:80"
+        
+backend:
+    build: .
+    command: >
+         gunicorn -b 0.0.0.0:8000
+        --access-logfile -
+        --reload
+        "manage:uggipuggi.app"
+    links:
+        - redis
+        - mongo
+        - celery
+        - confluentinc-kafka        
+        - kafka_consumer
+    ports:
+        - "8000:8000"
+
