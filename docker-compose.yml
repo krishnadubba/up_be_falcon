@@ -1,64 +1,107 @@
-version: '2'
+version: '2.2'
 
 services:
     confluentinc-zookeeper:
-        image: confluentinc/zookeeper
+        image: confluentinc/cp-zookeeper:latest
+        ports:
+            - "2181:2181"
         environment:
+            ZOOKEEPER_CLIENT_PORT:2181
             zk_id: "1"
 
     confluentinc-kafka:
-        image: confluentinc/kafka
+        image: confluentinc/cp-kafka:latest
         depends_on:
             - confluentinc-zookeeper
+        ports:
+            - "9092:9092"
         environment:
-            KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+            KAFKA_ZOOKEEPER_CONNECT: localhost::2181
+            KAFKA_LOG_DIRS: /var/logs/kafka
+            KAFKA_ADVERTISED_PORT: 9092
+        volumes_from:
+            - logs_data            
             
     mongo:
         image: mongo:latest
+        volumes_from:
+            - mongo_data
         ports:
-            - "27018:27017"
+            - "27017:27017"
+            
     redis:
-        image: redis
-        command: redis-server --requirepass devpassword
-        volumes:
-            - 'redis:/var/lib/redis/data'
+        image: redis:latest
+        command: redis-server
+        volumes_from:
+            - redis_data
         ports:
             - "6379:6379"
+
+    nginx:
+        image: nginx:latest
+        links:
+            - backend:backend
+        volumes:
+            - ./conf/uggipuggi_nginx.conf:/etc/nginx/conf.d/default.conf:ro     
+        ports:
+            - "80:80"
+        volumes_from:
+            - logs_data
             
-celery:
-    build: .
-    command: celery worker -l debug -A snakeeyes.blueprints.contact.tasks -n worker.high -Q high
-    env_file:
-        - '.env'
-    volumes:
-        - '.:/uggipuggi'
+    celery:
+        build: .
+        command: celery worker -l debug -A uggipuggi.celery.celery -n worker.high -Q high
+        #env_file:
+        #    - '.env'
+        volumes_from:
+            - logs_data
+    
+    kafka_consumer:
+        build: .
+        links:
+            - confluentinc-kafka
+        command: python3 uggipuggi/messaging/subscriber/recipe_kafka_collection_post_subscriber.py
+        volumes_from:
+            - logs_data
+            
+    backend:
+        build: .
+        command: 
+             gunicorn -b 0.0.0.0:8000
+            --access-logfile -
+            --reload
+            "manage:uggipuggi.app"
+        links:
+            - redis
+            - mongo
+            - celery
+            - confluentinc-kafka        
+            - kafka_consumer
+        ports:
+            - "8000:8000"
+        volumes_from:
+            - logs_data        
 
-kafka_consumer:
-    build: .
-    links:
-        - confluentinc-kafka
-    command: python3 uggipuggi/messaging/subscriber/recipe_kafka_collection_post_subscriber.py
-
-nginx:
-    build: ./nginx
-    links:
-        - backend:backend
-    ports:
-        - "80:80"
+    # Create volume container for mongodb
+    # docker create -v /var/database/mongodb/data --name mongo_data debian:jessie-slim
+    # docker create -v /var/database/redis/data   --name redis_data debian:jessie-slim
+    # docker create -v /var/logs                  --name  logs_data debian:jessie-slim
+    mongo_data:
+        image: debian:jessie-slim
+        #command: echo I'm a Mongodb data container
+        volumes:
+            - /var/database/mongodb/data 
+            
+    redis_data:
+        image: debian:jessie-slim
+        #command: echo I'm a Redis data container
+        volumes:
+            - /var/database/redis/data
+            
+    logs_data:
+        image: debian:jessie-slim
+        #command: echo I'm a logs data container
+        volumes:
+            - /var/logs
         
-backend:
-    build: .
-    command: >
-         gunicorn -b 0.0.0.0:8000
-        --access-logfile -
-        --reload
-        "manage:uggipuggi.app"
-    links:
-        - redis
-        - mongo
-        - celery
-        - confluentinc-kafka        
-        - kafka_consumer
-    ports:
-        - "8000:8000"
-
+        
