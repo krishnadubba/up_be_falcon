@@ -1,8 +1,10 @@
 from __future__ import absolute_import
-import sys
+import os, sys
 from celery import Celery
 
-sys.path.append('/home/dubba/work/webdev/backends/up_be_falcon')
+#sys.path.append('/home/dubba/work/webdev/backends/up_be_falcon')
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+sys.path.append(ROOT_DIR)
 
 # instantiate Celery object
 celery = Celery(include=[

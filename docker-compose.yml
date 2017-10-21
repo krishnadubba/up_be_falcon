@@ -1,69 +1,70 @@
-version: '2.2'
+version: '2'
 
+#export IP_ADDRESS_INSIDE_DOCKER=$(ifconfig docker0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}')
 services:
-    confluentinc-zookeeper:
+    zookeeper:
         image: confluentinc/cp-zookeeper:latest
         ports:
             - "2181:2181"
         environment:
-            ZOOKEEPER_CLIENT_PORT:2181
-            zk_id: "1"
+            # Leaving space between 'colon' and value causes error!
+            ZOOKEEPER_CLIENT_PORT: 2181
 
-    confluentinc-kafka:
+    kafka:
         image: confluentinc/cp-kafka:latest
         depends_on:
-            - confluentinc-zookeeper
+            - zookeeper
         ports:
             - "9092:9092"
+        links:
+            - zookeeper
         environment:
-            KAFKA_ZOOKEEPER_CONNECT: localhost::2181
+            KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
             KAFKA_LOG_DIRS: /var/logs/kafka
-            KAFKA_ADVERTISED_PORT: 9092
+            KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
         volumes_from:
             - logs_data            
-            
+
     mongo:
         image: mongo:latest
         volumes_from:
             - mongo_data
         ports:
             - "27017:27017"
-            
+        environment:            
+            MONGO_DATA_DIR: /data/db
+            MONGO_LOG_DIR: /dev/null
+           
     redis:
         image: redis:latest
         command: redis-server
+        hostname: redis
         volumes_from:
             - redis_data
         ports:
-            - "6379:6379"
+            - "6379:6379"            
 
-    nginx:
-        image: nginx:latest
-        links:
-            - backend:backend
-        volumes:
-            - ./conf/uggipuggi_nginx.conf:/etc/nginx/conf.d/default.conf:ro     
-        ports:
-            - "80:80"
-        volumes_from:
-            - logs_data
-            
     celery:
         build: .
         command: celery worker -l debug -A uggipuggi.celery.celery -n worker.high -Q high
-        #env_file:
-        #    - '.env'
-        volumes_from:
-            - logs_data
-    
-    kafka_consumer:
-        build: .
         links:
-            - confluentinc-kafka
-        command: python3 uggipuggi/messaging/subscriber/recipe_kafka_collection_post_subscriber.py
+            - redis
+        environment:
+            CELERY_BROKER_URL: redis://redis:6379/0
+            CELERY_RESULT_BACKEND: redis://redis:6379/0
         volumes_from:
             - logs_data
             
+    kafka_consumer:
+        build: .
+        links:
+            - zookeeper
+            - kafka
+            - redis
+        command: python3 uggipuggi/messaging/subscriber/recipe_kafka_collection_post_subscriber.py
+        volumes_from:
+            - logs_data
+
     backend:
         build: .
         command: 
@@ -75,12 +76,13 @@ services:
             - redis
             - mongo
             - celery
-            - confluentinc-kafka        
+            - kafka
+            - zookeeper
             - kafka_consumer
         ports:
             - "8000:8000"
         volumes_from:
-            - logs_data        
+            - logs_data             
 
     # Create volume container for mongodb
     # docker create -v /var/database/mongodb/data --name mongo_data debian:jessie-slim
@@ -90,18 +92,22 @@ services:
         image: debian:jessie-slim
         #command: echo I'm a Mongodb data container
         volumes:
-            - /var/database/mongodb/data 
+            - /data/db
+            - /data/configdb
+            - /var/lib/mongodb/
             
     redis_data:
         image: debian:jessie-slim
         #command: echo I'm a Redis data container
         volumes:
-            - /var/database/redis/data
+            - /var/lib/redis/
             
     logs_data:
         image: debian:jessie-slim
         #command: echo I'm a logs data container
         volumes:
             - /var/logs
+            - /var/logs/kafka
+            - /var/logs/uggipuggi/nginx/
         
         

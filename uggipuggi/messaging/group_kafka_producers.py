@@ -1,8 +1,13 @@
+import os
 import logging
+from conf import get_config
 from confluent_kafka import Producer
 
-KAFKA_BOOTSTRAP_SERVERS = 'localhost:9092'
-group_producer = Producer({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
+# load config via env
+env = os.environ.get('UGGIPUGGI_BACKEND_ENV', 'docker_compose')
+config = get_config(env)
+kafka_bootstrap_servers = config['kafka'].get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+group_producer = Producer({'bootstrap.servers': kafka_bootstrap_servers})
 
 def group_kafka_collection_post_producer(req, resp, resource):
     # Topic name is 'recipe' and partition is 'user_id'

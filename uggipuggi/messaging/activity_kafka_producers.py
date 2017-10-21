@@ -1,8 +1,13 @@
+import os
 import logging
+from conf import get_config
 from confluent_kafka import Producer
 
-KAFKA_BOOTSTRAP_SERVERS = 'localhost:9092'
-activity_kafka_producer = Producer({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})     
+# load config via env
+env = os.environ.get('UGGIPUGGI_BACKEND_ENV', 'docker_compose')
+config = get_config(env)
+kafka_bootstrap_servers = config['kafka'].get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+activity_kafka_producer = Producer({'bootstrap.servers': kafka_bootstrap_servers})     
 
 def activity_kafka_collection_post_producer(req, resp, resource):
     parameters = [req.user_id, req.params['body']["recipe_id"], resp.body["activity_id"], 

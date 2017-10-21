@@ -1,9 +1,14 @@
+import os
 import logging
+from conf import get_config
 from confluent_kafka import Producer
 from uggipuggi.models.recipe import ExposeLevel
 
-KAFKA_BOOTSTRAP_SERVERS = 'localhost:9092'
-recipe_producer = Producer({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
+# load config via env
+env = os.environ.get('UGGIPUGGI_BACKEND_ENV', 'docker_compose')
+config = get_config(env)
+kafka_bootstrap_servers = config['kafka'].get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+recipe_producer = Producer({'bootstrap.servers': kafka_bootstrap_servers})
 
 def recipe_kafka_collection_post_producer(req, resp, resource):
     # Publish that a recipe has been added
