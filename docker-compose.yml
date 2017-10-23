@@ -4,14 +4,17 @@ version: '2'
 services:
     zookeeper:
         image: confluentinc/cp-zookeeper:latest
+        network_mode: host
         ports:
             - "2181:2181"
         environment:
             # Leaving space between 'colon' and value causes error!
             ZOOKEEPER_CLIENT_PORT: 2181
+            ZOOKEEPER_TICK_TIME: 2000
 
     kafka:
         image: confluentinc/cp-kafka:latest
+        network_mode: host
         depends_on:
             - zookeeper
         ports:
@@ -19,14 +22,16 @@ services:
         links:
             - zookeeper
         environment:
-            KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+            KAFKA_BROKER_ID: 1
+            KAFKA_ZOOKEEPER_CONNECT: localhost:2181
             KAFKA_LOG_DIRS: /var/logs/kafka
-            KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+            KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${DOCKER_MACHINE_IP}:9092
         volumes_from:
             - logs_data            
 
     mongo:
         image: mongo:latest
+        network_mode: host
         volumes_from:
             - mongo_data
         ports:
@@ -37,6 +42,7 @@ services:
            
     redis:
         image: redis:latest
+        network_mode: host
         command: redis-server
         hostname: redis
         volumes_from:
@@ -46,17 +52,19 @@ services:
 
     celery:
         build: .
+        network_mode: host
         command: celery worker -l debug -A uggipuggi.celery.celery -n worker.high -Q high
         links:
             - redis
         environment:
-            CELERY_BROKER_URL: redis://redis:6379/0
-            CELERY_RESULT_BACKEND: redis://redis:6379/0
+            CELERY_BROKER_URL: redis://${DOCKER_MACHINE_IP}:6379/0
+            CELERY_RESULT_BACKEND: redis://${DOCKER_MACHINE_IP}:6379/0
         volumes_from:
             - logs_data
             
     kafka_consumer:
         build: .
+        network_mode: host
         links:
             - zookeeper
             - kafka
@@ -67,6 +75,7 @@ services:
 
     backend:
         build: .
+        network_mode: host
         command: 
              gunicorn -b 0.0.0.0:8000
             --access-logfile -
@@ -90,6 +99,7 @@ services:
     # docker create -v /var/logs                  --name  logs_data debian:jessie-slim
     mongo_data:
         image: debian:jessie-slim
+        network_mode: host
         #command: echo I'm a Mongodb data container
         volumes:
             - /data/db
@@ -98,12 +108,14 @@ services:
             
     redis_data:
         image: debian:jessie-slim
+        network_mode: host
         #command: echo I'm a Redis data container
         volumes:
             - /var/lib/redis/
             
     logs_data:
         image: debian:jessie-slim
+        network_mode: host
         #command: echo I'm a logs data container
         volumes:
             - /var/logs
