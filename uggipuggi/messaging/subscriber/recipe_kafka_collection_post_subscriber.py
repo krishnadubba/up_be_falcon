@@ -30,6 +30,10 @@ logging.debug("=====================================================")
 logging.debug("KAFKA_BOOTSTRAP_SERVERS: %s" %kafka_bootstrap_servers)
 logging.debug("=====================================================")
 
+print("=====================================================")
+print("KAFKA_BOOTSTRAP_SERVERS: %s" %kafka_bootstrap_servers)
+print("=====================================================")
+
 c = Consumer({'bootstrap.servers': kafka_bootstrap_servers, 'group.id': 'mygroup',
               'default.topic.config': {'auto.offset.reset': 'smallest'}})
 c.subscribe(['recipe_collection_post'])

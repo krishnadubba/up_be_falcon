@@ -1,10 +1,9 @@
 import os, sys
 import builtins
-from mongoengine import connection
 
-sys.path.append('../')
+ROOT_DIR = os.path.dirname(sys.path[0])
+sys.path.append(ROOT_DIR)
 
-from uggipuggi.services.user import get_user
 from conf import get_config
 import traceback
 import logging

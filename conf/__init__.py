@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-import os
+import os, re
 from configparser import SafeConfigParser
 
 def get_config(env='dev', file_path=None):
@@ -18,7 +18,18 @@ def get_config(env='dev', file_path=None):
         raise IOError('Invalid Config File. ConfigParser could not read config file: {}'.format(file_path))
 
     config_map = {}
+    #os.environ['DOCKER_MACHINE_IP'] = 'localhost'
     for section in config_parser.sections():
-        config_map[section] = {k: v for (k, v) in config_parser.items(section)}
-
+        config_map[section] = {}
+        for (k, v) in config_parser.items(section):
+            matches = re.findall('%\(([A-Z_]+)\)', v)
+            if len(matches) > 0:
+                env_var = matches[0]
+                v = re.sub('%\([A-Z_]+\)\w*', os.environ[env_var], v)
+            config_map[section].update({k:v})
+            
     return config_map
+
+if __name__ == "__main__":
+    config_file = 'docker_compose.ini'
+    cfg = get_config(file_path=config_file)

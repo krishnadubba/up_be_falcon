@@ -5,9 +5,10 @@ from confluent_kafka import Producer
 from uggipuggi.models.recipe import ExposeLevel
 
 # load config via env
-env = os.environ.get('UGGIPUGGI_BACKEND_ENV', 'docker_compose')
-config = get_config(env)
-kafka_bootstrap_servers = config['kafka'].get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+#env = os.environ.get('UGGIPUGGI_BACKEND_ENV', 'docker_compose')
+#config = get_config(env)
+#kafka_bootstrap_servers = config['kafka'].get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
 recipe_producer = Producer({'bootstrap.servers': kafka_bootstrap_servers})
 
 def recipe_kafka_collection_post_producer(req, resp, resource):

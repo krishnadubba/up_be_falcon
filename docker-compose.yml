@@ -9,6 +9,7 @@ services:
             - "2181:2181"
         environment:
             # Leaving space between 'colon' and value causes error!
+            ZOOKEEPER_SERVER_ID: 1
             ZOOKEEPER_CLIENT_PORT: 2181
             ZOOKEEPER_TICK_TIME: 2000
 
@@ -19,12 +20,10 @@ services:
             - zookeeper
         ports:
             - "9092:9092"
-        links:
-            - zookeeper
         environment:
             KAFKA_BROKER_ID: 1
+            KAFKA_LOG_DIRS: /var/logs/kafka            
             KAFKA_ZOOKEEPER_CONNECT: localhost:2181
-            KAFKA_LOG_DIRS: /var/logs/kafka
             KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${DOCKER_MACHINE_IP}:9092
         volumes_from:
             - logs_data            
@@ -39,6 +38,7 @@ services:
         environment:            
             MONGO_DATA_DIR: /data/db
             MONGO_LOG_DIR: /dev/null
+            DOCKER_MACHINE_IP: ${DOCKER_MACHINE_IP}
            
     redis:
         image: redis:latest
@@ -54,9 +54,11 @@ services:
         build: .
         network_mode: host
         command: celery worker -l debug -A uggipuggi.celery.celery -n worker.high -Q high
-        links:
+        depends_on:
             - redis
         environment:
+            DOCKER_MACHINE_IP: ${DOCKER_MACHINE_IP}
+            KAFKA_BOOTSTRAP_SERVERS: ${DOCKER_MACHINE_IP}:9092
             CELERY_BROKER_URL: redis://${DOCKER_MACHINE_IP}:6379/0
             CELERY_RESULT_BACKEND: redis://${DOCKER_MACHINE_IP}:6379/0
         volumes_from:
@@ -65,11 +67,14 @@ services:
     kafka_consumer:
         build: .
         network_mode: host
-        links:
-            - zookeeper
+        depends_on:
             - kafka
             - redis
+            - zookeeper
         command: python3 uggipuggi/messaging/subscriber/recipe_kafka_collection_post_subscriber.py
+        environment:
+            DOCKER_MACHINE_IP: ${DOCKER_MACHINE_IP}
+            KAFKA_BOOTSTRAP_SERVERS: ${DOCKER_MACHINE_IP}:9092
         volumes_from:
             - logs_data
 
@@ -81,7 +86,7 @@ services:
             --access-logfile -
             --reload
             "manage:uggipuggi.app"
-        links:
+        depends_on:
             - redis
             - mongo
             - celery
@@ -90,6 +95,8 @@ services:
             - kafka_consumer
         ports:
             - "8000:8000"
+        environment:
+            DOCKER_MACHINE_IP: ${DOCKER_MACHINE_IP}
         volumes_from:
             - logs_data             
 
@@ -120,6 +127,7 @@ services:
         volumes:
             - /var/logs
             - /var/logs/kafka
+            - /var/logs/zookeeper
             - /var/logs/uggipuggi/nginx/
         
         
