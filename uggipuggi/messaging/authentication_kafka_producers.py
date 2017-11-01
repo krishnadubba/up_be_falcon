@@ -3,10 +3,7 @@ import logging
 from conf import get_config
 from confluent_kafka import Producer
 
-# load config via env
-env = os.environ.get('UGGIPUGGI_BACKEND_ENV', 'docker_compose')
-config = get_config(env)
-kafka_bootstrap_servers = config['kafka'].get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
 authentication_kafka_producer = Producer({'bootstrap.servers': kafka_bootstrap_servers})
 
 def kafka_verify_post_producer(req, resp, resource):

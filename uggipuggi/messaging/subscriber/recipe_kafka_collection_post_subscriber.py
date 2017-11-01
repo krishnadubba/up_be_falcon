@@ -18,13 +18,11 @@ from confluent_kafka import Consumer, KafkaError
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(sys.path[0])))
 sys.path.append(ROOT_DIR)
-from conf import get_config
+
 from uggipuggi.tasks.recipe_add_task import user_feed_add_recipe
 
 # load config via env
-env = os.environ.get('UGGIPUGGI_BACKEND_ENV', 'docker_compose')
-config = get_config(env)
-kafka_bootstrap_servers = config['kafka'].get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
 
 logging.debug("=====================================================")
 logging.debug("KAFKA_BOOTSTRAP_SERVERS: %s" %kafka_bootstrap_servers)
