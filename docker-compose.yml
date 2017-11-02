@@ -23,8 +23,9 @@ services:
         environment:
             KAFKA_BROKER_ID: 1
             KAFKA_LOG_DIRS: /var/logs/kafka            
-            KAFKA_ZOOKEEPER_CONNECT: localhost:2181
+            KAFKA_ZOOKEEPER_CONNECT: ${DOCKER_MACHINE_IP}:2181
             KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${DOCKER_MACHINE_IP}:9092
+            KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
         volumes_from:
             - logs_data            
 
