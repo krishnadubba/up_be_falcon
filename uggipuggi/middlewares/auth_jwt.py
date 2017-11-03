@@ -17,7 +17,7 @@ from uggipuggi.controllers.hooks import deserialize, serialize
 from uggipuggi.messaging.authentication_kafka_producers import kafka_verify_post_producer,\
                                 kafka_register_post_producer, kafka_login_post_producer,\
                                 kafka_forgotpassword_post_producer, kafka_passwordchange_post_producer
-
+#from uggipuggi import Test, StaticResource
 
 def random_with_N_digits(n):
     range_start = 10**(n-1)
@@ -102,7 +102,11 @@ ACL_MAP = {
         'post': Role.USER,
     },     
 }
-
+                    
+class Test(object):
+    def on_get(self, req, resp):
+        resp.body = json_util.dumps({"Uggi": "Puggi"})
+        resp.status = falcon.HTTP_200 
       
 @falcon.before(deserialize)
 @falcon.after(serialize)
@@ -502,7 +506,8 @@ class AuthMiddleware(object):
            isinstance(resource, RegisterResource) or \
            isinstance(resource, VerifyPhoneResource) or \
            isinstance(resource, PasswordChangeResource) or \
-           isinstance(resource, ForgotPasswordResource):
+           isinstance(resource, ForgotPasswordResource) or \
+           isinstance(resource, Test):
             logging.debug("DON'T NEED TOKEN")
             return
         

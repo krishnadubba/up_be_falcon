@@ -80,27 +80,28 @@ services:
             - logs_data
 
     nginx:
-        image: nginx:latest
+        build: ./nginx/
+        restart: always
         network_mode: host
         depends_on:            
-            - logs_data
             - backend
-        volumes:
-            # Should not use absolute paths here, but relative paths not working
-            - /home/krishna/work/app_dev/backend/up_be_falcon/conf/nginx_conf:/etc/nginx/conf.d:ro     
         ports:
             - "80:80"
+        volumes:
+            - /www/static
         volumes_from:
-            - logs_data
+            - backend
             
     backend:
         build: .
         network_mode: host
+        restart: always
+        expose:
+            - "8000"
         command: 
-             gunicorn -b 0.0.0.0:8000
-            --access-logfile -
-            --reload
-            "manage:uggipuggi.app"
+            gunicorn -b 0.0.0.0:8000 "manage:uggipuggi.app"
+        volumes:
+            - ./uggipuggi/static:/usr/src/uggipuggi/static
         depends_on:
             - redis
             - mongo
@@ -108,12 +109,8 @@ services:
             - kafka
             - zookeeper
             - kafka_consumer
-        ports:
-            - "8000:8000"
         environment:
             DOCKER_MACHINE_IP: ${DOCKER_MACHINE_IP}
-        volumes_from:
-            - logs_data             
 
     # Create volume container for mongodb
     # docker create -v /var/database/mongodb/data --name mongo_data debian:jessie-slim
@@ -143,8 +140,6 @@ services:
             - /var/logs
             - /var/logs/kafka
             - /var/logs/zookeeper
-            # We don't need this from this container
-            #- /etc/nginx/conf.d/
             - /var/log/nginx/
             - /var/logs/uggipuggi/nginx/
         

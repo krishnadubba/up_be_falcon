@@ -3,12 +3,14 @@
 from __future__ import absolute_import
 #import __builtin__
 import os
+import time
 import builtins
 import falcon
 import logging
 import logging.config as logging_config
 import logging.handlers
-import time
+
+from bson import json_util
 from mongoengine import connection
 from uggipuggi.controllers import recipe, tag, status, rating, user, user_feed, batch, activity,\
                         redis_group, redis_contacts, redis_followers, redis_following
@@ -17,7 +19,7 @@ from uggipuggi.middlewares import auth_jwt
 from uggipuggi.constants import DATETIME_FORMAT, AUTH_SHARED_SECRET_ENV, \
                                 MAX_TOKEN_AGE, TOKEN_EXPIRATION_SECS, VERIFY_PHONE_TOKEN_EXPIRATION_SECS
 
-
+       
 class UggiPuggi(object):
 
     def __init__(self, config):
@@ -57,6 +59,7 @@ class UggiPuggi(object):
 
     def _load_routes(self):
         self.logger.info('Loading routes ...')
+        self.app.add_route('/test', auth_jwt.Test())
         self.app.add_route('/recipes', recipe.Collection())
         self.app.add_route('/recipes/{id}', recipe.Item())
         
