@@ -1,0 +1,81 @@
+version: '3.1'
+networks:
+  proxy: {external: true}
+services:
+  backend:
+    command: gunicorn -b 0.0.0.0:8000 "manage:uggipuggi.app"
+    depends_on: [redis, mongo, celery, kafka, zookeeper, kafka_consumer]
+    deploy:
+      labels: [com.df.notify=true, com.df.distribute=true, com.df.servicePath=/test,
+        com.df.port=8000]
+    image: kr:latest
+    networks: [proxy]
+    ports: ['8000:8000']
+  celery:
+    command: celery worker -l debug -A uggipuggi.celery.celery -n worker.high -Q high
+    depends_on: [redis]
+    environment: {CELERY_BROKER_URL: 'redis://redis:6379/0', CELERY_RESULT_BACKEND: 'redis://redis:6379/0',
+      KAFKA_BOOTSTRAP_SERVERS: 'kafka:9092'}
+    image: kr:latest
+    networks: [proxy]
+    ports: ['8002:8000']
+  kafka:
+    depends_on: [zookeeper]
+    environment: {KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092', KAFKA_BROKER_ID: 1,
+      KAFKA_LOG_DIRS: /var/logs/kafka, KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1,
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'}
+    image: confluentinc/cp-kafka:latest
+    networks: [proxy]
+    ports: ['9092:9092']
+  kafka_consumer:
+    command: python3 uggipuggi/messaging/subscriber/recipe_kafka_collection_post_subscriber.py
+    depends_on: [kafka, redis, zookeeper]
+    environment: {KAFKA_BOOTSTRAP_SERVERS: 'kafka:9092'}
+    image: kr:latest
+    networks: [proxy]
+    ports: ['8001:8000']
+  mongo:
+    environment: {MONGO_DATA_DIR: /data/db, MONGO_LOG_DIR: /dev/null}
+    image: mongo:latest
+    networks: [proxy]
+    ports: ['27017:27017']
+  proxy:
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.role == manager]
+    environment: [LISTENER_ADDRESS=swarm-listener, MODE=swarm, 'CONNECTION_MODE=${CONNECTION_MODE:-http-keep-alive}']
+    image: vfarcic/docker-flow-proxy:${TAG:-latest}
+    networks: [proxy]
+    ports: ['80:80']
+  redis:
+    image: redis:latest
+    networks: [proxy]
+    ports: ['6379:6379']
+  swarm-listener:
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.role == manager]
+    environment: ['DF_NOTIFY_CREATE_SERVICE_URL=http://proxy:8080/v1/docker-flow-proxy/reconfigure',
+      'DF_NOTIFY_REMOVE_SERVICE_URL=http://proxy:8080/v1/docker-flow-proxy/remove']
+    image: vfarcic/docker-flow-swarm-listener
+    networks: [proxy]
+    volumes: ['/var/run/docker.sock:/var/run/docker.sock']
+  visualizer:
+    deploy:
+      labels: [com.df.notify=true, com.df.distribute=true, com.df.servicePath=/visualizer,
+        com.df.port=8080]
+      placement:
+        constraints: [node.role == manager]
+      replicas: 1
+    environment: [CTX_ROOT=/visualizer]
+    image: dockersamples/visualizer:stable
+    networks: [proxy]
+    stop_grace_period: 1m30s
+    volumes: ['/var/run/docker.sock:/var/run/docker.sock']
+  zookeeper:
+    environment: {ZOOKEEPER_CLIENT_PORT: 2181, ZOOKEEPER_SERVER_ID: 1, ZOOKEEPER_TICK_TIME: 2000}
+    image: confluentinc/cp-zookeeper:latest
+    networks: [proxy]
+    ports: ['2181:2181']
