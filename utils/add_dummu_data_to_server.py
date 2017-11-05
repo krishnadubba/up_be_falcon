@@ -23,8 +23,7 @@ from dummy_data import feeds, materials, users, recipes, groups, contacts, follo
 
 food_gcs_base = 'https://storage.googleapis.com/up_food_pics/'
 users_gcs_base = 'https://storage.googleapis.com/up_users_avatars/'
-#rest_api = 'http://0.0.0.0:8000/'
-rest_api = 'http://rhels.com:80/'
+rest_api = 'http://172.17.0.1:80/'
 
 # set up logging to file - see previous section for more details
 logging.basicConfig(level=logging.DEBUG,

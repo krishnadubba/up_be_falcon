@@ -5,7 +5,7 @@ from confluent_kafka import Producer
 from uggipuggi.models.recipe import ExposeLevel
 
 # load config via env
-kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')
    
 def user_kafka_item_get_producer(req, resp, resource):
     parameters = [req.kafka_topic_name, req.params['body'], resp, resource]

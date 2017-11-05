@@ -4,7 +4,7 @@ from conf import get_config
 from confluent_kafka import Producer
 
 # load config via env
-kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')
 following_producer = Producer({'bootstrap.servers': kafka_bootstrap_servers})
 
 def following_kafka_item_get_producer(req, resp, resource):

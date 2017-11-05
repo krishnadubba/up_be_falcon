@@ -4,7 +4,7 @@ from conf import get_config
 from confluent_kafka import Producer
 from uggipuggi.models.recipe import ExposeLevel
 
-kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')
 recipe_producer = Producer({'bootstrap.servers': kafka_bootstrap_servers})
 
 def recipe_kafka_collection_post_producer(req, resp, resource):

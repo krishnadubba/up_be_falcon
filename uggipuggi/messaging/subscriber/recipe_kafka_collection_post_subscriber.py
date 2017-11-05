@@ -22,7 +22,7 @@ sys.path.append(ROOT_DIR)
 from uggipuggi.tasks.recipe_add_task import user_feed_add_recipe
 
 # load config via env
-kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')
 
 logging.debug("=====================================================")
 logging.debug("KAFKA_BOOTSTRAP_SERVERS: %s" %kafka_bootstrap_servers)

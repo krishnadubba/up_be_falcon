@@ -3,7 +3,7 @@ import logging
 from conf import get_config
 from confluent_kafka import Producer
 
-kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')
 activity_kafka_producer = Producer({'bootstrap.servers': kafka_bootstrap_servers})     
 
 def activity_kafka_collection_post_producer(req, resp, resource):

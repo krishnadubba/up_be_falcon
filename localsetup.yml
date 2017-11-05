@@ -6,7 +6,7 @@ services:
     command: gunicorn -b 0.0.0.0:8000 "manage:uggipuggi.app"
     depends_on: [redis, mongo, celery, kafka, zookeeper, kafka_consumer]
     deploy:
-      labels: [com.df.notify=true, com.df.distribute=true, com.df.servicePath=/test,
+      labels: [com.df.notify=true, com.df.distribute=true, com.df.servicePath=/,
         com.df.port=8000]
     image: kr:latest
     networks: [proxy]
