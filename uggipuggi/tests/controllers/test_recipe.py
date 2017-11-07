@@ -9,10 +9,10 @@ import json
 import mock
 
 
-class TestRecipeCollectionGet(testing.TestBase):
+class TestRecipesCollectionGet(testing.TestBase):
 
     def setUp(self):
-        with mock.patch('uggipuggi.JWTAuthMiddleware', return_value=get_mock_auth_middleware()):
+        with mock.patch('uggipuggi.AuthMiddleware', return_value=get_mock_auth_middleware()):
             self.api = get_test_uggipuggi().app
 
         self.resource = recipe.Collection()
@@ -61,10 +61,10 @@ class TestRecipeCollectionGet(testing.TestBase):
             self.assertEqual(body['count'], t['expected']['count'], "{}".format(t['query_string']))
 
 
-class TestRecipeCollectionPost(testing.TestBase):
+class TestRecipesCollectionPost(testing.TestBase):
 
     def setUp(self):
-        with mock.patch('uggipuggi.JWTAuthMiddleware', return_value=get_mock_auth_middleware()):
+        with mock.patch('uggipuggi.AuthMiddleware', return_value=get_mock_auth_middleware()):
             self.api = get_test_uggipuggi().app
 
         self.resource = recipe.Collection()
@@ -115,14 +115,14 @@ class TestRecipeCollectionPost(testing.TestBase):
             self.assertDictContainsSubset(t['expected'], body)
 
 
-class TestRestaurantItemGet(testing.TestBase):
+class TestRecipesItemGet(testing.TestBase):
 
     def setUp(self):
-        with mock.patch('snakebite.JWTAuthMiddleware', return_value=get_mock_auth_middleware()):
-            self.api = get_test_snakebite().app
+        with mock.patch('uggipuggi.AuthMiddleware', return_value=get_mock_auth_middleware()):
+            self.api =get_test_uggipuggi().app
 
         self.resource = restaurant.Item()
-        self.api.add_route('/restaurants/{id}', self.resource)
+        self.api.add_route('/recipes/{id}', self.resource)
         self.srmock = testing.StartResponseMock()
 
         restaurants = [
@@ -141,12 +141,12 @@ class TestRestaurantItemGet(testing.TestBase):
         ]
         self.restaurants = []
         for r in restaurants:
-            rest = Restaurant(**r)
+            rest = Recipe(**r)
             rest.save()
             self.restaurants.append(rest)
 
     def tearDown(self):
-        Restaurant.objects(id__in=[r.id for r in self.restaurants]).delete()
+        Recipe.objects(id__in=[r.id for r in self.restaurants]).delete()
 
     def test_item_on_get(self):
         tests = [
@@ -164,7 +164,7 @@ class TestRestaurantItemGet(testing.TestBase):
         ]
 
         for t in tests:
-            res = self.simulate_request('/restaurants/{}'.format(t['id']),
+            res = self.simulate_request('/recipes/{}'.format(t['id']),
                                         method='GET',
                                         headers={'Content-Type': 'application/json'})
 
@@ -180,14 +180,14 @@ class TestRestaurantItemGet(testing.TestBase):
                 self.assertDictContainsSubset(t['expected']['id'], body)
 
 
-class TestRestaurantItemDelete(testing.TestBase):
+class TestRecipesItemDelete(testing.TestBase):
 
     def setUp(self):
-        with mock.patch('snakebite.JWTAuthMiddleware', return_value=get_mock_auth_middleware()):
-            self.api = get_test_snakebite().app
+        with mock.patch('uggipuggi.AuthMiddleware', return_value=get_mock_auth_middleware()):
+            self.api = get_test_uggipuggi().app
 
         self.resource = restaurant.Item()
-        self.api.add_route('/restaurants/{id}', self.resource)
+        self.api.add_route('/recipes/{id}', self.resource)
         self.srmock = testing.StartResponseMock()
 
         restaurants = [
@@ -206,12 +206,12 @@ class TestRestaurantItemDelete(testing.TestBase):
         ]
         self.restaurants = []
         for r in restaurants:
-            rest = Restaurant(**r)
+            rest = Recipe(**r)
             rest.save()
             self.restaurants.append(rest)
 
     def tearDown(self):
-        Restaurant.objects(id__in=[r.id for r in self.restaurants]).delete()
+        Recipe.objects(id__in=[r.id for r in self.restaurants]).delete()
 
     def test_item_on_get(self):
         tests = [
@@ -239,7 +239,7 @@ class TestRestaurantItemDelete(testing.TestBase):
         )
 
         for t in tests:
-            res = self.simulate_request('/restaurants/{}'.format(t['id']),
+            res = self.simulate_request('/recipes/{}'.format(t['id']),
                                         method='DELETE',
                                         headers={'Content-Type': 'application/json'})
 
@@ -255,17 +255,17 @@ class TestRestaurantItemDelete(testing.TestBase):
                 self.assertIsNone(body)
 
 
-class TestRestaurantItemPut(testing.TestBase):
+class TestRecipesItemPut(testing.TestBase):
 
     def setUp(self):
-        with mock.patch('snakebite.JWTAuthMiddleware', return_value=get_mock_auth_middleware()):
-            self.api = get_test_snakebite().app
+        with mock.patch('uggipuggi.AuthMiddleware', return_value=get_mock_auth_middleware()):
+            self.api = get_test_uggipuggi().app
 
         self.resource = restaurant.Item()
-        self.api.add_route('/restaurants/{id}', self.resource)
+        self.api.add_route('/recipes/{id}', self.resource)
         self.srmock = testing.StartResponseMock()
         self.restaurant = None
-        rst = Restaurant(
+        rst = Recipe(
             name='a',
             description='desc',
             email='a@b.com',
@@ -276,10 +276,10 @@ class TestRestaurantItemPut(testing.TestBase):
         self.restaurant = rst.save()
 
     def tearDown(self):
-        Restaurant.objects.delete()
+        Recipe.objects.delete()
 
     def _get_restaurant_json(self):
-        res = self.simulate_request('/restaurants/{}'.format(self.restaurant.id),
+        res = self.simulate_request('/recipes/{}'.format(self.restaurant.id),
                                     method="GET",
                                     headers={'Content-Type': 'application/json'})
         return res[0]
@@ -318,7 +318,7 @@ class TestRestaurantItemPut(testing.TestBase):
         ]
 
         for t in tests:
-            res = self.simulate_request('/restaurants/{}'.format(t['id']),
+            res = self.simulate_request('/recipes/{}'.format(t['id']),
                                         body=t['data'],
                                         method='PUT',
                                         headers={'Content-Type': 'application/json'})

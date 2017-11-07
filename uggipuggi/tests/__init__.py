@@ -4,13 +4,13 @@
 
 from __future__ import absolute_import
 from conf import get_config
-from uggipuggi import create_uggipuggi
+from uggipuggi import UggiPuggi
 import mock
 
 
 def get_test_uggipuggi():
     config = get_config('testing')
-    return create_uggipuggi(**config)
+    return UggiPuggi(config)
 
 
 def get_mock_auth_middleware():

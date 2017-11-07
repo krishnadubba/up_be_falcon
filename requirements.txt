@@ -14,3 +14,4 @@ redis==2.10.6
 hiredis==0.2.0
 celery==4.1.0
 pyfcm==1.4.2
+mock==2.0.0
