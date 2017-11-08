@@ -1,31 +1,171 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-import jwt
+import re
 import json
 import os, sys
-import mock
-import logging
 import unittest
-from datetime import datetime
+import requests
+import subprocess
 from falcon import testing
-from passlib.hash import bcrypt as crypt
 
 sys.path.append(os.path.dirname(os.path.dirname(sys.path[0])))
 
 from uggipuggi.tests import get_test_uggipuggi
 from uggipuggi.tests.utils.dummy_data import users_gcs_base, users as dummy_users
 from uggipuggi.tests.utils.dummy_data_utils import get_dummy_email, get_dummy_password,\
-                                                  get_dummy_phone, get_dummy_display_name     
-from uggipuggi import constants
-from uggipuggi.models.user import User, Role
-from uggipuggi.middlewares import auth_jwt
+                                                   get_dummy_phone, get_dummy_display_name     
 
+
+class TestUggiPuggiAuthMiddleware(testing.TestBase):
+    def setUp(self):
+        try:
+            uggipuggi_ip = os.environ['UGGIPUGGI_BACKEND_IP']
+        except KeyError:
+            ip_config = subprocess.run(["ifconfig", "docker_gwbridge"], stdout=subprocess.PIPE)
+            ip_config = ip_config.stdout.decode('utf-8').split('\n')[1]
+            uggipuggi_ip = re.findall(r".+ inet addr:([0-9.]+) .+", ip_config)[0]                        
+            
+        self.rest_api = 'http://%s/'%uggipuggi_ip
+        self.verify_token = None
+        self.login_token  = None
+        self.test_user    = None
+        count = 0
+        
+        user = dummy_users[0]
+        current_author_id = user['id']
+        count = 1
+        self.password = get_dummy_password(count)
+        self.payload = {
+                        "email": get_dummy_email(count),
+                        "password": self.password,
+                        "phone": get_dummy_phone(count),
+                        "country_code": "IN",
+                        "display_name": user['name'],
+                        "gender": user['sex'],
+                        "display_pic": users_gcs_base + user['avatar'].split('/')[-1],
+                        }        
+
+    def tearDown(self):
+        header = {'Content-Type':'application/json'}
+        header.update({'auth_token':self.login_token})
+        res = requests.delete(self.rest_api + '/users/%s'%self.test_user,
+                              headers=header)
+        if res.status_code == 200:
+            print ("Successful test tearDown")
+        else:
+            print ("Test tearDown failed!!!")
+        
+    def test_a_jwt_auth_middleware(self):
+        print ('Starting register user tests ...')
+        tests = [
+                    {
+                        'name': 'register_success',
+                        'desc': 'success',
+                        'payload': self.payload,
+                        'expected': {'status': 200}
+                    },
+                    {
+                        'name': 'register_failure_user_exists',
+                        'desc': 'User already exists',
+                        'payload': self.payload,
+                        'expected': {'status': 401}
+                    },
+                ]
+        
+        header = {'Content-Type':'application/json'}
+        for test in tests:
+            with self.subTest(name=test['name']):
+                res = requests.post(self.rest_api + '/register', 
+                                  data=json.dumps(test['payload']), 
+                                  headers=header)
+                             
+                self.assertEqual(test['expected']['status'], res.status_code)
+                if test['expected']['status'] == 200:
+                    self.assertTrue('auth_token' in json.loads(res.content.decode('utf-8')))
+                    if 'auth_token' in json.loads(res.content.decode('utf-8')):
+                        self.verify_token = json.loads(res.content.decode('utf-8'))['auth_token']
+                        print ("setting verify token")
+                        
+        # Verify Phone
+        print ('Starting verify phone tests ...')
+        tests = [
+                    {
+                        'name': 'verify_phone_success',
+                        'desc': 'success',
+                        'payload': {'code':'9999'},
+                        'auth_token': self.verify_token,
+                        'expected': {'status': 202}
+                    },
+                    {
+                        'name': 'verify_phone_failure_wrong_otp',
+                        'desc': 'OTP code failure',
+                        'payload': {'code':'2222'},
+                        'auth_token': self.verify_token,
+                        'expected': {'status': 406}
+                    },
+                    {
+                        'name': 'verify_phone_failure_wrong_auth_token',
+                        'desc': 'Wrong auth token',
+                        'payload': {'code':'9999'},
+                        'auth_token': self.verify_token + '0',
+                        'expected': {'status': 401}
+                    },                        
+                ]
+        
+        header = {'Content-Type':'application/json'}            
+        for test in tests:
+            with self.subTest(name=test['name']):
+                header.update({'auth_token':test['auth_token']})
+                res = requests.post(self.rest_api + '/verify', 
+                                  data=json.dumps(test['payload']), 
+                                  headers=header)
+                             
+                self.assertEqual(test['expected']['status'], res.status_code)                
+
+        # Login
+        print ('Starting login user tests ...')
+        tests = [
+                    {
+                        'name': 'login_success',
+                        'desc': 'success',
+                        'payload': {'email':self.payload["email"], "password":self.payload["password"]},
+                        'expected': {'status': 202}
+                    },
+                    {
+                        'name': 'login_failure_wrong_password',
+                        'desc': 'Password did not match',
+                        'payload': {'email':self.payload["email"], "password":self.payload["password"]+'0'},
+                        'expected': {'status': 403}
+                    },
+                    {
+                        'name': 'login_failure_wrong_useremail',
+                        'desc': 'User does not exist',
+                        'payload': {'email':self.payload["email"]+'0', "password":self.payload["password"]},
+                        'expected': {'status': 401}
+                    },                        
+                ]
+        
+        header = {'Content-Type':'application/json'}            
+        for test in tests:
+            with self.subTest(name=test['name']):
+                res = requests.post(self.rest_api + '/login', 
+                                  data=json.dumps(test['payload']), 
+                                  headers=header)
+                             
+                self.assertEqual(test['expected']['status'], res.status_code)
+                if test['expected']['status'] == 202:
+                    self.assertTrue('auth_token' in json.loads(res.content.decode('utf-8')))
+                    self.assertTrue('user_identifier' in json.loads(res.content.decode('utf-8')))
+                    if 'auth_token' in json.loads(res.content.decode('utf-8')):
+                        self.login_token = json.loads(res.content.decode('utf-8'))['auth_token']
+                        print ("setting login token")
+                    if 'user_identifier' in json.loads(res.content.decode('utf-8')):
+                        self.test_user = json.loads(res.content.decode('utf-8'))['user_identifier']
 
 class TestMain(testing.TestBase):
 
     def setUp(self):
-        logging.disable(logging.INFO)
         test_uggipuggi = get_test_uggipuggi()
         self.api = test_uggipuggi.app
         self.config = test_uggipuggi.config
@@ -48,242 +188,6 @@ class TestMain(testing.TestBase):
                 self.assertIn(option, self.config[section])
 
 
-#class TestCorsMiddlewares(testing.TestBase):
-
-    #def test_cors(self):
-
-        #def _prepare():
-            #mock_cors_dict = {
-                #'allowed_origins': 'http://benri.com:5000,http://google.com',
-                #'allowed_headers': 'Content-Type',
-                #'allowed_methods': 'GET,PUT,POST,DELETE,OPTIONS'
-            #}
-
-            #uggipuggi = get_test_uggipuggi()
-            #uggipuggi.config = {'cors': mock_cors_dict}
-            #return uggipuggi.cors_middleware()
-
-        #cors_middleware = _prepare()
-        #dummy = mock.Mock()
-        #req = mock.Mock()
-
-        #tests = [
-            #{'origin': 'http://benri.com:5000', 'allowed': True},
-            #{'origin': 'http://benri.com:6000', 'allowed': False},
-            #{'origin': 'http://google.com', 'allowed': True},
-            #{'origin': 'http://mylittlepony.com', 'allowed': False},
-        #]
-
-        #for t in tests:
-            #req.get_header.return_value = t['origin']
-            #res = mock.Mock()
-            #res.headers = {}
-
-            #def set_mock_header(dct):
-                #res.headers.update(dct)
-
-            #res.set_headers = set_mock_header
-            #cors_middleware(req, res, dummy)
-
-            #if t['allowed']:
-                #self.assertIn('Access-Control-Allow-Origin', res.headers)
-            #else:
-                #self.assertNotIn('Access-Control-Allow-Origin', res.headers)
-
-
-class TestAuthMiddleware(testing.TestBase):
-    def setUp(self):
-        self.api = get_test_uggipuggi().app
-        self.api.add_route('/login', auth_jwt.LoginResource)
-        self.srmock = testing.StartResponseMock()
-        
-        user = dummy_users[0]
-        current_author_id = user['id']
-        count = 1
-        self.password = get_dummy_password(count)
-        self.payload = {"email": get_dummy_email(count),
-                   "password": crypt.encrypt(self.password),
-                   "phone": get_dummy_phone(count),
-                   "country_code": "IN",
-                   "display_name": user['name'],
-                   "gender": user['sex'],
-                   "display_pic": users_gcs_base + user['avatar'].split('/')[-1],
-                   "pw_last_changed": datetime.utcnow(),
-                   "phone_verified": True,
-                   "account_active": True                   
-                  }        
-
-        self.mongo_user = User(**self.payload)
-        self.mongo_user.save()
-
-    def tearDown(self):
-        User.objects.delete()
-
-    def test_jwt_auth_middleware_login(self):
-        tests = [
-            {
-                'desc': 'success',
-                'payload': {'email': self.payload["email"], "password":self.password},
-                'expected': {'status': 202}
-            },
-            {
-                  'desc': 'wrong email',
-                  'payload': {'email': 'dummyemail@gmail.com', "password":self.password},
-                  'expected': {'status': 401}
-            },
-            {
-                  'desc': 'wrong password',
-                  'payload': {'email': self.payload["email"], "password": 'dummypassword'},
-                  'expected': {'status': 403}
-            },
-        ]
-        for test in tests:
-            payload = test.get('payload')
-           
-            res = self.simulate_request('/login',
-                                        method='POST',
-                                        body=json.dumps(payload),
-                                        headers={'Content-Type':'application/json'})
-
-            body = json.loads(res[0].decode('utf-8'))
-            self.assertTrue(isinstance(body, dict))
-
-            if test['expected']['status'] != 202:
-                self.assertEqual(body['title'], "'Login Failed'")
-            else:
-                print (body)
-                self.assertEqual(body, {'ok': True})
-        
-    #def test_jwt_auth_middleware(self):
-        #tests = [
-            #{
-                #'desc': 'success',
-                #'payload': {'sub': str(self.users[0].id), 'iss': constants.AUTH_SERVER_NAME, 'acl': 'admin'},
-                #'secret': os.getenv(constants.AUTH_SHARED_SECRET_ENV),
-                #'expected': {'status': 200}
-            #},
-            #{
-                #'desc': 'missing jwt params',
-                #'expected': {'status': 401}
-            #},
-            #{
-                #'desc': 'wrong secret',
-                #'payload': {'sub': str(self.users[0].id), 'iss': constants.AUTH_SERVER_NAME, 'acl': 'admin'},
-                #'secret': 'hush hush',
-                #'expected': {'status': 401}
-            #},
-            #{
-                #'desc': 'wrong iss',
-                #'payload': {'sub': str(self.users[0].id), 'iss': 'butler', 'acl': 'admin'},
-                #'secret': os.getenv(constants.AUTH_SHARED_SECRET_ENV),
-                #'expected': {'status': 401}
-            #},
-            #{
-                #'desc': 'missing values',
-                #'payload': {'iss': 'butler'},
-                #'secret': os.getenv(constants.AUTH_SHARED_SECRET_ENV),
-                #'expected': {'status': 401}
-            #},
-            #{
-                #'desc': 'invalid user id',
-                #'payload': {'sub': 'whosyourdaddy', 'iss': constants.AUTH_SERVER_NAME, 'acl': 'admin'},
-                #'secret': os.getenv(constants.AUTH_SHARED_SECRET_ENV),
-                #'expected': {'status': 401}
-            #}
-        #]
-
-        #for test in tests:
-            #payload = test.get('payload')
-            #token = jwt.encode(payload, test['secret']) if payload else None
-            #qs = 'token={}'.format(token) if token else None
-
-            #res = self.simulate_request('/status',
-                                        #query_string=qs,
-                                        #method='GET',
-                                        #headers={'accept': 'application/json'})
-
-            #body = json.loads(res[0])
-            #self.assertTrue(isinstance(body, dict))
-
-            #if test['expected']['status'] != 200:
-                #self.assertEqual(body['title'], "Authorization Failed")
-            #else:
-                #self.assertEqual(body, {'ok': True})
-
-
-#class TestAuthMiddleware_old(testing.TestBase):
-    #def setUp(self):
-        #self.api = get_test_uggipuggi().app
-        #self.resource = status.Status()
-        #self.api.add_route('/status', self.resource)
-        #self.srmock = testing.StartResponseMock()
-
-        #users = [
-            #User(first_name='Clarke', last_name='Kent', display_name='Clarke Kent', email='superman@gmail.com', role=Role.USER)
-        #]
-        #self.users = []
-        #for user in users:
-            #user.save()
-            #self.users.append(user)
-
-    #def tearDown(self):
-        #User.objects.delete()
-
-    #def test_jwt_auth_middleware(self):
-        #tests = [
-            #{
-                #'desc': 'success',
-                #'payload': {'sub': str(self.users[0].id), 'iss': constants.AUTH_SERVER_NAME, 'acl': 'admin'},
-                #'secret': os.getenv(constants.AUTH_SHARED_SECRET_ENV),
-                #'expected': {'status': 200}
-            #},
-            #{
-                #'desc': 'missing jwt params',
-                #'expected': {'status': 401}
-            #},
-            #{
-                #'desc': 'wrong secret',
-                #'payload': {'sub': str(self.users[0].id), 'iss': constants.AUTH_SERVER_NAME, 'acl': 'admin'},
-                #'secret': 'hush hush',
-                #'expected': {'status': 401}
-            #},
-            #{
-                #'desc': 'wrong iss',
-                #'payload': {'sub': str(self.users[0].id), 'iss': 'butler', 'acl': 'admin'},
-                #'secret': os.getenv(constants.AUTH_SHARED_SECRET_ENV),
-                #'expected': {'status': 401}
-            #},
-            #{
-                #'desc': 'missing values',
-                #'payload': {'iss': 'butler'},
-                #'secret': os.getenv(constants.AUTH_SHARED_SECRET_ENV),
-                #'expected': {'status': 401}
-            #},
-            #{
-                #'desc': 'invalid user id',
-                #'payload': {'sub': 'whosyourdaddy', 'iss': constants.AUTH_SERVER_NAME, 'acl': 'admin'},
-                #'secret': os.getenv(constants.AUTH_SHARED_SECRET_ENV),
-                #'expected': {'status': 401}
-            #}
-        #]
-
-        #for test in tests:
-            #payload = test.get('payload')
-            #token = jwt.encode(payload, test['secret']) if payload else None
-            #qs = 'token={}'.format(token) if token else None
-
-            #res = self.simulate_request('/status',
-                                        #query_string=qs,
-                                        #method='GET',
-                                        #headers={'accept': 'application/json'})
-
-            #body = json.loads(res[0])
-            #self.assertTrue(isinstance(body, dict))
-
-            #if test['expected']['status'] != 200:
-                #self.assertEqual(body['title'], "Authorization Failed")
-            #else:
-                #self.assertEqual(body, {'ok': True})
 
 if __name__ == '__main__':
     unittest.main()    

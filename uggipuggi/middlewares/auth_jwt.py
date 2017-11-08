@@ -42,7 +42,7 @@ ACL_MAP = {
     '/recipes/+': {
         'get' :   Role.USER,
         'put' :   Role.USER,
-        'delete': Role.OWNER
+        'delete': Role.USER
     },
     '/activity': {
         'get' : Role.USER,
@@ -51,16 +51,16 @@ ACL_MAP = {
     '/activity/+': {
         'get':    Role.USER,
         'put':    Role.USER,
-        'delete': Role.OWNER
+        'delete': Role.USER
     },    
     '/users': {
-        'get':  Role.EMPLOYEE,
-        'post': Role.EMPLOYEE,
+        'get':  Role.USER,
+        'post': Role.USER,
     },
     '/users/+': {
         'get':    Role.USER,
         'put':    Role.USER,
-        'delete': Role.ADMIN
+        'delete': Role.USER
     },
     '/feed/+': {
         'get':    Role.USER,
@@ -239,6 +239,7 @@ class RegisterResource(object):
             if SERVER_SECURE_MODE == 'DEBUG':
                 logging.warn("SERVER RUNNING in DEBUG Mode")
                 otpass = repr(9999)
+                response = [202]
             else:    
                 # Plivo does not accept 0044, only accepts +44
                 otpass = random_with_N_digits(4)
@@ -252,9 +253,7 @@ class RegisterResource(object):
                 response = sms.send_message(params)
                 logging.debug(response)                
                 
-            logging.debug(otpass)            
-            
-            response = [202]            
+            logging.debug(otpass)
             if response[0] == 202:
                 # See if there is a user with that phone in verify_user DB
                 verify_user = self.get_user('phone', phone, verify=True)
@@ -501,13 +500,6 @@ class AuthMiddleware(object):
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
 
     def process_resource(self, req, resp, resource, params): # pylint: disable=unused-argument
-        logging.debug("Processing request in AuthMiddleware: %s" %repr(type(resource)))
-        logging.debug("Processing request in AuthMiddleware: %s" %repr(resource))
-        logging.debug("Processing request in AuthMiddleware: %s" %(resource.__class__.__name__))
-        logging.debug(isinstance(resource, LoginResource))
-        logging.debug(req.path)
-        logging.debug(req.method)
-        logging.debug(req.url)
         if isinstance(resource, LoginResource) or \
            isinstance(resource, RegisterResource) or \
            isinstance(resource, VerifyPhoneResource) or \

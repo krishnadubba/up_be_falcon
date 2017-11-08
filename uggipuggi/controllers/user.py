@@ -53,7 +53,6 @@ class Item(object):
 
     # TODO: handle PUT requests
     @falcon.before(deserialize)
-    @falcon.after(serialize)
     def on_post(self, req, resp, id):
         user = self._try_get_user(id)
         data = req.params.get('body')
@@ -65,10 +64,26 @@ class Item(object):
             
         logger.debug("Updated user data in database")
         
+    @falcon.before(deserialize)        
+    def on_delete(self, req, resp, id):
+        logger.debug("Checking if user is authorized to request profile delete ...")
+        request_user_id = req.user_id        
+        request_user = User.objects.get(id=request_user_id)
+        if not request_user.role_satisfy(Role.ADMIN):
+            # ensure requested user profile delete is request from user him/herself
+            if request_user_id != id:
+                raise HTTPUnauthorized(title='Unauthorized Request',
+                                       description='Not allowed to delete user resource: {}'.format(id))
+        logger.debug("Deleting user in database ...")           
+        user = self._try_get_user(id)
+        user.delete()
+        logger.debug("Deleted user in database")
+        resp.status = falcon.HTTP_OK
+        
     @falcon.before(deserialize)    
     @falcon.after(serialize)
     def on_get(self, req, resp, id):
-        request_user_id = req.params[constants.AUTH_HEADER_USER_ID]
+        request_user_id = req.user_id        
         request_user = User.objects.get(id=request_user_id)
         if not request_user.role_satisfy(Role.EMPLOYEE):
             # ensure requested user profile is request user him/herself
