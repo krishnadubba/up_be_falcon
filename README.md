@@ -8,8 +8,7 @@ To get started, please follow instructions below on how to setup your environmen
 
 > #### Prerequisites for Local Environment
 > Uggipuggi backend is using microservices architecture and all the services are containerized using Docker and run
-> using Docker Swarm
-> Install latest version of Docker, Linux system is preferred and tested
+> using Docker Swarm. Install latest version of Docker, Linux system is preferred and tested
 
 Once Docker is installed, just run the localsetup.sh to run the system (might take a couple of minutes to start). 
 The script at the end prints the web address your backend is listening (Gateway)and also intructions to see the 
