@@ -23,8 +23,8 @@ Gateway: 172.19.0.1 Subnet: 172.19.0.0/16
 ======================================================
 ```
 
-The script also automatically opens two browser tabs. The two browser tabs opened are 172.19.0.0/test and 
-172.19.0.0/visualizer/. The first tab just prints "{"Uggi": "Puggi"}" showing that the backend is responding 
+The script also automatically opens two browser tabs. The two browser tabs opened are 172.19.0.1/test and 
+172.19.0.1/visualizer/. The first tab just prints "{"Uggi": "Puggi"}" showing that the backend is responding 
 to HTTP requests. The second tab should show the following where it shows the status of different services 
 (the color of the boxes does not matter, the green dot shows the service is healthy).
 
@@ -39,6 +39,8 @@ $ curl -X  POST -H "Content-Type:application/json" -d '[PAYLOAD HERE]' http://ba
 ```
 
 If you wish to see the response in prettyprint, you can pipe the response with Python's json module: `| python -m json.tool`
+
+See the wiki for more HTTP request examples.
 
 Of course, you may prefer to use POSTMAN.io (easy GUI) to make these POST request. That is fine too.
 Do note that Uggipuggi only accepts json [content-type](http://en.wikipedia.org/wiki/Internet_media_type) for POST requests.
