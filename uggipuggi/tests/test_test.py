@@ -4,9 +4,9 @@ from __future__ import absolute_import
 from falcon import testing
 import mock
 import logging
-import sys
+import os, sys
 import unittest
-sys.path.append('/home/dubba/work/webdev/backends/up_be_falcon')
+sys.path.append(os.path.dirname(os.path.dirname(sys.path[0])))
 
 from uggipuggi.tests import get_test_uggipuggi
 from uggipuggi import constants

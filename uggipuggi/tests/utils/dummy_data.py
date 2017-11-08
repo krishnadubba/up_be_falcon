@@ -1,3 +1,6 @@
+food_gcs_base = 'https://storage.googleapis.com/up_food_pics/'
+users_gcs_base = 'https://storage.googleapis.com/up_users_avatars/'
+
 users = [    
         {
             'id': 'U0001',

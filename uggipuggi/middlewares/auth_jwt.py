@@ -502,12 +502,19 @@ class AuthMiddleware(object):
 
     def process_resource(self, req, resp, resource, params): # pylint: disable=unused-argument
         logging.debug("Processing request in AuthMiddleware: %s" %repr(type(resource)))
+        logging.debug("Processing request in AuthMiddleware: %s" %repr(resource))
+        logging.debug("Processing request in AuthMiddleware: %s" %(resource.__class__.__name__))
+        logging.debug(isinstance(resource, LoginResource))
+        logging.debug(req.path)
+        logging.debug(req.method)
+        logging.debug(req.url)
         if isinstance(resource, LoginResource) or \
            isinstance(resource, RegisterResource) or \
            isinstance(resource, VerifyPhoneResource) or \
            isinstance(resource, PasswordChangeResource) or \
            isinstance(resource, ForgotPasswordResource) or \
-           isinstance(resource, Test):
+           isinstance(resource, Test) or \
+           "http://falconframework.org" in req.url:
             logging.debug("DON'T NEED TOKEN")
             return
         
