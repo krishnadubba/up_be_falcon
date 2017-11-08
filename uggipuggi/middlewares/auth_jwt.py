@@ -398,7 +398,7 @@ class ForgotPasswordResource(object):
         logging.debug("getting user")
         logging.debug(user)
         if user:
-            random_password = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(10))
+            random_password = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(5))
             user.update(password=crypt.encrypt(random_password))
             user.update(pw_last_changed=datetime.utcnow())
             requests.post(

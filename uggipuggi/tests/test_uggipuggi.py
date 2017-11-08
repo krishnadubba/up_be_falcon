@@ -12,7 +12,8 @@ from falcon import testing
 sys.path.append(os.path.dirname(os.path.dirname(sys.path[0])))
 
 from uggipuggi.tests import get_test_uggipuggi
-from uggipuggi.tests.utils.dummy_data import users_gcs_base, users as dummy_users
+from uggipuggi.tests.utils.dummy_data import users_gcs_base, users as dummy_users,\
+                                             groups as dummy_groups 
 from uggipuggi.tests.utils.dummy_data_utils import get_dummy_email, get_dummy_password,\
                                                    get_dummy_phone, get_dummy_display_name     
 
@@ -34,7 +35,6 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
         
         user = dummy_users[0]
         current_author_id = user['id']
-        count = 1
         self.password = get_dummy_password(count)
         self.payload = {
                         "email": get_dummy_email(count),
@@ -163,6 +163,85 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
                     if 'user_identifier' in json.loads(res.content.decode('utf-8')):
                         self.test_user = json.loads(res.content.decode('utf-8'))['user_identifier']
 
+class TestUggiPuggiSocialNetwork(testing.TestBase):
+    def setUp(self):
+        try:
+            uggipuggi_ip = os.environ['UGGIPUGGI_BACKEND_IP']
+        except KeyError:
+            ip_config = subprocess.run(["ifconfig", "docker_gwbridge"], stdout=subprocess.PIPE)
+            ip_config = ip_config.stdout.decode('utf-8').split('\n')[1]
+            uggipuggi_ip = re.findall(r".+ inet addr:([0-9.]+) .+", ip_config)[0]                        
+            
+        self.rest_api = 'http://%s/'%uggipuggi_ip
+        
+    def test_a_groups(self):
+        count = 0
+        users_map = {}
+        for user in dummy_users:
+            current_author_id = user['id']
+            payload = {"email": get_dummy_email(count),
+                       "password": get_dummy_password(count),
+                       "phone": get_dummy_phone(count),
+                       "country_code": "IN",
+                       "display_name": user['name'],
+                       "gender": user['sex'],
+                       'display_pic': users_gcs_base + user['avatar'].split('/')[-1]
+                      }
+            
+            users_map[current_author_id] = payload
+            r = requests.post(self.rest_api + '/register', data=json.dumps(payload), 
+                              headers=header)
+            verify_token = json.loads(r.content.decode('utf-8'))['auth_token']
+            
+            header.update({'auth_token':verify_token})
+            r = requests.post(self.rest_api + '/verify', data=json.dumps({'code':'9999'}), 
+                                  headers=header)
+            
+            header = {'Content-Type':'application/json'}
+            r = requests.post(self.rest_api + '/login', data=json.dumps({'email':users_map[current_author_id]["email"], 
+                                                                   "password":users_map[current_author_id]["password"]}), 
+                              headers=header)
+            
+            login_token   = json.loads(r.content.decode('utf-8'))['auth_token']
+            user_mongo_id = json.loads(r.content.decode('utf-8'))['user_identifier']
+            users_map[current_author_id].update({'login_token':login_token})
+            users_map[current_author_id].update({'user_id':user_mongo_id})
+            
+            count += 1
+            
+        for group in dummy_groups:
+            with self.subTest(name=group['group_name']):
+                header = {'Content-Type':'application/json'}    
+                group_payload = {}
+                group_payload['group_name'] = group['group_name']
+                group_payload['group_pic'] = group['group_pic']
+                login_token = users_map[group['admin']]['login_token']
+                header.update({'auth_token':login_token})
+                
+                res = requests.post(self.rest_api + '/groups', data=json.dumps(group_payload), 
+                                  headers=header)
+            
+                self.assertEqual(201, res.status_code)
+                self.assertTrue('group_id' in json.loads(res.content.decode('utf-8')))
+                
+                group_id = json.loads(res.content.decode('utf-8'))['group_id']
+                
+                # First memeber is the admin
+                member_payload = {}
+                member_payload['member_id'] = []
+                for member in group['members'][1:]:    
+                    member_payload['member_id'].append(users_map[member]['user_id'])
+                    
+                res = requests.post(self.rest_api + '/groups/%s'%group_id, data=json.dumps(member_payload), 
+                                    headers=header)
+                self.assertEqual(200, res.status_code)
+                
+                res = requests.get(self.rest_api + '/groups/%s?members=True'%group_id, headers=header)
+                self.assertEqual(302, res.status_code)
+                self.assertTrue('members' in json.loads(res.content.decode('utf-8')))
+                self.assertEqual(len(group['members']), len(json.loads(res.content.decode('utf-8'))['members']))
+                
+            
 class TestMain(testing.TestBase):
 
     def setUp(self):
