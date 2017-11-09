@@ -234,7 +234,9 @@ class RegisterResource(object):
                 new_user.update(gender=req.params['body']['gender'])
             if 'display_pic' in req.params['body']:
                 new_user.update(display_pic=req.params['body']['display_pic'])
-            
+            if 'public_profile' in req.params['body']:
+                new_user.update(public_profile=req.params['body']['public_profile'])                
+                
             logging.debug("Sending SMS to new user ...")
             if SERVER_SECURE_MODE == 'DEBUG':
                 logging.warn("SERVER RUNNING in DEBUG Mode")

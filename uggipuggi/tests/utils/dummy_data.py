@@ -40,7 +40,8 @@ users = [
             'name': 'Duane Lane',
             'sex': 'female',
             'rank': 'popular',
-            'repicies': 6120
+            'repicies': 6120,
+            'public_profile': True
             },
         {
             'id': 'U0006',
@@ -80,7 +81,8 @@ users = [
             'name': 'Demi',
             'sex': 'female',
             'rank': 'other',
-            'repicies': 7120
+            'repicies': 7120,
+            'public_profile': True
             },
         {
             'id': 'U0011',

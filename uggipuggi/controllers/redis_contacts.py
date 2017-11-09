@@ -7,7 +7,6 @@ import logging
 from bson import json_util, ObjectId
 from uggipuggi.constants import CONTACTS
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
-from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.contacts_kafka_producers import contacts_kafka_item_post_producer,\
                                                          contacts_kafka_item_delete_producer
 
@@ -48,7 +47,8 @@ class Item(object):
                 resp.status = falcon.HTTP_OK
             except KeyError:
                 logger.warn("Please provide contact_user_id to delete from users contact")
-                resp.status = falcon.HTTPMissingParam                
+                resp.status = falcon.HTTP_BAD_REQUEST
+                raise falcon.HTTPMissingParam('contact_user_id')
 
     @falcon.before(deserialize)
     @falcon.after(contacts_kafka_item_post_producer)
@@ -59,7 +59,7 @@ class Item(object):
             req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
             logger.debug("Adding member to user contacts in database ... %s" %repr(id))
             contacts_id_name = CONTACTS + id
-            if 'contact_user_id' in req.params['body']:
+            if 'contact_user_id' in req.params['body'] and len(req.params['body']['contact_user_id']) > 0:
                 # req.params['body']['contact_user_id'] is a LIST of contacts
                 req.redis_conn.sadd(contacts_id_name, *req.params['body']['contact_user_id'])
                 logger.debug("Added member to user contacts in database: %s"  %repr(req.params['body']['contact_user_id']))
@@ -67,5 +67,5 @@ class Item(object):
                 resp.body = req.params['body']['contact_user_id']
             else:
                 logger.warn("Please provide contact_user_id to add to users contacts")
-                resp.status = falcon.HTTPMissingParam
-                
+                resp.status = falcon.HTTP_BAD_REQUEST
+                raise falcon.HTTPMissingParam('contact_user_id')

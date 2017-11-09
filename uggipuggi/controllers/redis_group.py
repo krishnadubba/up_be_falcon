@@ -7,7 +7,6 @@ import logging
 from bson import json_util, ObjectId
 from uggipuggi.constants import GROUP, GROUP_MEMBERS, USER_GROUPS
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
-from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.group_kafka_producers import group_kafka_item_put_producer, group_kafka_item_post_producer,\
        group_kafka_item_delete_producer, group_kafka_collection_post_producer, group_kafka_collection_delete_producer 
 

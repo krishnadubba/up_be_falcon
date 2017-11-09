@@ -8,7 +8,6 @@ from bson import json_util, ObjectId
 from uggipuggi.constants import FOLLOWERS, FOLLOWING
 from uggipuggi.services.user import get_user  
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
-from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.following_kafka_producers import following_kafka_item_post_producer,\
                                                           following_kafka_item_delete_producer
 
@@ -56,7 +55,8 @@ class Item(object):
                 resp.status = falcon.HTTP_OK
             else:
                 logger.warn("Please provide following_user_id to delete from users following list")
-                resp.status = falcon.HTTPMissingParam                
+                resp.status = falcon.HTTP_BAD_REQUEST
+                raise falcon.HTTPMissingParam('following_user_id')
 
     @falcon.before(deserialize)
     @falcon.after(following_kafka_item_post_producer)
@@ -71,7 +71,7 @@ class Item(object):
             # If user profile is not public, no followers
             if not follower_user.public_profile:
                 logger.warn("Cannot follow this user as the profile is not public")
-                resp.status = falcon.HTTP_UNAUTHORIZED
+                resp.status = falcon.HTTP_FORBIDDEN
                 description = ('Cannot follow this user as the profile is not public')
                 raise falcon.HTTPForbidden('Cannot follow this user as the profile is not public',
                                            description
@@ -87,6 +87,6 @@ class Item(object):
             logger.debug("Added user to following followers in database")            
             resp.status = falcon.HTTP_OK
         else:
-            logger.warn("Please provide contact_user_id to add to users following")
-            resp.status = falcon.HTTPMissingParam
-            
+            logger.warn("Please provide follower_user_id to add to users following")
+            resp.status = falcon.HTTP_BAD_REQUEST
+            raise falcon.HTTPMissingParam('follower_user_id')

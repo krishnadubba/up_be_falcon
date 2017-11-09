@@ -13,7 +13,8 @@ sys.path.append(os.path.dirname(os.path.dirname(sys.path[0])))
 
 from uggipuggi.tests import get_test_uggipuggi
 from uggipuggi.tests.utils.dummy_data import users_gcs_base, users as dummy_users,\
-                                             groups as dummy_groups 
+                                             groups as dummy_groups, contacts as dummy_contacts,\
+                                             following as dummy_following
 from uggipuggi.tests.utils.dummy_data_utils import get_dummy_email, get_dummy_password,\
                                                    get_dummy_phone, get_dummy_display_name     
 
@@ -179,7 +180,8 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         users_map = {}
         for user in dummy_users:
             current_author_id = user['id']
-            payload = {"email": get_dummy_email(count),
+            payload = {
+                       "email": get_dummy_email(count),
                        "password": get_dummy_password(count),
                        "phone": get_dummy_phone(count),
                        "country_code": "IN",
@@ -188,30 +190,34 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                        'display_pic': users_gcs_base + user['avatar'].split('/')[-1]
                       }
             
+            if 'public_profile' in user:
+                payload.update({"public_profile":True})
+                
+            header = {'Content-Type':'application/json'}    
             users_map[current_author_id] = payload
-            r = requests.post(self.rest_api + '/register', data=json.dumps(payload), 
-                              headers=header)
-            verify_token = json.loads(r.content.decode('utf-8'))['auth_token']
+            res = requests.post(self.rest_api + '/register', data=json.dumps(payload), 
+                                headers=header)
+            verify_token = json.loads(res.content.decode('utf-8'))['auth_token']
             
             header.update({'auth_token':verify_token})
-            r = requests.post(self.rest_api + '/verify', data=json.dumps({'code':'9999'}), 
-                                  headers=header)
+            res = requests.post(self.rest_api + '/verify', data=json.dumps({'code':'9999'}), 
+                                headers=header)
             
             header = {'Content-Type':'application/json'}
-            r = requests.post(self.rest_api + '/login', data=json.dumps({'email':users_map[current_author_id]["email"], 
+            res = requests.post(self.rest_api + '/login', data=json.dumps({'email':users_map[current_author_id]["email"], 
                                                                    "password":users_map[current_author_id]["password"]}), 
-                              headers=header)
+                                headers=header)
             
-            login_token   = json.loads(r.content.decode('utf-8'))['auth_token']
-            user_mongo_id = json.loads(r.content.decode('utf-8'))['user_identifier']
+            login_token   = json.loads(res.content.decode('utf-8'))['auth_token']
+            user_mongo_id = json.loads(res.content.decode('utf-8'))['user_identifier']
             users_map[current_author_id].update({'login_token':login_token})
             users_map[current_author_id].update({'user_id':user_mongo_id})
             
             count += 1
             
+        header = {'Content-Type':'application/json'}    
         for group in dummy_groups:
             with self.subTest(name=group['group_name']):
-                header = {'Content-Type':'application/json'}    
                 group_payload = {}
                 group_payload['group_name'] = group['group_name']
                 group_payload['group_pic'] = group['group_pic']
@@ -241,6 +247,49 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 self.assertTrue('members' in json.loads(res.content.decode('utf-8')))
                 self.assertEqual(len(group['members']), len(json.loads(res.content.decode('utf-8'))['members']))
                 
+        for contact in dummy_contacts:
+            with self.subTest(name=users_map[contact[0]]['user_id']):
+                login_token = users_map[contact[0]]['login_token']
+                header.update({'auth_token':login_token})
+                contact_payload = {}
+                contact_payload['contact_user_id'] = []
+                # Lets provide empty param and test
+                res = requests.post(self.rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
+                                                  data=json.dumps(contact_payload), 
+                                                  headers=header)                 
+                self.assertEqual(400, res.status_code)
+                
+                # Now give some ids to add
+                for cont in contact[1:]:        
+                    contact_payload['contact_user_id'].append(users_map[cont]['user_id'])
+                res = requests.post(self.rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
+                                  data=json.dumps(contact_payload), 
+                                  headers=header)
+                self.assertEqual(200, res.status_code)
+                
+                # Lets provide wrong param and test
+                contact_payload = {}
+                contact_payload['contact_user_wrong_key'] = []
+                res = requests.post(self.rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
+                                  data=json.dumps(contact_payload), 
+                                  headers=header)                
+                self.assertEqual(400, res.status_code)
+                                        
+        for contact in dummy_following:
+            login_token = users_map[contact[0]]['login_token']
+            header.update({'auth_token':login_token})
+            contact_payload = {}
+            for cont in contact[1:]:
+                with self.subTest(name=users_map[contact[0]]['user_id']+'::'+users_map[cont]['user_id']):
+                    contact_payload = {}
+                    contact_payload['follower_user_id'] = users_map[cont]['user_id']
+                    res = requests.post(self.rest_api + '/following/%s'%users_map[contact[0]]['user_id'], 
+                                        data=json.dumps(contact_payload), 
+                                        headers=header)
+                    if 'public_profile' in users_map[cont]:
+                        self.assertEqual(200, res.status_code)
+                    else:
+                        self.assertEqual(403, res.status_code)
             
 class TestMain(testing.TestBase):
 

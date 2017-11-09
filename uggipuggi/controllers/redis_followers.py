@@ -7,7 +7,6 @@ import logging
 from bson import json_util, ObjectId
 from uggipuggi.constants import FOLLOWERS
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
-from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.followers_kafka_producers import followers_kafka_item_delete_producer
 
 
@@ -46,5 +45,6 @@ class Item(object):
                 logger.debug("Deleted member from user followers in database")
                 resp.status = falcon.HTTP_OK
             except KeyError:
-                logger.warn("Please provide contact_user_id to delete from users contact")
-                resp.status = falcon.HTTPMissingParam
+                logger.warn("Please provide follower_user_id to delete from users contact")
+                resp.status = falcon.HTTP_BAD_REQUEST
+                raise falcon.HTTPMissingParam('follower_user_id')
