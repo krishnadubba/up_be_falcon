@@ -45,7 +45,7 @@ def group_kafka_item_get_producer(req, resp, resource):
     logging.debug("++++++++++++++++++++++")    
     group_producer.produce(topic=req.kafka_topic_name, 
                             value=repr(parameters),
-                            key=req.params['body']['user_id']) #req.encode('utf-8'))
+                            key=req.user_id) #req.encode('utf-8'))
     group_producer.flush()
     
 def group_kafka_item_put_producer(req, resp, resource):
@@ -83,6 +83,6 @@ def group_kafka_item_delete_producer(req, resp, resource):
     logging.debug("++++++++++++++++++++++")
     group_producer.produce(topic=req.kafka_topic_name, 
                             value=repr(parameters),
-                            key=req.params['body']['user_id']) #req.encode('utf-8'))
+                            key=req.user_id) #req.encode('utf-8'))
     group_producer.flush()
     

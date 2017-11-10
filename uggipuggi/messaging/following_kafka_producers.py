@@ -17,14 +17,14 @@ def following_kafka_item_get_producer(req, resp, resource):
     logging.debug("++++++++++++++++++++++")    
     following_producer.produce(topic=req.kafka_topic_name, 
                             value=repr(parameters),
-                            key=req.params['body']['user_id']) #req.encode('utf-8'))
+                            key=req.user_id) #req.encode('utf-8'))
     following_producer.flush()
 
-def following_kafka_item_post_producer(req, resp, resource):
+def following_kafka_item_put_producer(req, resp, resource):
     # Recipe updated, night not be useful
-    parameters = [req.user_id, resp.status]
+    parameters = [req.user_id, req.params['body']['public_user_id'], resp.status]
     logging.debug("++++++++++++++++++++++")
-    logging.debug("FOLLOWING_KAFKA_ITEM_POST_PRODUCER: %s" %req.kafka_topic_name)
+    logging.debug("FOLLOWING_KAFKA_ITEM_PUT_PRODUCER: %s" %req.kafka_topic_name)
     logging.debug("----------------------")
     logging.debug(repr(parameters))
     logging.debug("++++++++++++++++++++++")    
@@ -33,15 +33,15 @@ def following_kafka_item_post_producer(req, resp, resource):
                             key=req.user_id) #req.encode('utf-8'))
     following_producer.flush()
         
-def following_kafka_item_delete_producer(req, resp, resource):
+def following_kafka_item_post_producer(req, resp, resource):
     parameters = [req.user_id, resp.status]
     logging.debug("++++++++++++++++++++++")
-    logging.debug("FOLLOWING_KAFKA_ITEM_DELETE_PRODUCER: %s" %req.kafka_topic_name)
+    logging.debug("FOLLOWING_KAFKA_ITEM_POST_PRODUCER: %s" %req.kafka_topic_name)
     logging.debug("----------------------")
     logging.debug(repr(parameters))
     logging.debug("++++++++++++++++++++++")
     following_producer.produce(topic=req.kafka_topic_name, 
                             value=repr(parameters),
-                            key=req.params['body']['user_id']) #req.encode('utf-8'))
+                            key=req.user_id) #req.encode('utf-8'))
     following_producer.flush()
     

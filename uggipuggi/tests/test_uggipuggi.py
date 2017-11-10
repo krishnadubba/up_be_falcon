@@ -254,7 +254,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 contact_payload = {}
                 contact_payload['contact_user_id'] = []
                 # Lets provide empty param and test
-                res = requests.post(self.rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
+                res = requests.put(self.rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
                                                   data=json.dumps(contact_payload), 
                                                   headers=header)                 
                 self.assertEqual(400, res.status_code)
@@ -262,7 +262,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 # Now give some ids to add
                 for cont in contact[1:]:        
                     contact_payload['contact_user_id'].append(users_map[cont]['user_id'])
-                res = requests.post(self.rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
+                res = requests.put(self.rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
                                   data=json.dumps(contact_payload), 
                                   headers=header)
                 self.assertEqual(200, res.status_code)
@@ -270,7 +270,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 # Lets provide wrong param and test
                 contact_payload = {}
                 contact_payload['contact_user_wrong_key'] = []
-                res = requests.post(self.rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
+                res = requests.put(self.rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
                                   data=json.dumps(contact_payload), 
                                   headers=header)                
                 self.assertEqual(400, res.status_code)
@@ -282,14 +282,31 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
             for cont in contact[1:]:
                 with self.subTest(name=users_map[contact[0]]['user_id']+'::'+users_map[cont]['user_id']):
                     contact_payload = {}
-                    contact_payload['follower_user_id'] = users_map[cont]['user_id']
-                    res = requests.post(self.rest_api + '/following/%s'%users_map[contact[0]]['user_id'], 
-                                        data=json.dumps(contact_payload), 
-                                        headers=header)
+                    contact_payload['public_user_id'] = users_map[cont]['user_id']
+                    res = requests.put(self.rest_api + '/following/%s'%users_map[contact[0]]['user_id'], 
+                                       data=json.dumps(contact_payload), 
+                                       headers=header)
                     if 'public_profile' in users_map[cont]:
                         self.assertEqual(200, res.status_code)
                     else:
                         self.assertEqual(403, res.status_code)
+
+        # Delete the members from user's following list
+        for contact in dummy_following:
+            login_token = users_map[contact[0]]['login_token']
+            header.update({'auth_token':login_token})
+            contact_payload = {}
+            for cont in contact[1:]:
+                # We can only delete public users from following list
+                if 'public_profile' in users_map[cont]:
+                    with self.subTest(name=users_map[contact[0]]['user_id']+'::'+users_map[cont]['user_id']):
+                        contact_payload = {}
+                        # This time 'public_user_id' is a list (user can delete many in one go)
+                        contact_payload['public_user_id'] = [users_map[cont]['user_id']]
+                        res = requests.post(self.rest_api + '/following/%s'%users_map[contact[0]]['user_id'], 
+                                            data=json.dumps(contact_payload), 
+                                            headers=header)
+                        self.assertEqual(200, res.status_code)                        
             
 class TestMain(testing.TestBase):
 
@@ -318,4 +335,6 @@ class TestMain(testing.TestBase):
 
 
 if __name__ == '__main__':
+    if 'logs' not in os.listdir(sys.path[0]):
+        os.mkdir('logs')
     unittest.main()    
