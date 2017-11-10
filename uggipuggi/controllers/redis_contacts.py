@@ -8,7 +8,7 @@ from bson import json_util, ObjectId
 from uggipuggi.constants import CONTACTS
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.messaging.contacts_kafka_producers import contacts_kafka_item_post_producer,\
-                                                         contacts_kafka_item_delete_producer
+                                                         contacts_kafka_item_put_producer
 
 
 logger = logging.getLogger(__name__)
@@ -32,8 +32,8 @@ class Item(object):
             resp.status = falcon.HTTP_FOUND
         
     @falcon.before(deserialize)
-    @falcon.after(contacts_kafka_item_delete_producer)
-    def on_delete(self, req, resp, id):
+    @falcon.after(contacts_kafka_item_post_producer)
+    def on_post(self, req, resp, id):
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:    
@@ -41,8 +41,8 @@ class Item(object):
             logger.debug("Deleting member from user contacts in database ...")
             contacts_id_name = CONTACTS + id
             try:
-                # req.params['query']['contact_user_id'] is a list
-                req.redis_conn.srem(contacts_id_name, *req.params['query']['contact_user_id'])
+                # req.params['body']['contact_user_id'] is a list
+                req.redis_conn.srem(contacts_id_name, *req.params['body']['contact_user_id'])
                 logger.debug("Deleted member from user contacts in database")
                 resp.status = falcon.HTTP_OK
             except KeyError:
@@ -51,8 +51,8 @@ class Item(object):
                 raise falcon.HTTPMissingParam('contact_user_id')
 
     @falcon.before(deserialize)
-    @falcon.after(contacts_kafka_item_post_producer)
-    def on_post(self, req, resp, id):
+    @falcon.after(contacts_kafka_item_put_producer)
+    def on_put(self, req, resp, id):
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:

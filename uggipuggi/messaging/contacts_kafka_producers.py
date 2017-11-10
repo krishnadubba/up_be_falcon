@@ -17,7 +17,7 @@ def contacts_kafka_item_get_producer(req, resp, resource):
     logging.debug("++++++++++++++++++++++")    
     contacts_producer.produce(topic=req.kafka_topic_name, 
                             value=repr(parameters),
-                            key=req.params['body']['user_id']) #req.encode('utf-8'))
+                            key=req.user_id) #req.encode('utf-8'))
     contacts_producer.flush()
 
 def contacts_kafka_item_post_producer(req, resp, resource):
@@ -33,15 +33,15 @@ def contacts_kafka_item_post_producer(req, resp, resource):
                             key=req.user_id) #req.encode('utf-8'))
     contacts_producer.flush()
         
-def contacts_kafka_item_delete_producer(req, resp, resource):
-    parameters = [req.user_id, resp.status]
+def contacts_kafka_item_put_producer(req, resp, resource):
+    parameters = [req.user_id, req.params['body']['contact_user_id'], resp.status]
     logging.debug("++++++++++++++++++++++")
-    logging.debug("CONTACTS_KAFKA_ITEM_DELETE_PRODUCER: %s" %req.kafka_topic_name)
+    logging.debug("CONTACTS_KAFKA_ITEM_PUT_PRODUCER: %s" %req.kafka_topic_name)
     logging.debug("----------------------")
     logging.debug(repr(parameters))
     logging.debug("++++++++++++++++++++++")
     contacts_producer.produce(topic=req.kafka_topic_name, 
                             value=repr(parameters),
-                            key=req.params['body']['user_id']) #req.encode('utf-8'))
+                            key=req.user_id) #req.encode('utf-8'))
     contacts_producer.flush()
     
