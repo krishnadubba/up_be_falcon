@@ -178,6 +178,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
     def test_a_groups(self):
         count = 0
         users_map = {}
+        print ('Starting social network tests: addings users ...')
         for user in dummy_users:
             current_author_id = user['id']
             payload = {
@@ -215,6 +216,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
             
             count += 1
             
+        print ('Starting social network tests: addings groups ...')    
         header = {'Content-Type':'application/json'}    
         for group in dummy_groups:
             with self.subTest(name=group['group_name']):
@@ -247,6 +249,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 self.assertTrue('members' in json.loads(res.content.decode('utf-8')))
                 self.assertEqual(len(group['members']), len(json.loads(res.content.decode('utf-8'))['members']))
                 
+        print ('Starting social network tests: addings contacts ...')                
         for contact in dummy_contacts:
             with self.subTest(name=users_map[contact[0]]['user_id']):
                 login_token = users_map[contact[0]]['login_token']
@@ -274,7 +277,8 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                                   data=json.dumps(contact_payload), 
                                   headers=header)                
                 self.assertEqual(400, res.status_code)
-                                        
+                               
+        print ('Starting social network tests: addings following ...')
         for contact in dummy_following:
             login_token = users_map[contact[0]]['login_token']
             header.update({'auth_token':login_token})
