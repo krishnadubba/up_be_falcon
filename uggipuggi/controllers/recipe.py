@@ -91,8 +91,8 @@ class Item(object):
         try:
             return Recipe.objects.get(id=id)
         except (ValidationError, DoesNotExist, MultipleObjectsReturned) as e:
-            logger.error('Invalid recipe ID provided. {}'.format(e.message))
-            raise HTTPBadRequest(title='Invalid Value', description='Invalid recipe ID provided. {}'.format(e.message))
+            logger.error('Invalid recipe ID provided. {}'.format(e))
+            raise HTTPBadRequest(title='Invalid Value', description='Invalid recipe ID provided. {}'.format(e))
 
     @falcon.before(deserialize)
     def on_get(self, req, resp, id):

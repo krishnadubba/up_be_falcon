@@ -71,12 +71,12 @@ class UggiPuggiTaskSet(TaskSet):
     def get_recipe(self, recipe_index):    
         recipe = dummy_recipes[recipe_index]
         recipe_payload = {"recipe_name": recipe['name'],
-                               "user_id":self.user_id,
-                               "likes_count": 0,
-                               "user_name": self.user_name,
-                               "images":['https://storage.googleapis.com/up_food_pics/one-pot-cajun-pasta.jpg'],
-                               "expose_level": 5,
-                              }
+                          "user_id":self.user_id,
+                          "likes_count": 0,
+                          "user_name": self.user_name,
+                          "images":['https://storage.googleapis.com/up_food_pics/one-pot-cajun-pasta.jpg'],
+                          "expose_level": 5,
+                         }
         steps = []
         for direction in recipe['direction'].split('\n'):
             if direction == '':
@@ -97,7 +97,7 @@ class UggiPuggiTaskSet(TaskSet):
                                'ingredients_imgs':ingredients_imgs,
                                'ingredients_quant':ingredients_quant,
                                'ingredients_metric':ingredients_metric
-                               })
+                              })
         return recipe_payload
  
     @task

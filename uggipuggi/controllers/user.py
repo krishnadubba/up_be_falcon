@@ -34,7 +34,7 @@ class Collection(object):
 
         except ValueError as e:
             raise HTTPBadRequest(title='Invalid Value',
-                                 description='Invalid arguments in URL query:\n{}'.format(e.message))
+                                 description='Invalid arguments in URL query:\n{}'.format(e))
 
         users_qset = User.objects(**query_params)[start:end]
         users = [obj.to_mongo() for obj in users_qset]
@@ -49,7 +49,7 @@ class Item(object):
         try:
             return User.objects.get(id=id)
         except (ValidationError, DoesNotExist, MultipleObjectsReturned) as e:
-            raise HTTPBadRequest(title='Invalid Value', description='Invalid userID provided. {}'.format(e.message))
+            raise HTTPBadRequest(title='Invalid Value', description='Invalid userID provided. {}'.format(e))
 
     # TODO: handle PUT requests
     @falcon.before(deserialize)
