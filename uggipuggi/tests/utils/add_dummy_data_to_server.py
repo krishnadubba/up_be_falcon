@@ -267,10 +267,15 @@ for user in users:
             ingredients_imgs.append(food_gcs_base+ig['material']['image'].split('/')[-1])
             ingredients.append(ig['material']['name'])
             
-        recipe_payload.update({'ingredients':ingredients})
-        recipe_payload.update({'ingredients_imgs':ingredients_imgs})
-        recipe_payload.update({'ingredients_quant':ingredients_quant})
-        recipe_payload.update({'ingredients_metric':ingredients_metric})            
+        recipe_payload.update({'ingredients':ingredients,
+                               'ingredients_imgs':ingredients_imgs,
+                               'ingredients_quant':ingredients_quant,
+                               'ingredients_metric':ingredients_metric
+                               })            
+        #recipe_payload.update({'ingredients':ingredients})
+        #recipe_payload.update({'ingredients_imgs':ingredients_imgs})
+        #recipe_payload.update({'ingredients_quant':ingredients_quant})
+        #recipe_payload.update({'ingredients_metric':ingredients_metric})            
         
         recipe_map[recipe['id']] = recipe_payload
         

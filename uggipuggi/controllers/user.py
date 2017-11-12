@@ -91,5 +91,7 @@ class Item(object):
                 raise HTTPUnauthorized(title='Unauthorized Request',
                                        description='Not allowed to request for user resource: {}'.format(id))
         user = self._try_get_user(id)
+        # Converting MongoEngine recipe to dictionary
+        resp.body = user._data
         resp.status = falcon.HTTP_FOUND
-        resp.body = user
+        

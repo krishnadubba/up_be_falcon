@@ -73,7 +73,6 @@ class Collection(object):
         # Add recipe
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         # save to DB
-        #recipe = Recipe(**req.body)
         recipe = Recipe(**req.params['body'])
         recipe.save()
         logger.debug("Recipe created with id: %s" %str(recipe.id))
@@ -99,7 +98,8 @@ class Item(object):
     def on_get(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         recipe = self._try_get_recipe(id)
-        resp.body = recipe.to_dict()
+        # Converting MongoEngine recipe to dictionary
+        resp.body = recipe._data
         resp.status = falcon.HTTP_FOUND
         
     @falcon.before(deserialize)        

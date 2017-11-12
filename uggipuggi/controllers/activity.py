@@ -105,7 +105,8 @@ class Item(object):
     def on_get(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         activity = self._try_get_activity(id)
-        resp.body = activity.to_dict()
+        resp.body = activity._data
+        resp.body = activity._data
         resp.status = falcon.HTTP_FOUND
 
     @falcon.before(deserialize)
