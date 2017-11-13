@@ -1,0 +1,11 @@
+execution:
+- executor: locust
+  concurrency: 500
+  ramp-up: 500
+  duration: 2m
+  scenario: example
+
+scenarios:
+  example:
+    default-address: http://172.19.0.1
+    script: locustfile.py
