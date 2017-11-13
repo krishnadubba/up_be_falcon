@@ -11,7 +11,8 @@ from uggipuggi.models.recipe import Comment, Recipe
 from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.recipe_kafka_producers import recipe_kafka_collection_post_producer,\
                                                        recipe_kafka_item_put_producer
-from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError
+from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, LookUpError,\
+                               InvalidQueryError 
 
 
 # -------- BEFORE_HOOK functions
@@ -133,10 +134,10 @@ class Item(object):
                     resp.recipe_author_id = recipe.user_id
                 else:    
                     recipe.update(key=value)                        
-        except (ValidationError, KeyError) as e:
-            logger.error('Invalid fields provided for recipe. {}'.format(e.message))
+        except (ValidationError, LookUpError, InvalidQueryError, KeyError) as e:
+            logger.error('Invalid fields provided for recipe. {}'.format(e))
             raise HTTPBadRequest(title='Invalid Value', 
-                                 description='Invalid fields provided for recipe. {}'.format(e.message))            
+                                 description='Invalid fields provided for recipe. {}'.format(e))            
         logger.debug("Updated recipe data in database")
         resp.body = {"recipe_id": str(recipe.id)}
         resp.status = falcon.HTTP_OK

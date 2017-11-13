@@ -11,7 +11,7 @@ from uggipuggi.models.cooking_activity import CookingActivity
 from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.activity_kafka_producers import activity_kafka_collection_post_producer,\
                                                          activity_kafka_item_put_producer
-from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError
+from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, LookUpError, InvalidQueryError
 
 
 # -------- BEFORE_HOOK functions
@@ -98,8 +98,8 @@ class Item(object):
         try:
             return CookingActivity.objects.get(id=id)
         except (ValidationError, DoesNotExist, MultipleObjectsReturned) as e:
-            logger.error('Invalid cooking actibity ID provided. {}'.format(e.message))
-            raise HTTPBadRequest(title='Invalid Value', description='Invalid CookingActivity ID provided. {}'.format(e.message))
+            logger.error('Invalid cooking actibity ID provided. {}'.format(e))
+            raise HTTPBadRequest(title='Invalid Value', description='Invalid CookingActivity ID provided. {}'.format(e))
     
     @falcon.before(deserialize)    
     def on_get(self, req, resp, id):
@@ -138,10 +138,10 @@ class Item(object):
                     resp.activity_author_id = activity.user_id
                 else:                    
                     activity.update(key=value)
-        except (ValidationError, KeyError) as e:
-            logger.error('Invalid fields provided for cooking activity. {}'.format(e.message))
+        except (ValidationError, LookUpError, InvalidQueryError, KeyError) as e:
+            logger.error('Invalid fields provided for cooking activity. {}'.format(e))
             raise HTTPBadRequest(title='Invalid Value', 
-                                 description='Invalid fields provided for cooking activity. {}'.format(e.message))
+                                 description='Invalid fields provided for cooking activity. {}'.format(e))
         logger.debug("Updated activity data in database")
         resp.body = {"activity_id": str(activity.id)}
         resp.status = falcon.HTTP_OK

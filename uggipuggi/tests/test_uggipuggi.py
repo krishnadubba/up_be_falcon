@@ -12,7 +12,7 @@ from falcon import testing
 sys.path.append(os.path.dirname(os.path.dirname(sys.path[0])))
 
 from uggipuggi.tests import get_test_uggipuggi
-from uggipuggi.tests.utils.dummy_data import users_gcs_base, users as dummy_users,\
+from uggipuggi.tests.utils.dummy_data import users_gcs_base, food_gcs_base, users as dummy_users,\
                                              groups as dummy_groups, contacts as dummy_contacts,\
                                              following as dummy_following, recipes as dummy_recipes, feeds as dummy_feeds
 from uggipuggi.tests.utils.dummy_data_utils import get_dummy_email, get_dummy_password,\
@@ -178,7 +178,13 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
     def test_a_groups(self):
         count = 0
         users_map = {}
-        print ('Starting social network tests: addings users ...')
+        recipe_map = {}
+        activity_map = {}
+        print ("===============================================================")
+        print ()           
+        print ('Starting social network tests: adding Users ...')
+        print ()
+        print ("===============================================================")                
         for user in dummy_users:
             current_author_id = user['id']
             payload = {
@@ -216,7 +222,11 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
             
             count += 1
             
+        print ("===============================================================")
+        print ()               
         print ('Starting social network tests: addings groups ...')    
+        print ()
+        print ("===============================================================")                
         header = {'Content-Type':'application/json'}    
         for group in dummy_groups:
             with self.subTest(name=group['group_name']):
@@ -249,7 +259,11 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 self.assertTrue('members' in json.loads(res.content.decode('utf-8')))
                 self.assertEqual(len(group['members']), len(json.loads(res.content.decode('utf-8'))['members']))
                 
-        print ('Starting social network tests: addings contacts ...')                
+        print ("===============================================================")
+        print ()                   
+        print ('Starting social network tests: Adding Contacts ...')                
+        print ()
+        print ("===============================================================")                
         for contact in dummy_contacts:
             with self.subTest(name=users_map[contact[0]]['user_id']):
                 login_token = users_map[contact[0]]['login_token']
@@ -277,8 +291,12 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                                   data=json.dumps(contact_payload), 
                                   headers=header)                
                 self.assertEqual(400, res.status_code)
-                               
-        print ('Starting social network tests: addings following ...')
+        
+        print ("===============================================================")                               
+        print ()
+        print ('Starting social network tests: adding Following ...')
+        print ()
+        print ("===============================================================")        
         for contact in dummy_following:
             login_token = users_map[contact[0]]['login_token']
             header.update({'auth_token':login_token})
@@ -295,13 +313,161 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                     else:
                         self.assertEqual(403, res.status_code)
 
+        print ("===============================================================")
+        print ()   
+        print ('Starting social network tests: Adding Receipes ...')
+        print ()
+        print ("===============================================================")        
+        for user in dummy_users:
+            current_author_id = user['id']
+            # Add all the recipes authored by this user
+            for recipe in dummy_recipes:
+                if recipe['author']['id'] != current_author_id:
+                    continue
+                
+                with self.subTest(name=recipe['name']):
+                    login_token = users_map[current_author_id]['login_token']
+                    recipe_payload = {"recipe_name": recipe['name'],
+                                      "user_id": users_map[current_author_id]['user_id'],
+                                      "likes_count": 0,
+                                      "user_name": users_map[current_author_id]['display_name'],
+                                      "images":[food_gcs_base+recipe['image'].split('/')[-1]],
+                                      "expose_level": 5,
+                                      }
+                    steps = []
+                    for direction in recipe['direction'].split('\n'):
+                        if direction == '':
+                            continue
+                        steps.append(direction)
+                    recipe_payload.update({"steps":steps})
+                    
+                    ingredients = []
+                    ingredients_imgs   = []
+                    ingredients_quant  = []
+                    ingredients_metric = []
+                    for ig in recipe['ingredients']:
+                        ingredients_metric.append(ig['unit'])
+                        ingredients_quant.append(ig['quantity'])
+                        ingredients_imgs.append(food_gcs_base+ig['material']['image'].split('/')[-1])
+                        ingredients.append(ig['material']['name'])
+                        
+                    recipe_payload.update({'ingredients':ingredients,
+                                           'ingredients_imgs':ingredients_imgs,
+                                           'ingredients_quant':ingredients_quant,
+                                           'ingredients_metric':ingredients_metric
+                                           })                      
+                    
+                    recipe_map[recipe['id']] = recipe_payload
+                    
+                    header.update({'auth_token':login_token})
+                    
+                    res = requests.post(self.rest_api + 'recipes', data=json.dumps(recipe_payload), 
+                                        headers=header)
+                    
+                    self.assertEqual(201, res.status_code)
+                    result_dict = json.loads(res.content.decode('utf-8')) 
+                    self.assertTrue('recipe_id' in result_dict)
+                    if 'recipe_id' in result_dict:
+                        self.recipe_id = result_dict['recipe_id']
+                    recipe_map[recipe['id']].update({'recipe_id':result_dict['recipe_id']})
+                    
+                    res = requests.get(self.rest_api + '/recipes/%s' %self.recipe_id, headers=header)
+                    self.assertEqual(302, res.status_code)
+                    
+                    # Wrong recipe id
+                    res = requests.get(self.rest_api + '/recipes/%s' %self.recipe_id+'0', headers=header)
+                    self.assertEqual(400, res.status_code)
+                
+        print ("===============================================================")
+        print ()                   
+        print ('Starting social network tests: Adding comments ...')            
+        print ()
+        print ("===============================================================")        
+        for recipe in dummy_recipes:
+            recipe_id = recipe_map[recipe['id']]['recipe_id']
+            for com in recipe['reviews']:
+                user_id     = users_map[com['author']['id']]['user_id']
+                user_name   = users_map[com['author']['id']]['display_name']
+                login_token = users_map[com['author']['id']]['login_token']
+                header = {'Content-Type':'application/json'}
+                header.update({'auth_token':login_token})                    
+                with self.subTest(name=recipe_id+'::'+user_id):
+                    comment = {}
+                    comment['comment'] = {}                        
+                    comment['comment']['user_id']   = user_id
+                    comment['comment']['user_name'] = user_name
+                    comment['comment']['content']   = com['content'] 
+                    res = requests.put(self.rest_api + 'recipes/%s'%recipe_id, data=json.dumps(comment), 
+                                       headers=header)
+                    self.assertEqual(200, res.status_code)
+                    
+                    res = requests.put(self.rest_api + 'recipes/%s'%recipe_id+'0', data=json.dumps(comment), 
+                                       headers=header)
+                    self.assertEqual(400, res.status_code)
+                    
+                    comment = {}
+                    comment['wrong_key'] = {}                        
+                    comment['wrong_key']['user_id']   = user_id
+                    comment['wrong_key']['user_name'] = user_name
+                    comment['wrong_key']['content']   = com['content'] 
+                    res = requests.put(self.rest_api + 'recipes/%s'%recipe_id, data=json.dumps(comment), 
+                                       headers=header)
+                    self.assertEqual(400, res.status_code)                    
+                    
+                    comment = {}
+                    comment['comment'] = {}                        
+                    comment['comment']['wrong_key_user_id'] = user_id
+                    comment['comment']['user_name'] = user_name
+                    comment['comment']['content']   = com['content'] 
+                    res = requests.put(self.rest_api + 'recipes/%s'%recipe_id, data=json.dumps(comment), 
+                                       headers=header)
+                    self.assertEqual(400, res.status_code)                    
+   
+        print ("===============================================================")
+        print ()   
+        print ('Starting social network tests: Adding Feeds ...')
+        print ()
+        print ("===============================================================")        
+        for feed in dummy_feeds:
+            user_mongo_id   = users_map[feed['creator']['id']]['user_id']
+            recipe_mongo_id = recipe_map[feed['recipe']['id']]['recipe_id']            
+            with self.subTest(name=recipe_mongo_id+'::'+user_mongo_id):
+                activity_payload = {"recipe_id": recipe_mongo_id,
+                                    "user_id": user_mongo_id,
+                                    "user_name": users_map[feed['creator']['id']]['display_name'],
+                                    "likes_count": 0,
+                                    "images":recipe_map[feed['recipe']['id']]['images']
+                                    }
+                header = {'Content-Type':'application/json'}
+                header.update({'auth_token':users_map[feed['creator']['id']]['login_token']})
+                res = requests.post(self.rest_api + 'activity', data=json.dumps(activity_payload), 
+                                    headers=header)
+                self.assertEqual(201, res.status_code)
+                result_dict = json.loads(res.content.decode('utf-8')) 
+                self.assertTrue('activity_id' in result_dict)                
+
+                activity_payload.update({'activity_id':result_dict['activity_id']})
+                activity_map[feed['id']] = activity_payload   
+            
+                activity_Q_payload = {}
+                res = requests.get(self.rest_api + 'activity', params=activity_Q_payload, 
+                                   headers=header)
+                self.assertEqual(302, res.status_code)
+                results = json.loads(res.content.decode('utf-8'))['items']   
+      
+        print ("===============================================================")
+        print ()
+        print ('Starting social network tests: deleting from following list ...')
+        print ()
+        print ("===============================================================")                
         # Delete the members from user's following list
         for contact in dummy_following:
             login_token = users_map[contact[0]]['login_token']
             header.update({'auth_token':login_token})
             contact_payload = {}
             for cont in contact[1:]:
-                # We can only delete public users from following list
+                # We can only delete public users from following list (bcoz the list has only public profiles
+                # as you can only follow public profiles)
                 if 'public_profile' in users_map[cont]:
                     with self.subTest(name=users_map[contact[0]]['user_id']+'::'+users_map[cont]['user_id']):
                         contact_payload = {}
