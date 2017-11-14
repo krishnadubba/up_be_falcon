@@ -34,17 +34,9 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
         self.test_user    = None
         count = 0
         
-        user = dummy_users[0]
-        current_author_id = user['id']
-        self.password = get_dummy_password(count)
         self.payload = {
-                        "email": get_dummy_email(count),
-                        "password": self.password,
                         "phone": get_dummy_phone(count),
                         "country_code": "IN",
-                        "display_name": user['name'],
-                        "gender": user['sex'],
-                        "display_pic": users_gcs_base + user['avatar'].split('/')[-1],
                         }        
 
     def tearDown(self):
@@ -119,42 +111,10 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
             with self.subTest(name=test['name']):
                 header.update({'auth_token':test['auth_token']})
                 res = requests.post(self.rest_api + '/verify', 
-                                  data=json.dumps(test['payload']), 
-                                  headers=header)
+                                    data=json.dumps(test['payload']), 
+                                    headers=header)
                              
                 self.assertEqual(test['expected']['status'], res.status_code)                
-
-        # Login
-        print ('Starting login user tests ...')
-        tests = [
-                    {
-                        'name': 'login_success',
-                        'desc': 'success',
-                        'payload': {'email':self.payload["email"], "password":self.payload["password"]},
-                        'expected': {'status': 202}
-                    },
-                    {
-                        'name': 'login_failure_wrong_password',
-                        'desc': 'Password did not match',
-                        'payload': {'email':self.payload["email"], "password":self.payload["password"]+'0'},
-                        'expected': {'status': 403}
-                    },
-                    {
-                        'name': 'login_failure_wrong_useremail',
-                        'desc': 'User does not exist',
-                        'payload': {'email':self.payload["email"]+'0', "password":self.payload["password"]},
-                        'expected': {'status': 401}
-                    },                        
-                ]
-        
-        header = {'Content-Type':'application/json'}            
-        for test in tests:
-            with self.subTest(name=test['name']):
-                res = requests.post(self.rest_api + '/login', 
-                                  data=json.dumps(test['payload']), 
-                                  headers=header)
-                             
-                self.assertEqual(test['expected']['status'], res.status_code)
                 if test['expected']['status'] == 202:
                     self.assertTrue('auth_token' in json.loads(res.content.decode('utf-8')))
                     self.assertTrue('user_identifier' in json.loads(res.content.decode('utf-8')))
@@ -176,7 +136,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         self.rest_api = 'http://%s/'%uggipuggi_ip
         
     def test_a_groups(self):
-        count = 0
+        count = 1
         users_map = {}
         recipe_map = {}
         activity_map = {}
@@ -188,13 +148,8 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         for user in dummy_users:
             current_author_id = user['id']
             payload = {
-                       "email": get_dummy_email(count),
-                       "password": get_dummy_password(count),
                        "phone": get_dummy_phone(count),
                        "country_code": "IN",
-                       "display_name": user['name'],
-                       "gender": user['sex'],
-                       'display_pic': users_gcs_base + user['avatar'].split('/')[-1]
                       }
             
             if 'public_profile' in user:
@@ -202,17 +157,13 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 
             header = {'Content-Type':'application/json'}    
             users_map[current_author_id] = payload
+            users_map[current_author_id]['display_name'] = user['name']                        
             res = requests.post(self.rest_api + '/register', data=json.dumps(payload), 
                                 headers=header)
             verify_token = json.loads(res.content.decode('utf-8'))['auth_token']
             
             header.update({'auth_token':verify_token})
             res = requests.post(self.rest_api + '/verify', data=json.dumps({'code':'9999'}), 
-                                headers=header)
-            
-            header = {'Content-Type':'application/json'}
-            res = requests.post(self.rest_api + '/login', data=json.dumps({'email':users_map[current_author_id]["email"], 
-                                                                   "password":users_map[current_author_id]["password"]}), 
                                 headers=header)
             
             login_token   = json.loads(res.content.decode('utf-8'))['auth_token']
@@ -324,9 +275,9 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
             for recipe in dummy_recipes:
                 if recipe['author']['id'] != current_author_id:
                     continue
-                
                 with self.subTest(name=recipe['name']):
                     login_token = users_map[current_author_id]['login_token']
+                    
                     recipe_payload = {"recipe_name": recipe['name'],
                                       "user_id": users_map[current_author_id]['user_id'],
                                       "likes_count": 0,
@@ -494,16 +445,10 @@ class TestUggiPuggiRecipe(testing.TestBase):
         count = 100
         
         self.user_name = get_dummy_display_name(count)
-        self.password  = get_dummy_password(count)
         self.payload = {
-                        "email": get_dummy_email(count),
-                        "password": self.password,
                         "phone": get_dummy_phone(count),
                         "country_code": "IN",
-                        "display_name": self.user_name,
-                        "gender": 'male',
-                        "display_pic": 'https://storage.googleapis.com/up_users_avatars/salam.png',
-                        }
+                       }
         header = {'Content-Type':'application/json'}
         res = requests.post(self.rest_api + '/register', 
                             data=json.dumps(self.payload), 
@@ -514,11 +459,6 @@ class TestUggiPuggiRecipe(testing.TestBase):
                             data=json.dumps({'code':'9999'}), 
                             headers=header)
     
-        login_payload = {'email':self.payload["email"], "password":self.payload["password"]}
-        header = {'Content-Type':'application/json'}
-        res = requests.post(self.rest_api + '/login', 
-                            data=json.dumps(login_payload), 
-                            headers=header)
         print('=========================')
         print(res.content.decode('utf-8'))
         res_dict = json.loads(res.content.decode('utf-8'))

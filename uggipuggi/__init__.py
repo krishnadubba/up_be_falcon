@@ -35,7 +35,7 @@ class UggiPuggi(object):
                        "http_only": True}        
 
         # LoginResource, AuthMiddleware
-        self.forgot_password, self.register, self.pw_change, self.login, self.verify_phone, self.auth_middleware = auth_jwt.get_auth_objects(
+        self.forgot_password, self.register, self.pw_change, self.verify_phone, self.auth_middleware = auth_jwt.get_auth_objects(
             get_user,
             shared_secret, # random secret
             TOKEN_EXPIRATION_SECS,
@@ -78,7 +78,6 @@ class UggiPuggi(object):
         self.app.add_route('/followers/{id}', redis_followers.Item())
         self.app.add_route('/following/{id}', redis_following.Item())
         
-        self.app.add_route('/login', self.login)
         self.app.add_route('/register', self.register)
         self.app.add_route('/verify', self.verify_phone)
         self.app.add_route('/forgot_password', self.forgot_password)

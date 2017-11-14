@@ -44,19 +44,21 @@ class Subscription(object):
 
 class User(Document):
 
-    display_name    = StringField(required=True, min_length=4, max_length=20)
-    email           = EmailField(required=True, unique=True)
-    role            = IntField(required=True, default=Role.USER)
-    country_code    = StringField(min_length=2, max_length=2, required=True)  # follows ISO_3166-1
+    country_code    = StringField(required=True, min_length=2, max_length=2)  # follows ISO_3166-1
     phone           = StringField(required=True, unique=True)  # contact number
-    password        = StringField(required=True, min_length=8)
-    pw_last_changed = DateTimeField(required=True)
+    
+    role            = IntField(required=True, default=Role.USER)    
     phone_verified  = BooleanField(required=True, default=False)
     account_active  = BooleanField(required=True, default=False)
     public_profile  = BooleanField(required=True, default=False) # Public or private profile?
     app_platform    = StringField(required=True, default="android")
+    subscription    = IntField(required=True, default=Subscription.FREE)
     
     # Not mandatory
+    #phone_last_verified = DateTimeField(required=False)    
+    phone_last_verified = StringField(required=False)    
+    display_name    = StringField(required=False, min_length=4, max_length=20)
+    email           = EmailField(required=False)  # No need to be unique  
     first_name      = StringField(required=False)
     last_name       = StringField(required=False)
     display_pic     = URLField(required=False)
@@ -64,7 +66,6 @@ class User(Document):
     facebook_id     = LongField(required=False)  # Facebook ID is numeric but can be pretty big
     twitter_id      = StringField(required=False)  # Twitter ID is alphanumeric
     instagram_id    = StringField(required=False)  # Instagram ID is alphanumeric
-    subscription    = IntField(required=False, default=Subscription.FREE)
     # For Firebase Clound Messaging
     device_registration_id = StringField(required=False)    
     #groups          = DictField(required=False)

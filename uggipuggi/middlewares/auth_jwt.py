@@ -112,11 +112,12 @@ class Test(object):
 @falcon.after(serialize)
 class VerifyPhoneResource(object):
 
-    def __init__(self, get_user, secret, **token_opts):
+    def __init__(self, get_user, secret, token_expiration_seconds, **token_opts):
         
         self.get_user = get_user
         self.secret = secret
         self.kafka_topic_name = 'verify'
+        self.token_expiration_seconds = token_expiration_seconds
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         logging.debug(token_opts)
         
@@ -126,7 +127,7 @@ class VerifyPhoneResource(object):
         challenges = ['Hello="World"']
         logging.debug("Reached on_post() in VerifyPhone")
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
-        
+        resp.body = {}
         otp_code = req.params['body']["code"]
         
         logging.debug(req.get_header("auth_token"))
@@ -170,10 +171,16 @@ class VerifyPhoneResource(object):
         else:
             logging.debug("Verifying user...")
             if otp_code == user.otp:
+                current_time = datetime.utcnow()
+                logging.debug("Current time!")
+                logging.debug(str(current_time))
                 full_user = self.get_user('phone', phone_number)
                 full_user.update(phone_verified=True)
                 full_user.update(account_active=True)
+                # This gives error if we use datetime type instead of str                
+                full_user.update(phone_last_verified=str(current_time))
                 logging.debug("User verification: Success")
+                self.add_new_jwtoken(resp, str(full_user.id), phone_last_verified=current_time)
                 resp.status = falcon.HTTP_ACCEPTED
             else:
                 logging.debug("Incorrect OTP code!")
@@ -190,7 +197,34 @@ class VerifyPhoneResource(object):
             logging.debug("Token validation failed Error :{}".format(str(err)))
             return False        
 
-
+    def add_new_jwtoken(self, resp, user_identifier=None, phone_last_verified=None):
+        # add a JSON web token to the response headers
+        if not user_identifier:
+            resp.status = falcon.HTTP_BAD_REQUEST
+            raise Exception('Empty user_identifer passed to set JWT')
+        logging.debug(
+            "Creating new JWT, user_identifier is: {}".format(user_identifier))
+        logging.debug(datetime.utcnow() + timedelta(seconds=self.token_expiration_seconds))
+        logging.debug(phone_last_verified)
+        token = jwt.encode({'user_identifier': user_identifier,
+                            'exp': datetime.utcnow() + timedelta(seconds=self.token_expiration_seconds),
+                            'phone_last_verified': str(phone_last_verified)},
+                            self.secret,
+                            algorithm='HS256').decode("utf-8")
+        logging.debug("Setting TOKEN!")
+        self.token_opts["value"] = token
+        logging.debug(self.token_opts)
+        
+        if self.token_opts.get('location', 'cookie') == 'cookie': # default to cookie
+            resp.set_cookie(**self.token_opts)
+        elif self.token_opts['location'] == 'header':
+            resp.body.update({self.token_opts['name'] : self.token_opts['value'],
+                              "user_identifier": user_identifier})
+        else:
+            resp.status = falcon.HTTP_INTERNAL_SERVER_ERROR
+            raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')
+        resp.status = falcon.HTTP_ACCEPTED #HTTP_202
+        
 @falcon.before(deserialize)
 @falcon.after(serialize)
 class RegisterResource(object):
@@ -222,21 +256,13 @@ class RegisterResource(object):
         else:
             logging.debug("Adding new user...")
             # We don't check of display name is unique. We only check for email and phone 
-            new_user = User(email=req.params['body']["email"], 
-                            password=crypt.encrypt(req.params['body']["password"]),
-                            phone=phone, 
-                            country_code=req.params['body']["country_code"],
-                            display_name=req.params['body']["display_name"],
-                            pw_last_changed=datetime.utcnow())
+            new_user = User(phone=phone, 
+                            country_code=req.params['body']["country_code"])
             new_user.save()
- 
-            if 'gender' in req.params['body']:
-                new_user.update(gender=req.params['body']['gender'])
-            if 'display_pic' in req.params['body']:
-                new_user.update(display_pic=req.params['body']['display_pic'])
+            
             if 'public_profile' in req.params['body']:
-                new_user.update(public_profile=req.params['body']['public_profile'])                
-                
+                new_user.update(public_profile=req.params['body']['public_profile'])
+
             logging.debug("Sending SMS to new user ...")
             if SERVER_SECURE_MODE == 'DEBUG':
                 logging.warn("SERVER RUNNING in DEBUG Mode")
@@ -289,8 +315,8 @@ class RegisterResource(object):
             "Creating new JWT, user_identifier is: {}".format(user_identifier))
         token = jwt.encode({'user_identifier': user_identifier,
                             'exp': datetime.utcnow() + timedelta(seconds=self.verify_phone_token_expiration_seconds)},
-                           self.secret,
-                           algorithm='HS256').decode("utf-8")
+                            self.secret,
+                            algorithm='HS256').decode("utf-8")
         logging.debug("Setting TOKEN!")
         self.token_opts["value"] = token
         logging.debug(self.token_opts)
@@ -502,8 +528,7 @@ class AuthMiddleware(object):
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
 
     def process_resource(self, req, resp, resource, params): # pylint: disable=unused-argument
-        if isinstance(resource, LoginResource) or \
-           isinstance(resource, RegisterResource) or \
+        if isinstance(resource, RegisterResource) or \
            isinstance(resource, VerifyPhoneResource) or \
            isinstance(resource, PasswordChangeResource) or \
            isinstance(resource, ForgotPasswordResource) or \
@@ -542,11 +567,11 @@ class AuthMiddleware(object):
         # we used user mongo object id as user identifier
         user_id = self.decoded.pop("user_identifier")
         req.user_id = user_id
-        pw_last_changed = self.decoded.pop("pw_last_changed")
+        phone_last_verified = self.decoded.pop("phone_last_verified")
         logging.debug("Password last changed recovered from auth_token:")
-        logging.debug(pw_last_changed)
+        logging.debug(phone_last_verified)
         # check if user is authorized to this request
-        if not self._is_user_authorized(req, user_id, pw_last_changed, user_id_type='id'):
+        if not self._is_user_authorized(req, user_id, phone_last_verified, user_id_type='id'):
             resp.status = falcon.HTTP_UNAUTHORIZED
             logging.error("Authorization Failed: User does not have privilege/permission or supplied expired token.")
             raise falcon.HTTPUnauthorized(
@@ -584,9 +609,11 @@ class AuthMiddleware(object):
         logging.debug("Required role: %s" %repr(ACL_MAP[path].get(method, Role.USER)))
         return user.role_satisfy(ACL_MAP[path].get(method, Role.USER))  # defaults to minimal role if method not found
 
-    def _is_user_authorized(self, req, user_id, pw_last_changed, user_id_type='phone'):
+    def _is_user_authorized(self, req, user_id, phone_last_verified, user_id_type='phone'):
         user = self.get_user(user_id_type, user_id)
-        if str(user.pw_last_changed) != pw_last_changed:
+        if user.phone_last_verified != phone_last_verified:
+            logging.error(user.phone_last_verified)
+            logging.error(phone_last_verified)
             logging.error("Supplied authentication token is expired. Please supply new token.")
             return False
         return user is not None and self._access_allowed(req, user)
@@ -595,6 +622,5 @@ def get_auth_objects(get_user, secret, token_expiration_seconds, verify_phone_to
     return ForgotPasswordResource(get_user),\
            RegisterResource(get_user, secret, verify_phone_token_expiration_seconds, **token_opts),\
            PasswordChangeResource(get_user, secret, token_expiration_seconds, **token_opts),\
-           LoginResource(get_user, secret, token_expiration_seconds, **token_opts),\
-           VerifyPhoneResource(get_user, secret, **token_opts),\
+           VerifyPhoneResource(get_user, secret, token_expiration_seconds, **token_opts),\
            AuthMiddleware(get_user, secret, **token_opts)
