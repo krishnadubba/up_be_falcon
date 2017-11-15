@@ -13,8 +13,10 @@ PAGE_LIMIT = 20
 MAX_TOKEN_AGE = 86400
 
 # Token valid for 90 days
+
+OTP_LENGTH = 6
 TOKEN_EXPIRATION_SECS = 7776000
-VERIFY_PHONE_TOKEN_EXPIRATION_SECS = 86400
+VERIFY_PHONE_TOKEN_EXPIRATION_SECS = 3600
 
 AUTH_SERVER_NAME = "bouncer"
 AUTH_HEADER_USER_ID = "X-Gobbl-User-ID"
@@ -35,5 +37,6 @@ FOLLOWING     = 'following:'
 FOLLOWERS     = 'followers:'
 USER_FEED     = 'user_feed:'
 USER          = 'user:'
+OTP           = 'otp:'
 USER_NOTIFICATION_FEED = 'user_notification_feed:'
 RECIPE_COMMENTORS = 'recipe_commentors:'

@@ -18,7 +18,7 @@ from uggipuggi.tests.utils.dummy_data import users_gcs_base, food_gcs_base, user
 from uggipuggi.tests.utils.dummy_data_utils import get_dummy_email, get_dummy_password,\
                                                    get_dummy_phone, get_dummy_display_name     
 
-
+DEBUG_OTP = '999999'
 class TestUggiPuggiAuthMiddleware(testing.TestBase):
     def setUp(self):
         try:
@@ -59,10 +59,10 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
                         'expected': {'status': 200}
                     },
                     {
-                        'name': 'register_failure_user_exists',
+                        'name': 'register_again_user_exists',
                         'desc': 'User already exists',
                         'payload': self.payload,
-                        'expected': {'status': 401}
+                        'expected': {'status': 200}
                     },
                 ]
         
@@ -86,21 +86,21 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
                     {
                         'name': 'verify_phone_success',
                         'desc': 'success',
-                        'payload': {'code':'9999'},
+                        'payload': {'code':DEBUG_OTP},
                         'auth_token': self.verify_token,
                         'expected': {'status': 202}
                     },
                     {
                         'name': 'verify_phone_failure_wrong_otp',
                         'desc': 'OTP code failure',
-                        'payload': {'code':'2222'},
+                        'payload': {'code':'222222'},
                         'auth_token': self.verify_token,
                         'expected': {'status': 406}
                     },
                     {
                         'name': 'verify_phone_failure_wrong_auth_token',
                         'desc': 'Wrong auth token',
-                        'payload': {'code':'9999'},
+                        'payload': {'code':DEBUG_OTP},
                         'auth_token': self.verify_token + '0',
                         'expected': {'status': 401}
                     },                        
@@ -163,7 +163,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
             verify_token = json.loads(res.content.decode('utf-8'))['auth_token']
             
             header.update({'auth_token':verify_token})
-            res = requests.post(self.rest_api + '/verify', data=json.dumps({'code':'9999'}), 
+            res = requests.post(self.rest_api + '/verify', data=json.dumps({'code':DEBUG_OTP}), 
                                 headers=header)
             
             login_token   = json.loads(res.content.decode('utf-8'))['auth_token']
@@ -461,7 +461,7 @@ class TestUggiPuggiRecipe(testing.TestBase):
         self.verify_token = None
         self.login_token  = None
         self.test_user    = None
-        count = 100
+        count = 1000
         
         self.user_name = get_dummy_display_name(count)
         self.payload = {
@@ -475,7 +475,7 @@ class TestUggiPuggiRecipe(testing.TestBase):
         self.verify_token = json.loads(res.content.decode('utf-8'))['auth_token']
         header.update({'auth_token': self.verify_token})
         res = requests.post(self.rest_api + '/verify', 
-                            data=json.dumps({'code':'9999'}), 
+                            data=json.dumps({'code':DEBUG_OTP}), 
                             headers=header)
     
         print('=========================')

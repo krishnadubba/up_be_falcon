@@ -103,5 +103,5 @@ class Group(Document):
     
 class VerifyPhone(Document):
     phone = StringField(required=True, unique=True)  # contact number
-    otp   = StringField(required=True, min_length=4, max_length=5)
+    otp   = StringField(required=True, min_length=4, max_length=6)
 

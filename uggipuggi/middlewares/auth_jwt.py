@@ -12,6 +12,7 @@ from random import randint
 from bson import json_util, ObjectId
 from datetime import datetime, timedelta
 from passlib.hash import bcrypt as crypt
+from uggipuggi.constants import OTP, OTP_LENGTH
 from uggipuggi.models.user import Role, User, VerifyPhone
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.messaging.authentication_kafka_producers import kafka_verify_post_producer,\
@@ -162,18 +163,16 @@ class VerifyPhoneResource(object):
         
         phone_number = self.decoded.pop("user_identifier")        
         req.user_id = phone_number
-        # Use VerifyUser database instead of normal User database
-        user = self.get_user('phone', phone_number, verify=True)
-        logging.debug("getting user from VerifyUser database")
-        logging.debug(user)        
-        if not user:
-            description = ('Please register again.')
-            raise falcon.HTTPForbidden('User record with this phone number does not exist!',
+        user_otp = req.redis_conn.get(OTP+phone_number)
+        
+        if not user_otp:
+            description = ('OTP expired, please request new OTP.')
+            raise falcon.HTTPForbidden('OTP expired!',
                                        description,
                                        href='http://docs.example.com/auth')                                       
         else:
             logging.debug("Verifying user...")
-            if otp_code == user.otp:
+            if otp_code == user_otp:
                 current_time = datetime.utcnow()
                 logging.debug("Current time!")
                 logging.debug(str(current_time))
@@ -188,7 +187,7 @@ class VerifyPhoneResource(object):
                 self.add_new_jwtoken(resp, str(full_user.id), phone_last_verified=current_time)
                 resp.status = falcon.HTTP_ACCEPTED
             else:
-                logging.debug("Incorrect OTP code!")
+                logging.error("Incorrect OTP code!")
                 description = ('Incorrect OTP code! Please try again.')
                 raise falcon.HTTPNotAcceptable(description,
                                                href='http://docs.example.com/auth')                
@@ -230,6 +229,7 @@ class VerifyPhoneResource(object):
             raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')
         resp.status = falcon.HTTP_ACCEPTED #HTTP_202
         
+@falcon.before(supply_redis_conn)        
 @falcon.before(deserialize)
 @falcon.after(serialize)
 class RegisterResource(object):
@@ -254,59 +254,47 @@ class RegisterResource(object):
         
         logging.debug("getting user")
         logging.debug(user)
-        if user:
-            raise falcon.HTTPUnauthorized('User already exists!',
-                                          'Please login.',
-                                          ['Hello="World!"'])
-        else:
+        if not user:
             logging.debug("Adding new user...")
             # We don't check of display name is unique. We only check for email and phone 
             new_user = User(phone=phone, 
                             country_code=req.params['body']["country_code"])
             new_user.save()
-            
+        
             if 'public_profile' in req.params['body']:
                 new_user.update(public_profile=req.params['body']['public_profile'])
-
-            logging.debug("Sending SMS to new user ...")
-            if SERVER_SECURE_MODE == 'DEBUG':
-                logging.warn("SERVER RUNNING in DEBUG Mode")
-                otpass = repr(9999)
-                response = [202]
-            else:    
-                # Plivo does not accept 0044, only accepts +44
-                otpass = random_with_N_digits(4)
-                plivo_valid_dst = '+' + phone[2:]
-                params = {
-                    'src': SRC_PHONE_NUM, # Sender's phone number with country code
-                    'dst' : plivo_valid_dst,  # Receiver's phone Number with country code
-                    'text' : u"Your UggiPuggi OTP: %s" %otpass, # Your SMS Text Message - English
-                }
-                
-                response = sms.send_message(params)
-                logging.debug(response)                
-                
-            logging.debug(otpass)
-            if response[0] == 202:
-                # See if there is a user with that phone in verify_user DB
-                verify_user = self.get_user('phone', phone, verify=True)
-                if verify_user:
-                    # If user is there, just update otp, this is just resend OTP request
-                    verify_user.update(otp=otpass)
-                    logging.debug("User present in verify database, updating with new OTP")
-                else:
-                    # Else create new user with that phone in verify_user DB
-                    verify_user = VerifyPhone(phone=phone, otp=otpass)
-                    verify_user.save()
-                    logging.debug("Added new user in verify database as sms OTP successful")
-                self.add_new_jwtoken(resp, phone)
-                resp.status = falcon.HTTP_OK
-            else:
-                logging.debug("OTP SMS failed!")
-                raise falcon.HTTPBadRequest(
-                                "OTP SMS failed!", traceback.format_exc())
-            
             logging.debug("Added new user. Please verify phone number")
+            
+        logging.debug("Sending SMS to user ...")
+        if SERVER_SECURE_MODE == 'DEBUG':
+            logging.warn("SERVER RUNNING in DEBUG Mode")
+            otpass = repr(999999)
+            response = [202]
+        else:    
+            # Plivo does not accept 0044, only accepts +44
+            otpass = random_with_N_digits(OTP_LENGTH)
+            plivo_valid_dst = '+' + phone[2:]
+            params = {
+                'src': SRC_PHONE_NUM, # Sender's phone number with country code
+                'dst' : plivo_valid_dst,  # Receiver's phone Number with country code
+                'text' : u"Your UggiPuggi OTP: %s" %otpass, # Your SMS Text Message - English
+            }
+            
+            response = sms.send_message(params)
+            logging.debug(response)                
+            
+        logging.debug(otpass)
+        if response[0] == 202:
+            # See if there is a user with that phone in verify_user DB
+            req.redis_conn.set(OTP+phone, otpass)
+            req.redis_conn.expire(OTP+phone, self.verify_phone_token_expiration_seconds)
+            logging.debug("Added new user in verify database as sms OTP successful")
+            self.add_new_jwtoken(resp, phone)
+            resp.status = falcon.HTTP_OK
+        else:
+            logging.debug("OTP SMS failed!")
+            raise falcon.HTTPBadRequest(
+                            "OTP SMS failed!", traceback.format_exc())
 
     # given a user identifier, this will add a new token to the response
     # Typically you would call this from within your login function, after the
