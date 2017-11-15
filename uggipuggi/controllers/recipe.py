@@ -99,7 +99,7 @@ class Item(object):
     def on_get(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         recipe = self._try_get_recipe(id)
-        # Converting MongoEngine recipe to dictionary
+        # Converting MongoEngine recipe document to dictionary
         resp.body = recipe._data
         resp.status = falcon.HTTP_FOUND
         
@@ -119,12 +119,12 @@ class Item(object):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Finding recipe in database ... %s" %repr(id))
         recipe = self._try_get_recipe(id)
-        #data = req.params.get('body')
         logger.debug("Updating recipe data in database ...")
         logger.debug(req.params['body'])
         # save to DB
         try:            
             for key, value in req.params['body'].items():
+                # Adding comments to the recipe
                 if key == 'comment':
                     comment = Comment(content=value['content'], 
                                       user_id=value['user_id'], 
@@ -132,7 +132,8 @@ class Item(object):
                     recipe.comments.append(comment)
                     recipe.save()
                     resp.recipe_author_id = recipe.user_id
-                else:    
+                else:
+                    # Updating/adding other fields
                     recipe.update(key=value)                        
         except (ValidationError, LookUpError, InvalidQueryError, KeyError) as e:
             logger.error('Invalid fields provided for recipe. {}'.format(e))

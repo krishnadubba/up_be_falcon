@@ -62,6 +62,7 @@ class User(Document):
     first_name      = StringField(required=False)
     last_name       = StringField(required=False)
     display_pic     = URLField(required=False)
+    dp_thumbnail    = URLField(required=False)
     gender          = StringField(required=False, min_length=4, max_length=6)        
     facebook_id     = LongField(required=False)  # Facebook ID is numeric but can be pretty big
     twitter_id      = StringField(required=False)  # Twitter ID is alphanumeric

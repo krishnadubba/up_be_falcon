@@ -27,13 +27,8 @@ class UggiPuggiTaskSet(TaskSet):
     def on_start(self):
         count = USER_CREDENTIALS.pop()
         self.user_name = get_dummy_display_name(count)
-        payload = {"email":    get_dummy_email(count),
-                   "password": get_dummy_password(count),
-                   "phone":    get_dummy_phone(count),
+        payload = {"phone":    get_dummy_phone(count),
                    "country_code": "IN",
-                   "display_name": self.user_name,
-                   "gender": 'female',
-                   'display_pic': 'https://storage.googleapis.com/up_users_avatars/salam.png'
                    }
         header = {'Content-Type':'application/json'}
         # If you give dict as body use json=dict or data=json.dumps(dict)
@@ -45,14 +40,9 @@ class UggiPuggiTaskSet(TaskSet):
         
         header.update({'auth_token':verify_token})
         res = self.client.post('/verify', 
-                               data=json.dumps({'code':'9999'}), 
+                               data=json.dumps({'code':'999999'}), 
                                headers=header)
         
-        payload = {'email':get_dummy_email(count), "password":get_dummy_password(count)}
-        header = {'Content-Type':'application/json'}
-        res = self.client.post('/login', 
-                               data=json.dumps(payload), 
-                               headers=header)
         res_dict = json.loads(res.content.decode('utf-8'))
         self.login_token = res_dict['auth_token']
         self.user_id     = res_dict['user_identifier']
