@@ -13,11 +13,10 @@ from bson import json_util, ObjectId
 from datetime import datetime, timedelta
 from passlib.hash import bcrypt as crypt
 from uggipuggi.models.user import Role, User, VerifyPhone
-from uggipuggi.controllers.hooks import deserialize, serialize
+from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.messaging.authentication_kafka_producers import kafka_verify_post_producer,\
                                 kafka_register_post_producer, kafka_login_post_producer,\
                                 kafka_forgotpassword_post_producer, kafka_passwordchange_post_producer
-#from uggipuggi import Test, StaticResource
 
 def random_with_N_digits(n):
     range_start = 10**(n-1)
@@ -62,6 +61,9 @@ ACL_MAP = {
         'put':    Role.USER,
         'delete': Role.USER
     },
+    '/get_userid': {
+        'post': Role.USER
+    },    
     '/feed/+': {
         'get':    Role.USER,
     },    
@@ -108,6 +110,7 @@ class Test(object):
         resp.body = json_util.dumps({"Uggi": "Puggi"})
         resp.status = falcon.HTTP_200 
       
+@falcon.before(supply_redis_conn)      
 @falcon.before(deserialize)
 @falcon.after(serialize)
 class VerifyPhoneResource(object):
@@ -179,6 +182,8 @@ class VerifyPhoneResource(object):
                 full_user.update(account_active=True)
                 # This gives error if we use datetime type instead of str                
                 full_user.update(phone_last_verified=str(current_time))
+                # Store phone to MongoDB mapping in Redis database
+                req.redis_conn.set(phone_number, str(full_user.id))
                 logging.debug("User verification: Success")
                 self.add_new_jwtoken(resp, str(full_user.id), phone_last_verified=current_time)
                 resp.status = falcon.HTTP_ACCEPTED

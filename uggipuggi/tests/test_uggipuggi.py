@@ -214,7 +214,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         print ()                   
         print ('Starting social network tests: Adding Contacts ...')                
         print ()
-        print ("===============================================================")                
+        print ("===============================================================")        
         for contact in dummy_contacts:
             with self.subTest(name=users_map[contact[0]]['user_id']):
                 login_token = users_map[contact[0]]['login_token']
@@ -226,13 +226,32 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                                                   data=json.dumps(contact_payload), 
                                                   headers=header)                 
                 self.assertEqual(400, res.status_code)
-                
+                                
                 # Now give some ids to add
                 for cont in contact[1:]:        
                     contact_payload['contact_user_id'].append(users_map[cont]['user_id'])
+                    
                 res = requests.put(self.rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
-                                  data=json.dumps(contact_payload), 
-                                  headers=header)
+                                   data=json.dumps(contact_payload), 
+                                   headers=header)
+                self.assertEqual(200, res.status_code)
+                
+                phone_numbers = []
+                for cont in contact[1:]:        
+                    phone_numbers.append(users_map[cont]['phone'])
+            
+                res = requests.post(self.rest_api + '/get_userid', 
+                                    data=json.dumps({'phone_numbers':phone_numbers}),
+                                    headers=header)
+                self.assertEqual(200, res.status_code)
+                results = json.loads(res.content.decode('utf-8'))
+                self.assertTrue('items' in results)
+                self.assertTrue('count' in results)
+                contact_payload['contact_user_id'] = results['items']
+                print(results['items'])
+                res = requests.put(self.rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
+                                   data=json.dumps(contact_payload), 
+                                   headers=header)
                 self.assertEqual(200, res.status_code)
                 
                 # Lets provide wrong param and test

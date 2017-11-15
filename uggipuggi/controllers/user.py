@@ -4,7 +4,7 @@ from __future__ import absolute_import
 import falcon
 import logging
 from uggipuggi import constants
-from uggipuggi.controllers.hooks import deserialize, serialize
+from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.models.user import User, Role
 from uggipuggi.libs.error import HTTPBadRequest, HTTPUnauthorized
 from uggipuggi.messaging.user_kafka_producers import user_kafka_item_get_producer
@@ -16,7 +16,21 @@ from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, Validation
 
 logger = logging.getLogger(__name__)
 
+@falcon.before(supply_redis_conn)
+class ID(object):
+    def __init__(self):
+        pass
 
+    @falcon.before(deserialize)
+    @falcon.after(serialize)
+    def on_post(self, req, resp):
+        data = req.params.get('body')
+        if 'phone_numbers' not in data:
+            raise HTTPBadRequest(title='Invalid Value', description='Please provide phone numbers. {}'.format(e))
+        user_ids = req.redis_conn.mget(data['phone_numbers'])
+        resp.body = {'items': user_ids, 'count': len(user_ids)}
+        resp.status = falcon.HTTP_OK
+        
 class Collection(object):
     def __init__(self):
         pass
@@ -39,7 +53,7 @@ class Collection(object):
         users_qset = User.objects(**query_params)[start:end]
         users = [obj.to_mongo() for obj in users_qset]
         resp.body = {'items': [res.to_dict() for res in users], 'count': len(users)}
-        resp.status = falcon.HTTP_FOUND
+        resp.status = falcon.HTTP_OK
 
 class Item(object):
     def __init__(self):
@@ -93,5 +107,5 @@ class Item(object):
         user = self._try_get_user(id)
         # Converting MongoEngine recipe to dictionary
         resp.body = user._data
-        resp.status = falcon.HTTP_FOUND
+        resp.status = falcon.HTTP_OK
         

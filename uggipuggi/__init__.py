@@ -13,7 +13,7 @@ import logging.handlers
 from bson import json_util
 from mongoengine import connection
 from uggipuggi.controllers import recipe, tag, status, rating, user, user_feed, batch, activity,\
-                        redis_group, redis_contacts, redis_followers, redis_following
+                                   redis_group, redis_contacts, redis_followers, redis_following
 from uggipuggi.services.user import get_user  
 from uggipuggi.middlewares import auth_jwt
 from uggipuggi.constants import DATETIME_FORMAT, AUTH_SHARED_SECRET_ENV, \
@@ -66,6 +66,7 @@ class UggiPuggi(object):
         self.app.add_route('/activity', activity.Collection())
         self.app.add_route('/activity/{id}', activity.Item())
         
+        self.app.add_route('/get_userid', user.ID())
         self.app.add_route('/users', user.Collection())
         self.app.add_route('/users/{id}', user.Item())
         
