@@ -29,6 +29,11 @@ def user_feed_add_recipe(message):
         
     pipeline = redis_conn.pipeline(True)
     
+    # Add the author to recipe commentor list, so we can notify 
+    # him when others comments on this recipe
+    recipe_commentors_id = RECIPE_COMMENTORS + recipe_id    
+    pipeline.sadd(recipe_commentors_id, user_id)
+    
     # Add a hash for the recipe at "recipe:recipe_id"
     pipeline.hmset(recipe_id_name, recipe_dict)
     logger.info('################# I am executed in celery worker START ###################')
@@ -48,14 +53,11 @@ def user_feed_put_comment(message):
     logger.debug('Celery worker: user_feed_put_comment')
     commenter_id, commenter_name, recipe_author_id, recipe_id, comment, status = json_util.loads(message.strip("'<>() ").replace('\'', '\"'))        
     redis_conn = get_redis_conn()
+    recipe_commentors_id = RECIPE_COMMENTORS + recipe_id
+    recipients = redis_conn.smembers(recipe_commentors_id)
     pipeline = redis_conn.pipeline(True)
-    recipe_commentors_id = RECIPE_COMMENTORS + recipe_author_id
+    # Add the current commentor, so we can notify him when others comments on this recipe
     pipeline.sadd(recipe_commentors_id, commenter_id)
-    pipeline.sadd(recipe_commentors_id, recipe_author_id)    
-    pipeline.smembers(recipe_commentors_id)
-    recipients = pipeline.execute()[-1]
-    recipients.remove(commenter_id)
-    
     for recipient in recipients:
         # Use the count of this user feed bucket for notification
         user_notification_feed = USER_NOTIFICATION_FEED + recipient
@@ -73,8 +75,8 @@ def user_feed_add_activity(message):
     redis_conn = get_redis_conn()
     pipeline = redis_conn.pipeline(True)
     # Get all contacts and followers userids
-    activity_id_name  = ACTIVITY + activity_id
-    recipe_id_name    = RECIPE   + recipe_id
+    activity_id_name = ACTIVITY + activity_id
+    recipe_id_name   = RECIPE   + recipe_id
     
     recipe_name, recipe_author_name, recipe_author_id = redis_conn.hmget(recipe_id_name, ['recipe_name',
                                                                                           'author_name',
