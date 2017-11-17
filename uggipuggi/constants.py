@@ -11,6 +11,8 @@ INTEGER_MAX = sys.maxsize - 1
 PAGE_LIMIT = 20
 
 MAX_TOKEN_AGE = 86400
+GCLOUD_SERVICE_CREDS='/home/krishna/gcloud_credentials/uggipuggi-a17b68a1ad89.json'
+FCM_SERVER_KEY = 'AAAAzPk-Tf4:APA91bGwttdFLH671-48ekIwFNW2htVppUH0qorLPxNEUNAQC_XtOcTDG2I2hzqn3p6JQ0wySadD_AV32agw35xYVXukCYsUQAv6gnf5xvdJhnQRZS_uZJq65V4hQv8jpI3Hp57FPCnu'
 
 # Token valid for 90 days
 

@@ -31,8 +31,8 @@ class RecipeSchema(colander.MappingSchema):
     rating_total = colander.SchemaNode(colander.Int())
     prep_time    = colander.SchemaNode(colander.Int())
     cook_time    = colander.SchemaNode(colander.Int())
-    last_modified = DateTimeField(required=False)
-    comments     = ListField(EmbeddedDocumentField(Comment), required=False)
+    #last_modified = DateTimeField(required=False)
+    #comments     = ListField(EmbeddedDocumentField(Comment), required=False)
  
 class Recipes(colander.SequenceSchema):
     recipe = RecipeSchema()

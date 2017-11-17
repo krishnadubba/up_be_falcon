@@ -395,7 +395,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
    
         print ("===============================================================")
         print ()   
-        print ('Starting social network tests: Adding Feeds ...')
+        print ('Starting social network tests: Adding Activity ...')
         print ()
         print ("===============================================================")        
         for feed in dummy_feeds:
@@ -426,27 +426,42 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 results = json.loads(res.content.decode('utf-8'))['items']   
       
         print ("===============================================================")
+        print ()   
+        print ('Starting social network tests: Testing Feeds ...')
         print ()
-        print ('Starting social network tests: deleting from following list ...')
-        print ()
-        print ("===============================================================")                
-        # Delete the members from user's following list
-        for contact in dummy_following:
-            login_token = users_map[contact[0]]['login_token']
-            header.update({'auth_token':login_token})
-            contact_payload = {}
-            for cont in contact[1:]:
-                # We can only delete public users from following list (bcoz the list has only public profiles
-                # as you can only follow public profiles)
-                if 'public_profile' in users_map[cont]:
-                    with self.subTest(name=users_map[contact[0]]['user_id']+'::'+users_map[cont]['user_id']):
-                        contact_payload = {}
-                        # This time 'public_user_id' is a list (user can delete many in one go)
-                        contact_payload['public_user_id'] = [users_map[cont]['user_id']]
-                        res = requests.post(self.rest_api + '/following/%s'%users_map[contact[0]]['user_id'], 
-                                            data=json.dumps(contact_payload), 
-                                            headers=header)
-                        self.assertEqual(200, res.status_code)                        
+        print ("===============================================================")         
+        user_mongo_id = users_map['U0016']['user_id']
+        login_token   = users_map['U0016']['login_token']
+        header = {'Content-Type':'application/json'}
+        header.update({'auth_token':login_token})
+        
+        res = requests.get(self.rest_api + 'feed/%s'%user_mongo_id, headers=header)
+        print('Response:')
+        print(res.status_code)
+        print(res.text)              
+      
+        #print ("===============================================================")
+        #print ()
+        #print ('Starting social network tests: deleting from following list ...')
+        #print ()
+        #print ("===============================================================")                
+        ## Delete the members from user's following list
+        #for contact in dummy_following:
+            #login_token = users_map[contact[0]]['login_token']
+            #header.update({'auth_token':login_token})
+            #contact_payload = {}
+            #for cont in contact[1:]:
+                ## We can only delete public users from following list (bcoz the list has only public profiles
+                ## as you can only follow public profiles)
+                #if 'public_profile' in users_map[cont]:
+                    #with self.subTest(name=users_map[contact[0]]['user_id']+'::'+users_map[cont]['user_id']):
+                        #contact_payload = {}
+                        ## This time 'public_user_id' is a list (user can delete many in one go)
+                        #contact_payload['public_user_id'] = [users_map[cont]['user_id']]
+                        #res = requests.post(self.rest_api + '/following/%s'%users_map[contact[0]]['user_id'], 
+                                            #data=json.dumps(contact_payload), 
+                                            #headers=header)
+                        #self.assertEqual(200, res.status_code)                        
             
 class TestUggiPuggiRecipe(testing.TestBase):
     def setUp(self):
