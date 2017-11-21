@@ -44,7 +44,7 @@ class Subscription(object):
 
 class User(Document):
 
-    country_code    = StringField(required=True, min_length=2, max_length=2)  # follows ISO_3166-1
+    country_code    = StringField(required=True, min_length=2, max_length=10)  # follows ISO_3166-1
     phone           = StringField(required=True, unique=True)  # contact number
     
     role            = IntField(required=True, default=Role.USER)    

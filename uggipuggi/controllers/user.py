@@ -7,9 +7,10 @@ from uggipuggi import constants
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.models.user import User, Role
 from uggipuggi.libs.error import HTTPBadRequest, HTTPUnauthorized
-from uggipuggi.messaging.user_kafka_producers import user_kafka_item_get_producer
+from uggipuggi.messaging.user_kafka_producers import user_kafka_item_get_producer,\
+                                                     user_kafka_item_put_producer
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError
-
+from uggipuggi.tasks.user_tasks import user_profile_pic_task
 
 # -------- BEFORE_HOOK functions
 # -------- END functions
@@ -57,8 +58,8 @@ class Collection(object):
 
 class Item(object):
     def __init__(self):
-        pass
-
+        self.kafka_topic_name = 'user_item'
+    
     def _try_get_user(self, id):
         try:
             return User.objects.get(id=id)
@@ -67,12 +68,20 @@ class Item(object):
 
     # TODO: handle PUT requests
     @falcon.before(deserialize)
-    def on_post(self, req, resp, id):
+    @falcon.after(user_kafka_item_put_producer)
+    def on_put(self, req, resp, id):
+        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
+        
         user = self._try_get_user(id)
-        data = req.params.get('body')
+        data = req.params.get('body').copy()
         logger.debug("Updating user data in database ...")
         logger.debug(data)
+                
         # save to DB
+        if "display_pic" in data:
+            user_profile_pic_task.delay(req)            
+            data.pop("display_pic")
+            
         for key, value in data.iteritems():
             user.update(key, value)
             

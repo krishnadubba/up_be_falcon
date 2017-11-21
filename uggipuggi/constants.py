@@ -42,3 +42,7 @@ USER          = 'user:'
 OTP           = 'otp:'
 USER_NOTIFICATION_FEED = 'user_notification_feed:'
 RECIPE_COMMENTORS = 'recipe_commentors:'
+
+# Google Cloud Storage stuff
+GCS_USER_BUCKET = 'gcs_user_bucket'
+GCS_ALLOWED_EXTENSIONS = ['jpg']
