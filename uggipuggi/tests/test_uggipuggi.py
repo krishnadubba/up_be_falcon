@@ -7,6 +7,7 @@ import os, sys
 import unittest
 import requests
 import subprocess
+from six import BytesIO
 from falcon import testing
 
 sys.path.append(os.path.dirname(os.path.dirname(sys.path[0])))
@@ -123,6 +124,25 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
                         print ("setting login token")
                     if 'user_identifier' in json.loads(res.content.decode('utf-8')):
                         self.test_user = json.loads(res.content.decode('utf-8'))['user_identifier']
+
+        tests = [
+                    {
+                        'name': 'verify_gcs_storage',
+                        'desc': 'success',
+                        'payload': {'display_pic':(BytesIO(b'hello world'), 'hello.jpg')},
+                        'auth_token': self.verify_token,
+                        'expected': {'status': 200}
+                    },
+                ]
+        
+        header = {'Content-Type':'application/json'}
+        for test in tests:
+            with self.subTest(name=test['name']):
+                header.update({'auth_token':test['auth_token']})
+                res = requests.put(self.rest_api + '/users/%s' %self.test_user, 
+                                    data=json.dumps(test['payload']), 
+                                    headers=header)
+                self.assertEqual(test['expected']['status'], res.status_code)
 
 class TestUggiPuggiSocialNetwork(testing.TestBase):
     def setUp(self):

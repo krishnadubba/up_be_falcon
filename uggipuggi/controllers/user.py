@@ -86,6 +86,7 @@ class Item(object):
             user.update(key, value)
             
         logger.debug("Updated user data in database")
+        resp.status = falcon.HTTP_OK
         
     @falcon.before(deserialize)        
     def on_delete(self, req, resp, id):

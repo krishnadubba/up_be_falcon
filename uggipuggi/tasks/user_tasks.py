@@ -2,6 +2,8 @@ import os, sys, time
 from bson import json_util
 from celery.utils.log import get_task_logger
 from uggipuggi.celery.celery import celery
+from uggipuggi.models.user import User
+from uggipuggi.services.user import get_user 
 from uggipuggi.constants import USER, GCS_ALLOWED_EXTENSIONS, GCS_USER_BUCKET
 from google.cloud import storage as gc_storage
 import six
@@ -31,6 +33,7 @@ def user_profile_pic_task(req_json):
     url = blob.public_url
     if isinstance(url, six.binary_type):
         url = url.decode('utf-8')
-    data["display_pic"] = url    
-    
+        
+    user = get_user('id', req_json.user_id)
+    user.update(display_pic=url)
     logger.info('################# I am executed in celery worker END ###################')
