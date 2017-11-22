@@ -267,7 +267,6 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 results = json.loads(res.content.decode('utf-8'))
                 self.assertTrue('items' in results)
                 self.assertTrue('count' in results)
-                contact_payload['contact_user_id'] = results['items']
                 print(results['items'])
                 
                 # Lets provide wrong param and test

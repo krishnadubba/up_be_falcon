@@ -43,6 +43,7 @@ def deserialize(req, res, resource, params, schema=None):
                 else:
                     json_body = json_util.loads(req_stream)
                     
+                req.params['body'] = json_body    
             except Exception:
                 raise falcon.HTTPBadRequest(
                     "I don't understand the HTTP request body", traceback.format_exc())
@@ -58,8 +59,7 @@ def deserialize(req, res, resource, params, schema=None):
                                      description='Invalid arguments '
                                                  'in params:\n{}'.format(e.asdict()))
 
-        req.params['body'] = json_body
-
+        
     elif req.method.upper() in ['OPTIONS', 'HEAD', 'GET', 'DELETE']:
 
         req.params['query'] = {}

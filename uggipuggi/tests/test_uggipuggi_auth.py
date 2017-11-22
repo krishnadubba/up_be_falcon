@@ -34,7 +34,7 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
         self.verify_token = None
         self.login_token  = None
         self.test_user    = None
-        count = 0
+        count = 5
         
         self.payload = {
                         "phone": get_dummy_phone(count),
@@ -126,6 +126,7 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
                     if 'user_identifier' in json.loads(res.content.decode('utf-8')):
                         self.test_user = json.loads(res.content.decode('utf-8'))['user_identifier']
                         
+        here = os.path.dirname(os.path.realpath(__file__))                        
         filepath = os.path.join(os.path.dirname(os.path.dirname(here)), 'test_data', 'image.jpg')
         image = open(filepath, 'rb')
         tests = [
@@ -133,20 +134,24 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
                         'name': 'verify_gcs_storage',
                         'desc': 'success',
                         'payload': {'display_pic':image},
-                        'auth_token': self.verify_token,
+                        'auth_token': self.login_token,
                         'expected': {'status': 200}
                     },
                 ]
         
-        header = {'Content-Type':'multipart/form-data'}
+        #header = {'Content-Type':'multipart/form-data'}
+        header = {'auth_token':self.login_token}
         for test in tests:
             with self.subTest(name=test['name']):
-                header.update({'auth_token':test['auth_token']})
+                #header.update({'auth_token':test['auth_token']})
                 res = requests.put(self.rest_api + '/users/%s' %self.test_user, 
-                                    files=test['payload'], 
+                                    files=test['payload'], data={'gender': 'male'},
                                     headers=header)
+                print (res.status_code)
+                print (res.text)                
                 self.assertEqual(test['expected']['status'], res.status_code)
-
+                
+        image.close()
 
 if __name__ == '__main__':
     if 'logs' not in os.listdir(sys.path[0]):

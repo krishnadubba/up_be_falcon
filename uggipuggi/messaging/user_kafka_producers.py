@@ -18,7 +18,10 @@ def user_kafka_item_get_producer(req, resp, resource):
     p.flush()
     
 def user_kafka_item_put_producer(req, resp, resource):
-    parameters = [req.kafka_topic_name, req.params['body'].keys(), resp, resource]
+    if 'multipart/form-data' in req.content_type:
+        parameters = [req.kafka_topic_name, req._params.keys(), resp, resource]
+    else:    
+        parameters = [req.kafka_topic_name, req.params['body'].keys(), resp, resource]
     logging.debug("++++++++++++++++++++++")
     logging.debug("USER_KAFKA_ITEM_POST_PRODUCER")
     logging.debug("++++++++++++++++++++++")

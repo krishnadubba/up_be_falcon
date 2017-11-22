@@ -1,3 +1,4 @@
+import six
 import os, sys, time
 from bson import json_util
 from celery.utils.log import get_task_logger
@@ -6,7 +7,6 @@ from uggipuggi.models.user import User
 from uggipuggi.services.user import get_user 
 from uggipuggi.constants import USER, GCS_ALLOWED_EXTENSIONS, GCS_USER_BUCKET
 from google.cloud import storage as gc_storage
-import six
 
 logger = get_task_logger(__name__)
 
