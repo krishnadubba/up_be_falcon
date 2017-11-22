@@ -15,9 +15,9 @@ from passlib.hash import bcrypt as crypt
 from uggipuggi.constants import OTP, OTP_LENGTH
 from uggipuggi.models.user import Role, User, VerifyPhone
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
-from uggipuggi.messaging.authentication_kafka_producers import kafka_verify_post_producer,\
-                                kafka_register_post_producer, kafka_login_post_producer,\
-                                kafka_forgotpassword_post_producer, kafka_passwordchange_post_producer
+from uggipuggi.messaging.authentication_kafka_producers import kafka_verify_producer,\
+                     kafka_register_producer, kafka_login_producer, kafka_logout_producer,\
+                     kafka_forgotpassword_producer, kafka_passwordchange_producer
 
 def random_with_N_digits(n):
     range_start = 10**(n-1)
@@ -120,17 +120,16 @@ class VerifyPhoneResource(object):
         
         self.get_user = get_user
         self.secret = secret
-        self.kafka_topic_name = 'verify'
         self.token_expiration_seconds = token_expiration_seconds
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         logging.debug(token_opts)
         
-    @falcon.after(kafka_verify_post_producer)
+    @falcon.after(kafka_verify_producer)
     def on_post(self, req, resp):
         # Used to send the OTP for verificiation
         challenges = ['Hello="World"']
         logging.debug("Reached on_post() in VerifyPhone")
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
+        req.kafka_topic_name = 'verify_phone'
         resp.body = {}
         otp_code = req.params['body']["code"]
         
@@ -235,18 +234,17 @@ class VerifyPhoneResource(object):
 class RegisterResource(object):
 
     def __init__(self, get_user, secret, verify_phone_token_expiration_seconds, **token_opts):
-        self.kafka_topic_name = 'register'
         self.get_user = get_user
         self.secret = secret
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         self.verify_phone_token_expiration_seconds = verify_phone_token_expiration_seconds        
        
-    @falcon.after(kafka_register_post_producer)
+    @falcon.after(kafka_register_producer)
     def on_post(self, req, resp):
         # Should we check if the number supplied is same as the number verified?
         # Can we do this in client instead of server?
         logging.debug("Reached on_post() in Register")
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
+        req.kafka_topic_name = 'register'
         resp.body = {}
       
         phone = req.params['body']["phone"]
@@ -330,15 +328,14 @@ class LoginResource(object):
     def __init__(self, get_user, secret, token_expiration_seconds, **token_opts):
         self.get_user = get_user
         self.secret = secret
-        self.kafka_topic_name = 'login'
         self.token_expiration_seconds = token_expiration_seconds
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         logging.debug(token_opts)
 
-    @falcon.after(kafka_login_post_producer)
+    @falcon.after(kafka_login_producer)
     def on_post(self, req, resp):
         logging.debug("Reached on_post() in Login")
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
+        req.kafka_topic_name = 'login'
         resp.body = {}
 
         email = req.params['body']["email"]
@@ -397,21 +394,45 @@ class LoginResource(object):
             raise falcon.HTTPInternalServerError('Unrecognized jwt token location specifier')
         resp.status = falcon.HTTP_ACCEPTED #HTTP_202
 
+class LogoutResource(object):
 
+    def __init__(self, get_user):
+        self.get_user = get_user
+        self.kafka_topic_name = 'logout'
+
+    @falcon.after(kafka_logout_producer)
+    def on_post(self, req, resp):
+        logging.debug("Reached on_post() in Logout")
+        req.kafka_topic_name = 'logout'
+        
+        user = self.get_user('id', req.user_id)
+        if user:
+            logging.debug(user.id)
+            if not user.phone_verified:
+                raise falcon.HTTPUnauthorized('Phone not verified. Please verify phone.',
+                                              'User did not verify phone.',
+                                              ['Hello="World!"']) 
+            user.update(phone_last_verified=datetime.utcnow())
+            resp.status = falcon.HTTP_OK
+        else:
+            raise falcon.HTTPUnauthorized('Logout Failed',
+                                          'User with this phone number does not exist, please register',
+                                          ['Hello="World!"'])
+
+            
 @falcon.before(deserialize)
 @falcon.after(serialize)
 class ForgotPasswordResource(object):
 
     def __init__(self, get_user):
         self.get_user = get_user
-        self.kafka_topic_name = 'forgotpassword'
 
-    @falcon.after(kafka_forgotpassword_post_producer)
+    @falcon.after(kafka_forgotpassword_producer)
     def on_post(self, req, resp):
         # Should we check if the number supplied is same as the number verified?
         # Can we do this in client instead of server?
         logging.debug("Reached on_post() in ForgotPassword")
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
+        req.kafka_topic_name = 'forgotpassword'
 
         email = req.params['body']["email"]
         user = self.get_user('email', email)
@@ -444,15 +465,14 @@ class PasswordChangeResource(object):
     def __init__(self, get_user, secret, token_expiration_seconds, **token_opts):
         self.get_user = get_user
         self.secret = secret
-        self.kafka_topic_name = 'passwordchange'
         self.token_expiration_seconds = token_expiration_seconds
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         logging.debug(token_opts)
         
-    @falcon.after(kafka_passwordchange_post_producer)        
+    @falcon.after(kafka_passwordchange_producer)        
     def on_post(self, req, resp):
         logging.debug("Reached on_post() in PasswordChange")
-        req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
+        req.kafka_topic_name = 'passwordchange'
         
         logging.debug(req.params['body'])
         email = req.params['body']["email"]
@@ -614,6 +634,7 @@ class AuthMiddleware(object):
 def get_auth_objects(get_user, secret, token_expiration_seconds, verify_phone_token_expiration_seconds, token_opts=DEFAULT_TOKEN_OPTS): # pylint: disable=dangerous-default-value
     return ForgotPasswordResource(get_user),\
            RegisterResource(get_user, secret, verify_phone_token_expiration_seconds, **token_opts),\
+           LogoutResource(get_user),\
            PasswordChangeResource(get_user, secret, token_expiration_seconds, **token_opts),\
            VerifyPhoneResource(get_user, secret, token_expiration_seconds, **token_opts),\
            AuthMiddleware(get_user, secret, **token_opts)

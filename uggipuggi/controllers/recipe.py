@@ -52,19 +52,19 @@ class Collection(object):
         # custom filters
         # temp dict for updating query filters
         updated_params = {}
-
-        for item in ['name', 'description']:
+        # For these fields, we want to do a partial search instead of exact match
+        # So for example, 'chicken curry' satisfies 'recipe_name=chicken' 
+        for item in ['recipe_name', 'description']:
             if item in query_params:
                 item_val = query_params.pop(item)
                 updated_params['{}__icontains'.format(item)] = item_val
 
         query_params.update(updated_params)  # update modified params for filtering
         recipes_qset = Recipe.objects(**query_params)[start:end]
-        recipes = [obj.to_mongo() for obj in recipes_qset]
         
-        # No need to use json_util.dumps here (?)                             
-        resp.body = {'items': [res.to_dict() for res in recipes],
-                     'count': len(recipes)}
+        recipes = [obj.to_mongo().to_dict() for obj in recipes_qset]        
+        # No need to use json_util.dumps here (?)                                     
+        resp.body = {'items': recipes, 'count': len(recipes)}        
         resp.status = falcon.HTTP_FOUND
         
     #@falcon.before(deserialize_create)

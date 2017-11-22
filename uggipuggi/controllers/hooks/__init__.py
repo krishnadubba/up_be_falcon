@@ -30,23 +30,26 @@ def deserialize(req, res, resource, params, schema=None):
 
     if req.method.upper() in ['POST', 'PUT', 'PATCH']:
 
-        if not _is_json_type(req.content_type):
-            raise HTTPNotAcceptable(description='JSON required. '
-                                                'Invalid Content-Type\n{}'.format(req.content_type))
+        #if not _is_json_type(req.content_type):
+            #raise HTTPNotAcceptable(description='JSON required. '
+                                                #'Invalid Content-Type\n{}'.format(req.content_type))
 
-        req.params['body'] = {}
-
-        try:
-            req_stream = req.stream.read()
-            if isinstance(req_stream, bytes):
-                json_body = json_util.loads(req_stream.decode('utf8'))
-            else:
-                json_body = json_util.loads(req_stream)
-                
-        except Exception:
-            raise falcon.HTTPBadRequest(
-                "I don't understand the HTTP request body", traceback.format_exc())
+        if _is_json_type(req.content_type):
+            req.params['body'] = {}    
+            try:
+                req_stream = req.stream.read()
+                if isinstance(req_stream, bytes):
+                    json_body = json_util.loads(req_stream.decode('utf8'))
+                else:
+                    json_body = json_util.loads(req_stream)
+                    
+            except Exception:
+                raise falcon.HTTPBadRequest(
+                    "I don't understand the HTTP request body", traceback.format_exc())
         
+        else:
+            logging.debug(req.content_type)
+            
         if schema:
             try:
                 json_body = schema.deserialize(json_body)

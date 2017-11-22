@@ -247,9 +247,9 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                                                   headers=header)                 
                 self.assertEqual(400, res.status_code)
                                 
-                # Now give some ids to add
+                # Now give some phone numbers to add
                 for cont in contact[1:]:        
-                    contact_payload['contact_user_id'].append(users_map[cont]['user_id'])
+                    contact_payload['contact_user_id'].append(users_map[cont]['phone'])
                     
                 res = requests.put(self.rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
                                    data=json.dumps(contact_payload), 
@@ -269,10 +269,6 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 self.assertTrue('count' in results)
                 contact_payload['contact_user_id'] = results['items']
                 print(results['items'])
-                res = requests.put(self.rest_api + '/contacts/%s'%users_map[contact[0]]['user_id'], 
-                                   data=json.dumps(contact_payload), 
-                                   headers=header)
-                self.assertEqual(200, res.status_code)
                 
                 # Lets provide wrong param and test
                 contact_payload = {}

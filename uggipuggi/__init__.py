@@ -12,6 +12,7 @@ import logging.handlers
 
 from bson import json_util
 from mongoengine import connection
+from falcon_multipart.middleware import MultipartMiddleware
 from uggipuggi.controllers import recipe, tag, status, rating, user, user_feed, batch, activity,\
                                    redis_group, redis_contacts, redis_followers, redis_following
 from uggipuggi.services.user import get_user  
@@ -35,7 +36,7 @@ class UggiPuggi(object):
                        "http_only": True}        
 
         # LoginResource, AuthMiddleware
-        self.forgot_password, self.register, self.pw_change, self.verify_phone, self.auth_middleware = auth_jwt.get_auth_objects(
+        self.forgot_password, self.register, self.logout, self.pw_change, self.verify_phone, self.auth_middleware = auth_jwt.get_auth_objects(
             get_user,
             shared_secret, # random secret
             TOKEN_EXPIRATION_SECS,
@@ -43,7 +44,8 @@ class UggiPuggi(object):
             token_opts=COOKIE_OPTS
         )
         
-        self.app = falcon.API(middleware=[CorsMiddleware(config), 
+        self.app = falcon.API(middleware=[CorsMiddleware(config),
+                                          MultipartMiddleware(),
                                           self.auth_middleware])
         # If we need authentication
         #self.app = falcon.API(
@@ -81,6 +83,7 @@ class UggiPuggi(object):
         
         self.app.add_route('/register', self.register)
         self.app.add_route('/verify', self.verify_phone)
+        self.app.add_route('/logout', self.logout)
         self.app.add_route('/forgot_password', self.forgot_password)
         self.app.add_route('/password_change', self.pw_change)
         # batch resources

@@ -6,6 +6,7 @@ import falcon
 import logging
 from bson import json_util, ObjectId
 from uggipuggi.constants import CONTACTS
+from uggipuggi.services.user import get_user
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.messaging.contacts_kafka_producers import contacts_kafka_item_post_producer,\
                                                          contacts_kafka_item_put_producer
@@ -53,18 +54,22 @@ class Item(object):
     @falcon.before(deserialize)
     @falcon.after(contacts_kafka_item_put_producer)
     def on_put(self, req, resp, id):
+        # Note that, here we get contacts phone numbers, not their user_ids
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:
-            req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
             logger.debug("Adding member to user contacts in database ... %s" %repr(id))
-            contacts_id_name = CONTACTS + id
             if 'contact_user_id' in req.params['body'] and len(req.params['body']['contact_user_id']) > 0:
-                # req.params['body']['contact_user_id'] is a LIST of contacts
-                req.redis_conn.sadd(contacts_id_name, *req.params['body']['contact_user_id'])
+                req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
+                contacts_id_list = CONTACTS + id
+                # req.params['body']['contact_user_id'] is a LIST of contact phone numbers
+                # So first get user_ids for these phone numbers
+                contact_user_ids = req.redis_conn.mget(req.params['body']['contact_user_id'])
+                # Only add non_none contact ids
+                req.redis_conn.sadd(contacts_id_list, *[i for i in contact_user_ids if i])
                 logger.debug("Added member to user contacts in database: %s"  %repr(req.params['body']['contact_user_id']))
                 resp.status = falcon.HTTP_OK
-                resp.body = req.params['body']['contact_user_id']
+                resp.body = contact_user_ids
             else:
                 logger.warn("Please provide contact_user_id to add to users contacts")
                 resp.status = falcon.HTTP_BAD_REQUEST

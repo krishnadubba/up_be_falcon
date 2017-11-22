@@ -52,8 +52,8 @@ class Collection(object):
                                  description='Invalid arguments in URL query:\n{}'.format(e))
 
         users_qset = User.objects(**query_params)[start:end]
-        users = [obj.to_mongo() for obj in users_qset]
-        resp.body = {'items': [res.to_dict() for res in users], 'count': len(users)}
+        users = [obj.to_mongo().to_dict() for obj in users_qset]
+        resp.body = {'items': users, 'count': len(users)}
         resp.status = falcon.HTTP_OK
 
 class Item(object):
@@ -73,14 +73,16 @@ class Item(object):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         
         user = self._try_get_user(id)
-        data = req.params.get('body').copy()
-        logger.debug("Updating user data in database ...")
-        logger.debug(data)
                 
         # save to DB
-        if "display_pic" in data:
-            user_profile_pic_task.delay(req)            
+        if 'multipart/form-data' in req.content_type:
+            user_profile_pic_task.delay(req)
+            data = req._params.copy()
             data.pop("display_pic")
+        else:
+            data = req.params.get('body')
+            logger.debug("Updating user data in database ...")
+            logger.debug(data)
             
         for key, value in data.iteritems():
             user.update(key, value)

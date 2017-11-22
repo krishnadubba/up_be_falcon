@@ -13,22 +13,21 @@ logger = get_task_logger(__name__)
 def check_file_extension(filename, allowed_extensions):
     if ('.' not in filename or
             filename.split('.').pop().lower() not in allowed_extensions):
-        raise HTTPBadRequest(title='Invalid image file extention', 
+        raise HTTPBadRequest(title='Invalid image file extention, only .jpg allowed', 
                              description='Invalid image file extention')
 
 @celery.task
-def user_profile_pic_task(req_json):
+def user_profile_pic_task(req_multipart):
     logger.info('Celery worker: user_profile_pic_task')
     logger.info('################# I am executed in celery worker START ###################')
     # We run this under correct google project, we it gets it correct
-        # gc_storage.Client(project=current_app.config['PROJECT_ID'])            
+    # gc_storage.Client(project=current_app.config['PROJECT_ID'])            
     client = gc_storage.Client()
-    check_file_extension(filename, GCS_ALLOWED_EXTENSIONS)
+    img_data = req.get_param('display_pic').file.read()
+    check_file_extension(req.get_param('display_pic').filename, GCS_ALLOWED_EXTENSIONS)
     bucket = client.bucket(GCS_USER_BUCKET)
     blob = bucket.blob(filename)
-    img_data = data["display_pic"].read()
-
-    blob.upload_from_string(img_data, content_type=data["display_pic"].content_type)            
+    blob.upload_from_string(img_data, content_type=req.get_param('display_pic').type)
 
     url = blob.public_url
     if isinstance(url, six.binary_type):
