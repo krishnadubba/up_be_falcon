@@ -1,10 +1,17 @@
 from io import open
-import os
+import os, sys
 
 import falcon
 from falcon_multipart.middleware import MultipartMiddleware
 import pytest
+import six
+from PIL import Image
+from io import BytesIO, StringIO
+from google.cloud import storage as gc_storage
 
+sys.path.append(os.path.dirname(os.path.dirname(sys.path[0])))
+
+from uggipuggi.constants import USER, GCS_USER_BUCKET
 
 application = falcon.API(middleware=MultipartMiddleware())
 
@@ -44,7 +51,32 @@ def test_with_binary_file(client):
     class Resource:
 
         def on_post(self, req, resp, **kwargs):
+            client = gc_storage.Client()            
+            size = (64, 64)
             resp.data = req.get_param('afile').file.read()
+            pil_image = Image.open(BytesIO(resp.data))
+            pil_image.thumbnail(size)
+            
+            byte_io = BytesIO()            
+            pil_image.save(byte_io, format='JPEG')            
+            byte_str = byte_io.getvalue()
+            
+            bucket = client.bucket(GCS_USER_BUCKET)
+            if not bucket.exists():
+                logger.debug("GCS Bucket %s does not exist, creating one" %GCS_USER_BUCKET)
+                bucket.create()
+                
+            thumb_display_pic_gcs_filename = 'display_pic_thumb.jpg'
+            thumb_blob = bucket.blob(thumb_display_pic_gcs_filename)
+            thumb_blob.upload_from_string(byte_str, content_type='image/jpeg')
+            
+            thumb_blob.make_public()
+            
+            thumb_url = thumb_blob.public_url
+            if isinstance(thumb_url, six.binary_type):
+                thumb_url = thumb_url.decode('utf-8')
+
+            print (thumb_url)
             assert req.get_param('afile').filename==os.path.join(os.path.dirname(os.path.dirname(here)), 'test_data', 'image.jpg')
             assert req.get_param('afile').type=='image/jpeg'
             resp.content_type = 'image/jpg'

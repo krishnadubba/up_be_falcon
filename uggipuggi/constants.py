@@ -44,5 +44,6 @@ USER_NOTIFICATION_FEED = 'user_notification_feed:'
 RECIPE_COMMENTORS = 'recipe_commentors:'
 
 # Google Cloud Storage stuff
-GCS_USER_BUCKET = 'gcs_user_bucket'
-GCS_ALLOWED_EXTENSIONS = ['jpg', 'jpeg']
+GCS_USER_BUCKET = 'gcs_user_public_bucket'
+BACKEND_ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'bmp']
+GCS_ALLOWED_EXTENSION = 'image/jpeg'

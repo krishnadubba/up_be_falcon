@@ -34,7 +34,7 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
         self.verify_token = None
         self.login_token  = None
         self.test_user    = None
-        count = 5
+        count = 0
         
         self.payload = {
                         "phone": get_dummy_phone(count),

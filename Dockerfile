@@ -18,7 +18,9 @@ RUN sed -i 's/archive.ubuntu.com/mirror.us.leaseweb.net/' /etc/apt/sources.list 
         python3 \
         python3-dev \
         python3-pip \
-        aria2 \ 
+        aria2 \
+        libjpeg8-dev \
+        zlib1g-dev \
         && apt-get autoremove -y \ 
         && apt-get clean
         

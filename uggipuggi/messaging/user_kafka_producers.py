@@ -23,7 +23,7 @@ def user_kafka_item_put_producer(req, resp, resource):
     else:    
         parameters = [req.kafka_topic_name, req.params['body'].keys(), resp, resource]
     logging.debug("++++++++++++++++++++++")
-    logging.debug("USER_KAFKA_ITEM_POST_PRODUCER")
+    logging.debug("USER_KAFKA_ITEM_PUT_PRODUCER")
     logging.debug("++++++++++++++++++++++")
     logging.debug(repr(parameters))
     logging.debug("++++++++++++++++++++++")    

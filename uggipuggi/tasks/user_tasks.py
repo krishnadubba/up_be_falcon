@@ -5,7 +5,8 @@ from celery.utils.log import get_task_logger
 from uggipuggi.celery.celery import celery
 from uggipuggi.models.user import User
 from uggipuggi.services.user import get_user 
-from uggipuggi.constants import USER, GCS_ALLOWED_EXTENSIONS, GCS_USER_BUCKET
+from uggipuggi.constants import USER, GCS_ALLOWED_EXTENSION, GCS_USER_BUCKET,\
+                                BACKEND_ALLOWED_EXTENSIONS
 from google.cloud import storage as gc_storage
 
 logger = get_task_logger(__name__)
@@ -24,7 +25,7 @@ def user_profile_pic_task(req_multipart):
     # gc_storage.Client(project=current_app.config['PROJECT_ID'])            
     client = gc_storage.Client()
     img_data = req.get_param('display_pic').file.read()
-    check_file_extension(req.get_param('display_pic').filename, GCS_ALLOWED_EXTENSIONS)
+    check_file_extension(req.get_param('display_pic').filename, BACKEND_ALLOWED_EXTENSIONS)
     bucket = client.bucket(GCS_USER_BUCKET)
     blob = bucket.blob(filename)
     blob.upload_from_string(img_data, content_type=req.get_param('display_pic').type)

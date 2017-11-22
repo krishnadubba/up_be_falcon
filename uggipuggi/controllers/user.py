@@ -5,6 +5,8 @@ import six
 import falcon
 import logging
 from google.cloud import storage as gc_storage
+from PIL import Image
+from io import BytesIO, StringIO
 
 from uggipuggi import constants
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
@@ -15,7 +17,7 @@ from uggipuggi.messaging.user_kafka_producers import user_kafka_item_get_produce
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError
 from uggipuggi.tasks.user_tasks import user_profile_pic_task
 
-from uggipuggi.constants import USER, GCS_ALLOWED_EXTENSIONS, GCS_USER_BUCKET
+from uggipuggi.constants import USER, GCS_ALLOWED_EXTENSION, GCS_USER_BUCKET, BACKEND_ALLOWED_EXTENSIONS
 
 # -------- BEFORE_HOOK functions
 # -------- END functions
@@ -89,43 +91,63 @@ class Item(object):
         logger.debug(req.content_type)
         # save to DB
         if 'multipart/form-data' in req.content_type:
+            size = (64, 64)
             #user_profile_pic_task.delay(req)
             client = gc_storage.Client()
             display_pic_filename = req.get_param('display_pic').filename
             img_data = req.get_param('display_pic').file.read()
+            pil_image = Image.open(BytesIO(img_data))
+            pil_image.thumbnail(size)
+            
+            byte_io = BytesIO()
+            pil_image.save(byte_io, 'JPEG')
+            
             logger.debug("Display_pic filename:")
             
             logger.debug(display_pic_filename)
-            self._check_file_extension(display_pic_filename, GCS_ALLOWED_EXTENSIONS)
+            self._check_file_extension(display_pic_filename, BACKEND_ALLOWED_EXTENSIONS)
             bucket = client.bucket(GCS_USER_BUCKET)
             if not bucket.exists():
                 logger.debug("GCS Bucket %s does not exist, creating one" %GCS_USER_BUCKET)
                 bucket.create()
-            blob = bucket.blob(display_pic_filename)
-            blob.upload_from_string(img_data, content_type=req.get_param('display_pic').type)
+            display_pic_gcs_filename = str(user.id) + '_' + 'display_pic.jpg'
+            blob = bucket.blob(display_pic_gcs_filename)
+            blob.upload_from_string(img_data, content_type=GCS_ALLOWED_EXTENSION)
+            blob.make_public()
         
+            thumb_display_pic_gcs_filename = str(user.id) + '_' + 'display_pic_thumb.jpg'
+            thumb_blob = bucket.blob(thumb_display_pic_gcs_filename)
+            thumb_blob.upload_from_string(byte_io.getvalue(), content_type=GCS_ALLOWED_EXTENSION)            
+            thumb_blob.make_public()
+            
             url = blob.public_url
             if isinstance(url, six.binary_type):
                 url = url.decode('utf-8')
             
+            thumb_url = thumb_blob.public_url
+            if isinstance(thumb_url, six.binary_type):
+                thumb_url = thumb_url.decode('utf-8')
+                
             logger.debug("Display_pic public url:")
             logger.debug(url)
             
+            logger.debug("Display_pic thumb public url:")
+            logger.debug(thumb_url)
+            
             user.update(display_pic=url)
+            user.update(dp_thumbnail=thumb_url)
+            
             resp.body = url
             data = req._params.copy()
             data.pop("display_pic")
             logger.debug(data)            
         else:
             data = req.params.get('body')
-            logger.debug("Updating user data in database ...")
             logger.debug(data)
             
         # Using dictionary to update fields
         user.update(**data)
-        user = self._try_get_user(id)
-        logger.debug(user._data)
-        
+
         logger.debug("Updated user data in database")
         
         resp.status = falcon.HTTP_OK

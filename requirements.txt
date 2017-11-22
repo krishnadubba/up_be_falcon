@@ -17,3 +17,4 @@ pyfcm==1.4.2
 mock==2.0.0
 google-cloud-storage==1.6.0
 falcon-multipart
+pillow-simd
