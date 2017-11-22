@@ -2,7 +2,7 @@
 docker swarm init
 docker network create -d overlay proxy
 docker build -t kr .
-docker stack deploy -c google_cloud_setup.yml uggi
+docker stack deploy -c localsetup.yml uggi
 echo '======================================================'
 echo 'For logs: docker service logs -f stackname_servicename'
 echo 'Docker Overlay Network:'

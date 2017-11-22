@@ -5,40 +5,39 @@ import falcon
 from falcon_multipart.middleware import MultipartMiddleware
 import pytest
 import six
+from time import gmtime, strftime
 from PIL import Image
 from io import BytesIO, StringIO
 from google.cloud import storage as gc_storage
 
 sys.path.append(os.path.dirname(os.path.dirname(sys.path[0])))
 
-from uggipuggi.constants import USER, GCS_USER_BUCKET
-
 application = falcon.API(middleware=MultipartMiddleware())
-
+GCS_USER_BUCKET = 'gcs_user_temp_bucket'
 
 @pytest.fixture
 def app():
     return application
 
 
-def test_parse_form_as_params(client):
+#def test_parse_form_as_params(client):
 
-    class Resource:
+    #class Resource:
 
-        def on_post(self, req, resp, **kwargs):
-            assert req.get_param('simple') == 'ok'
-            assert req.get_param('another_simple') == 'okok'
-            assert req.get_param('afile').file.read() == b'filecontent'
-            assert req.get_param('afile').filename == 'afile.txt'
-            resp.body = 'parsed'
-            resp.content_type = 'text/plain'
+        #def on_post(self, req, resp, **kwargs):
+            #assert req.get_param('simple') == 'ok'
+            #assert req.get_param('another_simple') == 'okok'
+            #assert req.get_param('afile').file.read() == b'filecontent'
+            #assert req.get_param('afile').filename == 'afile.txt'
+            #resp.body = 'parsed'
+            #resp.content_type = 'text/plain'
 
-    application.add_route('/route', Resource())
+    #application.add_route('/route', Resource())
 
-    resp = client.post('/route', data={'simple': 'ok', 'another_simple': 'okok'},
-                       files={'afile': ('filecontent', 'afile.txt')})
-    assert resp.status == falcon.HTTP_OK
-    assert resp.body == 'parsed'
+    #resp = client.post('/route', data={'simple': 'ok', 'another_simple': 'okok'},
+                       #files={'afile': ('filecontent', 'afile.txt')})
+    #assert resp.status == falcon.HTTP_OK
+    #assert resp.body == 'parsed'
 
 
 def test_with_binary_file(client):
@@ -63,14 +62,25 @@ def test_with_binary_file(client):
             
             bucket = client.bucket(GCS_USER_BUCKET)
             if not bucket.exists():
-                logger.debug("GCS Bucket %s does not exist, creating one" %GCS_USER_BUCKET)
+                print ("GCS Bucket %s does not exist, creating one" %GCS_USER_BUCKET)
                 bucket.create()
                 
-            thumb_display_pic_gcs_filename = 'display_pic_thumb.jpg'
-            thumb_blob = bucket.blob(thumb_display_pic_gcs_filename)
-            thumb_blob.upload_from_string(byte_str, content_type='image/jpeg')
+            print ('==================================') 
+            print (strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
             
-            thumb_blob.make_public()
+            for i in range(10):
+                display_pic_gcs_filename = 'display_pic_%d.jpg'%i
+                blob = bucket.blob(display_pic_gcs_filename)
+                blob.upload_from_string(resp.data, content_type='image/jpeg')
+                blob.make_public()            
+    
+                thumb_display_pic_gcs_filename = 'display_pic_thumb_%d.jpg'%i
+                thumb_blob = bucket.blob(thumb_display_pic_gcs_filename)
+                thumb_blob.upload_from_string(byte_str, content_type='image/jpeg')
+                
+                thumb_blob.make_public()
+            print (strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()))
+            print ('==================================')    
             
             thumb_url = thumb_blob.public_url
             if isinstance(thumb_url, six.binary_type):
@@ -90,41 +100,41 @@ def test_with_binary_file(client):
     assert resp.body == image.read()
 
 
-def test_parse_multiple_values(client):
+#def test_parse_multiple_values(client):
 
-    class Resource:
+    #class Resource:
 
-        def on_post(self, req, resp, **kwargs):
-            assert req.get_param_as_list('multi') == ['1', '2']
-            resp.body = 'parsed'
-            resp.content_type = 'text/plain'
+        #def on_post(self, req, resp, **kwargs):
+            #assert req.get_param_as_list('multi') == ['1', '2']
+            #resp.body = 'parsed'
+            #resp.content_type = 'text/plain'
 
-    application.add_route('/route', Resource())
+    #application.add_route('/route', Resource())
 
-    resp = client.post('/route', data={'multi': ['1', '2']},
-                       files={'afile': ('filecontent', 'afile.txt')})
-    assert resp.status == falcon.HTTP_OK
-    assert resp.body == 'parsed'
+    #resp = client.post('/route', data={'multi': ['1', '2']},
+                       #files={'afile': ('filecontent', 'afile.txt')})
+    #assert resp.status == falcon.HTTP_OK
+    #assert resp.body == 'parsed'
 
 
-def test_parse_non_ascii_filename_in_headers(client):
+#def test_parse_non_ascii_filename_in_headers(client):
 
-    class Resource:
+    #class Resource:
 
-        def on_post(self, req, resp, **kwargs):
-            assert req.get_param('afile').file.read() == b'name,code\nnom,2\n'
-            assert req.get_param('afile').filename == 'Na%C3%AFve%20file.txt'
-            resp.body = 'parsed'
-            resp.content_type = 'text/plain'
+        #def on_post(self, req, resp, **kwargs):
+            #assert req.get_param('afile').file.read() == b'name,code\nnom,2\n'
+            #assert req.get_param('afile').filename == 'Na%C3%AFve%20file.txt'
+            #resp.body = 'parsed'
+            #resp.content_type = 'text/plain'
 
-    application.add_route('/route', Resource())
+    #application.add_route('/route', Resource())
 
-    # Simulate browser sending non ascii filename.
-    body = ('--boundary\r\nContent-Disposition: '
-            'form-data; name="afile"; filename*=utf-8\'\'Na%C3%AFve%20file.txt'
-            '\r\nContent-Type: text/csv\r\n\r\nname,code\nnom,2\n\r\n'
-            '--boundary--\r\n')
-    headers = {'Content-Type': 'multipart/form-data; boundary=boundary'}
-    resp = client.post('/route', body=body, headers=headers)
-    assert resp.status == falcon.HTTP_OK
-    assert resp.body == 'parsed'
+    ## Simulate browser sending non ascii filename.
+    #body = ('--boundary\r\nContent-Disposition: '
+            #'form-data; name="afile"; filename*=utf-8\'\'Na%C3%AFve%20file.txt'
+            #'\r\nContent-Type: text/csv\r\n\r\nname,code\nnom,2\n\r\n'
+            #'--boundary--\r\n')
+    #headers = {'Content-Type': 'multipart/form-data; boundary=boundary'}
+    #resp = client.post('/route', body=body, headers=headers)
+    #assert resp.status == falcon.HTTP_OK
+    #assert resp.body == 'parsed'

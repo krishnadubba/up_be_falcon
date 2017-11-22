@@ -34,8 +34,7 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
         self.verify_token = None
         self.login_token  = None
         self.test_user    = None
-        count = 0
-        
+        count = 4
         self.payload = {
                         "phone": get_dummy_phone(count),
                         "country_code": "IN",
@@ -139,19 +138,27 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
                     },
                 ]
         
-        #header = {'Content-Type':'multipart/form-data'}
         header = {'auth_token':self.login_token}
         for test in tests:
             with self.subTest(name=test['name']):
-                #header.update({'auth_token':test['auth_token']})
                 res = requests.put(self.rest_api + '/users/%s' %self.test_user, 
                                     files=test['payload'], data={'gender': 'male'},
                                     headers=header)
                 print (res.status_code)
                 print (res.text)                
-                self.assertEqual(test['expected']['status'], res.status_code)
-                
+                self.assertEqual(test['expected']['status'], res.status_code)                
         image.close()
+        
+        header = {'auth_token':self.login_token}
+        header.update({'Content-Type':'application/json'})
+        for test in tests:
+            with self.subTest(name=test['name']):
+                res = requests.put(self.rest_api + '/users/%s' %self.test_user, 
+                                    data=json.dumps({'gender': 'female'}),
+                                    headers=header)
+                print (res.status_code)
+                print (res.text)                
+                self.assertEqual(test['expected']['status'], res.status_code)
 
 if __name__ == '__main__':
     if 'logs' not in os.listdir(sys.path[0]):

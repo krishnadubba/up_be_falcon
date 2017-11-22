@@ -65,6 +65,12 @@ class Collection(object):
 
 class Item(object):
     def __init__(self):
+        self.gcs_client = gc_storage.Client()            
+        self.gcs_bucket = self.gcs_client.bucket(GCS_USER_BUCKET)
+        if not self.gcs_bucket.exists():
+            logger.debug("GCS Bucket %s does not exist, creating one" %GCS_USER_BUCKET)
+            self.gcs_bucket.create()
+            
         self.kafka_topic_name = 'user_item'
             
     def _check_file_extension(self, filename, allowed_extensions):
@@ -93,31 +99,28 @@ class Item(object):
         if 'multipart/form-data' in req.content_type:
             size = (64, 64)
             #user_profile_pic_task.delay(req)
-            client = gc_storage.Client()
             display_pic_filename = req.get_param('display_pic').filename
+            self._check_file_extension(display_pic_filename, BACKEND_ALLOWED_EXTENSIONS)
+            
             img_data = req.get_param('display_pic').file.read()
             pil_image = Image.open(BytesIO(img_data))
             pil_image.thumbnail(size)
             
             byte_io = BytesIO()
             pil_image.save(byte_io, 'JPEG')
+            thumb_img = byte_io.getvalue()
             
-            logger.debug("Display_pic filename:")
+            logger.debug("Display_pic filename:")            
+            logger.debug(display_pic_filename)            
             
-            logger.debug(display_pic_filename)
-            self._check_file_extension(display_pic_filename, BACKEND_ALLOWED_EXTENSIONS)
-            bucket = client.bucket(GCS_USER_BUCKET)
-            if not bucket.exists():
-                logger.debug("GCS Bucket %s does not exist, creating one" %GCS_USER_BUCKET)
-                bucket.create()
             display_pic_gcs_filename = str(user.id) + '_' + 'display_pic.jpg'
-            blob = bucket.blob(display_pic_gcs_filename)
+            blob = self.gcs_bucket.blob(display_pic_gcs_filename)
             blob.upload_from_string(img_data, content_type=GCS_ALLOWED_EXTENSION)
             blob.make_public()
         
             thumb_display_pic_gcs_filename = str(user.id) + '_' + 'display_pic_thumb.jpg'
-            thumb_blob = bucket.blob(thumb_display_pic_gcs_filename)
-            thumb_blob.upload_from_string(byte_io.getvalue(), content_type=GCS_ALLOWED_EXTENSION)            
+            thumb_blob = self.gcs_bucket.blob(thumb_display_pic_gcs_filename)
+            thumb_blob.upload_from_string(thumb_img, content_type=GCS_ALLOWED_EXTENSION)            
             thumb_blob.make_public()
             
             url = blob.public_url
