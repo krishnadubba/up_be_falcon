@@ -8,4 +8,4 @@ import os
 os.environ['CELERY_CONFIG_MODULE'] = 'conf.celeryconfig'
 env = os.environ.get('UGGIPUGGI_BACKEND_ENV', 'docker_compose')
 config = get_config(env)
-uggipuggi = UggiPuggi(config)
+uggipuggi_app = UggiPuggi(config)

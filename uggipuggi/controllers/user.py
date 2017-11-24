@@ -1,23 +1,27 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
+import os
 import six
+import sys
 import falcon
 import logging
-from google.cloud import storage as gc_storage
-from PIL import Image
-from io import BytesIO, StringIO
+import requests
 
+from google.cloud import storage as gc_storage
+from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError
+#sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
+#from manage import config as uggipuggi_config
 from uggipuggi import constants
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.models.user import User, Role
 from uggipuggi.libs.error import HTTPBadRequest, HTTPUnauthorized
 from uggipuggi.messaging.user_kafka_producers import user_kafka_item_get_producer,\
                                                      user_kafka_item_put_producer
-from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError
 from uggipuggi.tasks.user_tasks import user_profile_pic_task
-
-from uggipuggi.constants import USER, GCS_ALLOWED_EXTENSION, GCS_USER_BUCKET, BACKEND_ALLOWED_EXTENSIONS
+from uggipuggi.constants import USER, GCS_ALLOWED_EXTENSION, GCS_USER_BUCKET,\
+                                BACKEND_ALLOWED_EXTENSIONS
 
 # -------- BEFORE_HOOK functions
 # -------- END functions
@@ -67,10 +71,12 @@ class Item(object):
     def __init__(self):
         self.gcs_client = gc_storage.Client()            
         self.gcs_bucket = self.gcs_client.bucket(GCS_USER_BUCKET)
+
         if not self.gcs_bucket.exists():
             logger.debug("GCS Bucket %s does not exist, creating one" %GCS_USER_BUCKET)
             self.gcs_bucket.create()
-            
+
+        self.img_server = 'https://uggipuggi-1234.appspot.com' #uggipuggi_config['imgserver'].get('img_server_ip')            
         self.kafka_topic_name = 'user_item'
             
     def _check_file_extension(self, filename, allowed_extensions):
@@ -97,53 +103,33 @@ class Item(object):
         logger.debug(req.content_type)
         # save to DB
         if 'multipart/form-data' in req.content_type:
-            size = (64, 64)
-            #user_profile_pic_task.delay(req)
-            display_pic_filename = req.get_param('display_pic').filename
-            self._check_file_extension(display_pic_filename, BACKEND_ALLOWED_EXTENSIONS)
-            
-            img_data = req.get_param('display_pic').file.read()
-            pil_image = Image.open(BytesIO(img_data))
-            pil_image.thumbnail(size)
-            
-            byte_io = BytesIO()
-            pil_image.save(byte_io, 'JPEG')
-            thumb_img = byte_io.getvalue()
-            
-            logger.debug("Display_pic filename:")            
-            logger.debug(display_pic_filename)            
-            
-            display_pic_gcs_filename = str(user.id) + '_' + 'display_pic.jpg'
-            blob = self.gcs_bucket.blob(display_pic_gcs_filename)
-            blob.upload_from_string(img_data, content_type=GCS_ALLOWED_EXTENSION)
-            blob.make_public()
-        
-            thumb_display_pic_gcs_filename = str(user.id) + '_' + 'display_pic_thumb.jpg'
-            thumb_blob = self.gcs_bucket.blob(thumb_display_pic_gcs_filename)
-            thumb_blob.upload_from_string(thumb_img, content_type=GCS_ALLOWED_EXTENSION)            
-            thumb_blob.make_public()
-            
-            url = blob.public_url
-            if isinstance(url, six.binary_type):
-                url = url.decode('utf-8')
-            
-            thumb_url = thumb_blob.public_url
-            if isinstance(thumb_url, six.binary_type):
-                thumb_url = thumb_url.decode('utf-8')
+            # img_data has three components
+            # file (the image data that you can see using read()), filename, type
+            img_data = req.get_param('display_pic')            
+
+            res = requests.post(self.img_server + '/img_post', 
+                                files={'img': img_data.file}, 
+                                data={'gcs_bucket': GCS_USER_BUCKET,
+                                      'file_name': str(user.id) + '_' + 'display_pic.jpg',
+                                      'file_type': img_data.type
+                                      })            
+            logger.debug(res.status_code)
+            logger.debug(res.text)
+            if repr(res.status_code) == '200':
+                img_url = res.text
+                logger.debug("Display_pic public url:")
+                logger.debug(img_url)
                 
-            logger.debug("Display_pic public url:")
-            logger.debug(url)
-            
-            logger.debug("Display_pic thumb public url:")
-            logger.debug(thumb_url)
-            
-            user.update(display_pic=url)
-            user.update(dp_thumbnail=thumb_url)
-            
-            resp.body = url
-            data = req._params.copy()
-            data.pop("display_pic")
-            logger.debug(data)            
+                user.update(display_pic=img_url)
+                
+                resp.body = img_url
+                data = req._params.copy()
+                data.pop("display_pic")
+                logger.debug(data)
+            else:
+                raise HTTPBadRequest(title='Image upload to cloud server failed!',
+                                     description='Status Code: %s'%repr(res.status_code))
+                
         else:
             data = req.params.get('body')
             logger.debug(data)
