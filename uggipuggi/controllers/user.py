@@ -115,7 +115,7 @@ class Item(object):
                                       })            
             logger.debug(res.status_code)
             logger.debug(res.text)
-            if repr(res.status_code) == '200':
+            if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
                 img_url = res.text
                 logger.debug("Display_pic public url:")
                 logger.debug(img_url)

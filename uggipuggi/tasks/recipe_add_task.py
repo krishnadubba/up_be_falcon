@@ -12,7 +12,7 @@ logger = get_task_logger(__name__)
 @celery.task
 def user_feed_add_recipe(message):
     logger.info('Celery worker: user_feed_add_recipe')
-    user_id, user_name, recipe_id, recipe_name, recipe_pic, expose_level, _ = json_util.loads(message.strip("'<>() ").replace('\'', '\"'))
+    user_id, user_name, recipe_name, expose_level, recipe_id, recipe_pic, _ = json_util.loads(message.strip("'<>() ").replace('\'', '\"'))
     recipe_dict = {'author_id':user_id, 'author_name':user_name, 'recipe_name':recipe_name,
                    'recipe_pic':recipe_pic, 'type': 'recipe'}
     

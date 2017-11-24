@@ -11,10 +11,14 @@ def recipe_kafka_collection_post_producer(req, resp, resource):
     # Publish that a recipe has been added
     # Topic name is 'recipe' and partition is 'user_id'
     # Consumer reads pushes notifications to interested parties and feeds
-    if req.params['body']['expose_level'] != ExposeLevel.PRIVATE:        
-        parameters = [req.user_id, req.params['body']['user_name'], resp.body["recipe_id"], 
-                      req.params['body']['recipe_name'], req.params['body']['images'][0], 
-                      req.params['body']['expose_level'], resp.status]
+    if 'multipart/form-data' in req.content_type and req.get_param('expose_level') != ExposeLevel.PRIVATE:        
+        parameters = [req.user_id, 
+                      req.get_param('user_name'), 
+                      req.get_param('recipe_name'), 
+                      req.get_param('expose_level'), 
+                      resp.body['recipe_id'],
+                      resp.body['images'], 
+                      resp.status]
         logging.debug("++++++++++++++++++++++")
         logging.debug("RECIPE_KAFKA_COLLECTION_POST_PRODUCER: %s" %req.kafka_topic_name)
         logging.debug("----------------------")

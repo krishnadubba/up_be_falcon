@@ -93,15 +93,13 @@ class TestUggiPuggiRecipe(testing.TestBase):
         filepath = os.path.join(os.path.dirname(os.path.dirname(here)), 'test_data', 'pasta.jpg')
         recipe_image = open(filepath, 'rb')
         
-        #header = {'Content-Type':'application/json'}
-        #header.update({'auth_token':self.login_token})
         header = {'auth_token':self.login_token}
         print (first_recipe_payload)
         res = requests.post(self.rest_api + '/recipes',
                             files={'images': recipe_image},
-                            data={'recipe_body': first_recipe_payload},
+                            data=first_recipe_payload,
                             headers=header)
-        
+        recipe_image.close()
         self.assertEqual(201, res.status_code)
         self.assertTrue('recipe_id' in json.loads(res.content.decode('utf-8')))
         if 'recipe_id' in json.loads(res.content.decode('utf-8')):

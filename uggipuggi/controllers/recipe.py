@@ -4,7 +4,8 @@ from __future__ import absolute_import
 import falcon
 import logging
 import requests
-
+import mongoengine
+from copy import deepcopy
 from google.cloud import storage as gc_storage
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, \
                                LookUpError, InvalidQueryError 
@@ -87,8 +88,17 @@ class Collection(object):
         # save to DB
         if 'multipart/form-data' in req.content_type:
             img_data = req.get_param('images')
-            logger.debug(req.get_param('recipe_body'))
-            recipe = Recipe(**req.get_param('recipe_body'))
+            recipe_data = {}
+            for key in req._params:
+                if key in Recipe._fields and key not in ['images']:
+                    if isinstance(Recipe._fields[key], mongoengine.fields.ListField):
+                        recipe_data[key] = req.get_param_as_list(key)
+                    else:    
+                        recipe_data[key] = req.get_param(key)                    
+                    
+            logger.debug(recipe_data)
+            recipe = Recipe(**recipe_data)
+            recipe.save()
             res = requests.post(self.img_server + '/img_post', 
                                 files={'img': img_data.file}, 
                                 data={'gcs_bucket': GCS_RECIPE_BUCKET,
@@ -100,20 +110,17 @@ class Collection(object):
             if repr(res.status_code) == '200':
                 img_url = res.text
                 logger.debug("Display_pic public url:")
-                logger.debug(img_url)
-        
-                user.update(display_pic=img_url)            
+                logger.debug(img_url)        
                 recipe.update(images=[img_url])
+                resp.body = {"recipe_id": str(recipe.id), "images": [img_url]}
+            else:
+                resp.body = {"recipe_id": str(recipe.id)}
         else:    
             recipe = Recipe(**req.params['body'])
-            
-        recipe.save()
-        logger.debug("Recipe created with id: %s" %str(recipe.id))
+            recipe.save()
+            resp.body = {"recipe_id": str(recipe.id)}
         
-        stored_recipe = Recipe.objects.get(id=recipe.id)
-        logger.debug(stored_recipe._data)
-        # return Recipe id
-        resp.body = {"recipe_id": str(recipe.id)}
+        logger.debug("Recipe created with id: %s" %str(recipe.id))
         resp.status = falcon.HTTP_CREATED
 
 
