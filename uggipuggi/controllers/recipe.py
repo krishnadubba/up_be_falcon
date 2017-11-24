@@ -3,16 +3,19 @@
 from __future__ import absolute_import
 import falcon
 import logging
-from bson import json_util, ObjectId
-from uggipuggi import constants
+import requests
+
+from google.cloud import storage as gc_storage
+from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, \
+                               LookUpError, InvalidQueryError 
+
+from uggipuggi.constants import GCS_RECIPE_BUCKET, PAGE_LIMIT
 from uggipuggi.controllers.hooks import deserialize, serialize
 from uggipuggi.controllers.schema.recipe import RecipeSchema, RecipeCreateSchema
 from uggipuggi.models.recipe import Comment, Recipe 
 from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.recipe_kafka_producers import recipe_kafka_collection_post_producer,\
                                                        recipe_kafka_item_put_producer
-from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, LookUpError,\
-                               InvalidQueryError 
 
 
 # -------- BEFORE_HOOK functions
@@ -34,6 +37,14 @@ logger = logging.getLogger(__name__)
 class Collection(object):
     def __init__(self):
         self.kafka_topic_name = 'recipe_collection'
+        self.gcs_client = gc_storage.Client()            
+        self.gcs_bucket = self.gcs_client.bucket(GCS_RECIPE_BUCKET)
+
+        if not self.gcs_bucket.exists():
+            logger.debug("GCS Bucket %s does not exist, creating one" %GCS_RECIPE_BUCKET)
+            self.gcs_bucket.create()
+
+        self.img_server = 'https://uggipuggi-1234.appspot.com' #uggipuggi_config['imgserver'].get('img_server_ip')        
         
     @falcon.before(deserialize)
     def on_get(self, req, resp):
@@ -43,7 +54,7 @@ class Collection(object):
         try:
             # get pagination limits
             start = int(query_params.pop('start', 0))
-            limit = int(query_params.pop('limit', constants.PAGE_LIMIT))
+            limit = int(query_params.pop('limit', PAGE_LIMIT))
             end = start + limit
 
         except ValueError as e:
@@ -74,10 +85,33 @@ class Collection(object):
         # Add recipe
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         # save to DB
-        recipe = Recipe(**req.params['body'])
+        if 'multipart/form-data' in req.content_type:
+            img_data = req.get_param('images')
+            logger.debug(req.get_param('recipe_body'))
+            recipe = Recipe(**req.get_param('recipe_body'))
+            res = requests.post(self.img_server + '/img_post', 
+                                files={'img': img_data.file}, 
+                                data={'gcs_bucket': GCS_RECIPE_BUCKET,
+                                      'file_name': str(recipe.id) + '_' + 'recipe_images.jpg',
+                                      'file_type': img_data.type
+                                     })
+            logger.debug(res.status_code)
+            logger.debug(res.text)
+            if repr(res.status_code) == '200':
+                img_url = res.text
+                logger.debug("Display_pic public url:")
+                logger.debug(img_url)
+        
+                user.update(display_pic=img_url)            
+                recipe.update(images=[img_url])
+        else:    
+            recipe = Recipe(**req.params['body'])
+            
         recipe.save()
         logger.debug("Recipe created with id: %s" %str(recipe.id))
         
+        stored_recipe = Recipe.objects.get(id=recipe.id)
+        logger.debug(stored_recipe._data)
         # return Recipe id
         resp.body = {"recipe_id": str(recipe.id)}
         resp.status = falcon.HTTP_CREATED

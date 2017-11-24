@@ -123,8 +123,7 @@ class Item(object):
                 user.update(display_pic=img_url)
                 
                 resp.body = img_url
-                data = req._params.copy()
-                data.pop("display_pic")
+                data = req.get_param('body')
                 logger.debug(data)
             else:
                 raise HTTPBadRequest(title='Image upload to cloud server failed!',
