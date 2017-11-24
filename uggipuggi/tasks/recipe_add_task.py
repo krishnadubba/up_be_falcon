@@ -70,7 +70,7 @@ def user_feed_put_comment(message):
 @celery.task
 def user_feed_add_activity(message):
     logger.debug('Celery worker: user_feed_add_activity')
-    user_id, recipe_id, activity_id, recipe_pic, _ = json_util.loads(message.strip("'<>() ").replace('\'', '\"'))
+    user_id, recipe_id, activity_pic, activity_id, _ = json_util.loads(message.strip("'<>() ").replace('\'', '\"'))
     
     redis_conn = get_redis_conn()
     pipeline = redis_conn.pipeline(True)
@@ -82,7 +82,7 @@ def user_feed_add_activity(message):
                                                                                           'author_name',
                                                                                           'author_id'])    
     activity_dict = {'author_id':user_id, 'author_name':user_name, 'recipe_name':recipe_name,
-                     'recipe_pic':recipe_pic, 'recipe_author_name':recipe_author_name,
+                     'recipe_pic':activity_pic, 'recipe_author_name':recipe_author_name,
                      'recipe_author_id':recipe_author_id, 'type': 'activity'}
     
     redis_conn.hmset(activity_id_name, activity_dict)

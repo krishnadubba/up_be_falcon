@@ -5,7 +5,6 @@ import falcon
 import logging
 import requests
 import mongoengine
-from copy import deepcopy
 from google.cloud import storage as gc_storage
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, \
                                LookUpError, InvalidQueryError 
@@ -107,7 +106,7 @@ class Collection(object):
                                      })
             logger.debug(res.status_code)
             logger.debug(res.text)
-            if repr(res.status_code) == '200':
+            if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
                 img_url = res.text
                 logger.debug("Display_pic public url:")
                 logger.debug(img_url)        

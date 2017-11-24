@@ -7,18 +7,22 @@ kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092'
 activity_kafka_producer = Producer({'bootstrap.servers': kafka_bootstrap_servers})     
 
 def activity_kafka_collection_post_producer(req, resp, resource):
-    parameters = [req.user_id, req.params['body']["recipe_id"], resp.body["activity_id"], 
-                  req.params['body']['images'][0], resp.status]
-    logging.debug("++++++++++++++++++++++")
-    logging.debug("ACTIVITY_KAFKA_COLLECTION_POST_PRODUCER: %s" %req.kafka_topic_name)
-    logging.debug("----------------------")
-    logging.debug(repr(parameters))
-    logging.debug("++++++++++++++++++++++")    
-    activity_kafka_producer.produce(topic=req.kafka_topic_name, 
-                                    value=repr(parameters),
-                                    key=req.user_id) #req.encode('utf-8'))
-    activity_kafka_producer.flush()
-    
+    if 'multipart/form-data' in req.content_type:
+        parameters = [req.user_id, 
+                      req.get_params("recipe_id"),
+                      resp.body['images'],
+                      resp.body["activity_id"], 
+                      resp.status]
+        logging.debug("++++++++++++++++++++++")
+        logging.debug("ACTIVITY_KAFKA_COLLECTION_POST_PRODUCER: %s" %req.kafka_topic_name)
+        logging.debug("----------------------")
+        logging.debug(repr(parameters))
+        logging.debug("++++++++++++++++++++++")    
+        activity_kafka_producer.produce(topic=req.kafka_topic_name, 
+                                        value=repr(parameters),
+                                        key=req.user_id) #req.encode('utf-8'))
+        activity_kafka_producer.flush()
+        
 def activity_kafka_item_get_producer(req, resp, resource):
     parameters = [req.user_id, resp.status]
     logging.debug("++++++++++++++++++++++")

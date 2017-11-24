@@ -3,15 +3,19 @@
 from __future__ import absolute_import
 import falcon
 import logging
+import mongoengine
+from google.cloud import storage as gc_storage
 from bson import json_util, ObjectId
-from uggipuggi import constants
+from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, \
+                               LookUpError, InvalidQueryError
+
+from uggipuggi.constants import GCS_ACTIVITY_BUCKET, PAGE_LIMIT
 from uggipuggi.controllers.hooks import deserialize, serialize
 #from uggipuggi.controllers.schema.activity import CookingActivitySchema, CookingActivityCreateSchema
 from uggipuggi.models.cooking_activity import CookingActivity
 from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.activity_kafka_producers import activity_kafka_collection_post_producer,\
                                                          activity_kafka_item_put_producer
-from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, LookUpError, InvalidQueryError
 
 
 # -------- BEFORE_HOOK functions
@@ -29,7 +33,15 @@ logger = logging.getLogger(__name__)
 class Collection(object):
     def __init__(self):
         self.kafka_topic_name = 'activity_collection'
+        self.gcs_client = gc_storage.Client()            
+        self.gcs_bucket = self.gcs_client.bucket(GCS_ACTIVITY_BUCKET)
 
+        if not self.gcs_bucket.exists():
+            logger.debug("GCS Bucket %s does not exist, creating one" %GCS_ACTIVITY_BUCKET)
+            self.gcs_bucket.create()
+
+        self.img_server = 'https://uggipuggi-1234.appspot.com' #uggipuggi_config['imgserver'].get('img_server_ip') 
+        
     @falcon.before(deserialize)
     def on_get(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
@@ -39,7 +51,7 @@ class Collection(object):
         try:
             # get pagination limits
             start = int(query_params.pop('start', 0))
-            limit = int(query_params.pop('limit', constants.PAGE_LIMIT))
+            limit = int(query_params.pop('limit', PAGE_LIMIT))
             end = start + limit
 
         except ValueError as e:
@@ -48,8 +60,9 @@ class Collection(object):
         # custom filters
         # temp dict for updating query filters
         updated_params = {}
-
-        for item in ['name', 'description']:
+        # For these fields, we want to do a partial search instead of exact match
+        # So for example, 'chicken curry' satisfies 'recipe_name=chicken'
+        for item in ['user_name', 'recipe_name', 'description']:
             if item in query_params:
                 item_val = query_params.pop(item)
                 updated_params['{}__icontains'.format(item)] = item_val
@@ -65,8 +78,9 @@ class Collection(object):
         # [obj._data for obj in activities_qset._iter_results()]
         activities = [obj.to_mongo() for obj in activities_qset]
         logger.debug("Query results: %d" %len(activities))
-        logger.debug("Sample result:")
-        logger.debug(activities[0].to_dict())
+        if len(activities) > 0:
+            logger.debug("Sample result:")
+            logger.debug(activities[0].to_dict())
         # No need to use json_util.dumps here (?)                             
         resp.body = {'items': [res.to_dict() for res in activities],
                      'count': len(activities)}
@@ -80,12 +94,41 @@ class Collection(object):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         
         # save to DB
-        activity = CookingActivity(**req.params['body'])
-        activity.save()
+        if 'multipart/form-data' in req.content_type:
+            img_data = req.get_param('images')
+            activity_data = {}
+            for key in req._params:
+                if key in CookingActivity._fields and key not in ['images']:
+                    if isinstance(CookingActivity._fields[key], mongoengine.fields.ListField):
+                        activity_data[key] = req.get_param_as_list(key)
+                    else:    
+                        activity_data[key] = req.get_param(key)                    
+                    
+            logger.debug(activity_data)
+            activity = CookingActivity(**activity_data)
+            activity.save()
+            res = requests.post(self.img_server + '/img_post', 
+                                files={'img': img_data.file}, 
+                                data={'gcs_bucket': GCS_ACTIVITY_BUCKET,
+                                      'file_name': str(activity.id) + '_' + 'activity_images.jpg',
+                                      'file_type': img_data.type
+                                     })
+            logger.debug(res.status_code)
+            logger.debug(res.text)
+            if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
+                img_url = res.text
+                logger.debug("Display_pic public url:")
+                logger.debug(img_url)        
+                activity.update(images=[img_url])
+                resp.body = {"activity_id": str(activity.id), "images": [img_url]}
+            else:
+                resp.body = {"activity_id": str(activity.id)}
+        else:            
+            activity = CookingActivity(**req.params['body'])
+            activity.save()
+            resp.body = {"activity_id": str(activity.id)}
         logger.debug("Cooking Activity created with id: %s" %str(activity.id))
         
-        # return Recipe id
-        resp.body = {"activity_id": str(activity.id)}
         resp.status = falcon.HTTP_CREATED
 
 

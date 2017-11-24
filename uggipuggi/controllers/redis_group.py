@@ -5,7 +5,10 @@ import time
 import falcon
 import logging
 from bson import json_util, ObjectId
-from uggipuggi.constants import GROUP, GROUP_MEMBERS, USER_GROUPS
+from google.cloud import storage as gc_storage
+
+from uggipuggi.libs.error import HTTPBadRequest
+from uggipuggi.constants import GROUP, GROUP_MEMBERS, USER_GROUPS, GCS_GROUP_BUCKET
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.messaging.group_kafka_producers import group_kafka_item_put_producer, group_kafka_item_post_producer,\
        group_kafka_item_delete_producer, group_kafka_collection_post_producer, group_kafka_collection_delete_producer 
@@ -91,6 +94,14 @@ class Collection(object):
 class Item(object):
     def __init__(self):
         self.kafka_topic_name = 'group_item'
+        self.gcs_client = gc_storage.Client()            
+        self.gcs_bucket = self.gcs_client.bucket(GCS_GROUP_BUCKET)
+
+        if not self.gcs_bucket.exists():
+            logger.debug("GCS Bucket %s does not exist, creating one" %GCS_GROUP_BUCKET)
+            self.gcs_bucket.create()
+
+        self.img_server = 'https://uggipuggi-1234.appspot.com' #uggipuggi_config['imgserver'].get('img_server_ip')        
 
     @falcon.before(deserialize)
     #@falcon.after(group_kafka_item_get_producer)
@@ -144,8 +155,28 @@ class Item(object):
             return
         else:
             pipeline = req.redis_conn.pipeline(True)
-            for key in req.params['body']:
-                pipeline.hset(group_id_name, key, req.params['body'][key])
+            if 'multipart/form-data' in req.content_type:
+                img_data = req.get_param('group_pic')
+                res = requests.post(self.img_server + '/img_post', 
+                                    files={'img': img_data.file}, 
+                                    data={'gcs_bucket': GCS_GROUP_BUCKET,
+                                          'file_name': group_id_name + '_' + 'group_pic.jpg',
+                                          'file_type': img_data.type
+                                         })
+                logger.debug(res.status_code)
+                logger.debug(res.text)
+                if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
+                    img_url = res.text
+                    logger.debug("Group_pic public url:")
+                    logger.debug(img_url)
+                    pipeline.hset(group_id_name, 'group_pic', img_url)
+                else:                    
+                    logger.error("Group_pic upload to cloud storage failed!")
+                    raise HTTPBadRequest(title='Group_pic upload failed', 
+                                         description='Group_pic upload to cloud storage failed!')
+            else:    
+                for key in req.params['body']:
+                    pipeline.hset(group_id_name, key, req.params['body'][key])
             pipeline.execute()
         logger.debug("Updated group data in database")
         resp.status = falcon.HTTP_OK
