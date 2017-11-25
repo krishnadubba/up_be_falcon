@@ -106,6 +106,8 @@ class TestUggiPuggiRecipe(testing.TestBase):
             self.recipe_id = json.loads(res.content.decode('utf-8'))['recipe_id']
             print ("Recipe id :")
             print (self.recipe_id)
+            
+        header.update({'Content-Type':'application/json'})
         res = requests.get(self.rest_api + '/recipes/%s' %self.recipe_id, headers=header)
         self.assertEqual(302, res.status_code)
         # Wrong recipe id
@@ -113,12 +115,12 @@ class TestUggiPuggiRecipe(testing.TestBase):
         self.assertEqual(400, res.status_code)
         
         # Delete recipe
-        #res = requests.delete(self.rest_api + '/recipes/%s'%self.recipe_id,
-                              #headers=header)        
-        #self.assertEqual(200, res.status_code)
-        ## We deleted the recipe, so we should not find it now
-        #res = requests.get(self.rest_api + '/recipes/%s' %self.recipe_id, headers=header)
-        #self.assertEqual(400, res.status_code)        
+        res = requests.delete(self.rest_api + '/recipes/%s'%self.recipe_id,
+                              headers=header)        
+        self.assertEqual(200, res.status_code)
+        # We deleted the recipe, so we should not find it now
+        res = requests.get(self.rest_api + '/recipes/%s' %self.recipe_id, headers=header)
+        self.assertEqual(400, res.status_code)        
 
 
 if __name__ == '__main__':

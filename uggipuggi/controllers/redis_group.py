@@ -21,7 +21,15 @@ logger = logging.getLogger(__name__)
 class Collection(object):
     def __init__(self):
         self.kafka_topic_name = 'group_collection'
+        self.gcs_client = gc_storage.Client()            
+        self.gcs_bucket = self.gcs_client.bucket(GCS_GROUP_BUCKET)
 
+        if not self.gcs_bucket.exists():
+            logger.debug("GCS Bucket %s does not exist, creating one" %GCS_GROUP_BUCKET)
+            self.gcs_bucket.create()
+
+        self.img_server = 'https://uggipuggi-1234.appspot.com' #uggipuggi_config['imgserver'].get('img_server_ip')   
+        
     @falcon.before(deserialize)
     def on_get(self, req, resp):
         # Get all groups of user
@@ -39,22 +47,48 @@ class Collection(object):
         group_id = str(req.redis_conn.incr(GROUP))
         logger.debug('New group id created: %s' %group_id)
         group_id_name = GROUP + group_id
-        user_groups_id = USER_GROUPS + req.user_id
         group_members_id_name = GROUP_MEMBERS + group_id
         
+        img_data = req.get_param('group_pic')
+        res = requests.post(self.img_server + '/img_post', 
+                            files={'img': img_data.file}, 
+                            data={'gcs_bucket': GCS_GROUP_BUCKET,
+                                  'file_name': group_id_name + '_' + 'group_pic.jpg',
+                                  'file_type': img_data.type
+                                 })
+        logger.debug(res.status_code)
+        logger.debug(res.text)
+        img_url = ''
+        if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
+            img_url = res.text
+            logger.debug("Group_pic public url:")
+            logger.debug(img_url)
+            #pipeline.hset(group_id_name, 'group_pic', img_url)
+        else:                    
+            logger.error("Group_pic upload to cloud storage failed!")
+            raise HTTPBadRequest(title='Group_pic upload failed', 
+                                 description='Group_pic upload to cloud storage failed!')        
+
         pipeline = req.redis_conn.pipeline(True)        
         pipeline.hmset(group_id_name, {
-            'group_name': req.params['body']['group_name'],
-            'group_pic' : req.params['body']['group_pic'],
+            'group_name'  : req.get_param('group_name'),
+            'group_pic'   : img_url,
             'created_time': time.time(),
             'admin'       : req.user_id
         })
-        
+                
+        # Get group members list
+        group_members_list = req.get_param_as_list('member_id')
         # Add admin (current user) to group_members        
-        pipeline.sadd(group_members_id_name, req.user_id)
+        group_members_list.append(req.user_id)
+        # Add members to the groups' members list
+        pipeline.sadd(group_members_id_name, *group_members_list)
         
-        # Add this group to set of groups a user belongs to        
-        pipeline.sadd(user_groups_id, group_id_name)
+        # Add this group to set of groups a user belongs to
+        for member_id in group_members_list:
+            user_groups_id = USER_GROUPS + member_id
+            pipeline.sadd(user_groups_id, group_id_name)        
+        
         pipeline.execute()
         resp.body = {"group_id": group_id}
         resp.status = falcon.HTTP_CREATED
