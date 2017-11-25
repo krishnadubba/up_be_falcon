@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 from mongoengine import Document, StringField, EmailField, IntField, DateTimeField,\
                         BooleanField, LongField, URLField, ListField, DictField
+from uggipuggi.constants import DEFAULT_USER_STATUS
 
 class Role(object):
     # defines all available roles for users
@@ -53,6 +54,7 @@ class User(Document):
     public_profile  = BooleanField(required=True, default=False) # Public or private profile?
     app_platform    = StringField(required=True, default="android")
     subscription    = IntField(required=True, default=Subscription.FREE)
+    status          = StringField(required=True, default=DEFAULT_USER_STATUS, max_length=50)
     
     # Not mandatory
     #phone_last_verified = DateTimeField(required=False)    

@@ -320,7 +320,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 activity_image = open(filepath, 'rb')
                 
                 header = {'auth_token':users_map[feed['creator']['id']]['login_token']}
-                res = requests.post(self.rest_api + 'activity', 
+                res = requests.post(self.rest_api + '/activity', 
                                     data=activity_payload, 
                                     files={'images': activity_image},
                                     headers=header)
@@ -334,7 +334,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 activity_map[feed['id']] = activity_payload   
             
                 activity_Q_payload = {}
-                res = requests.get(self.rest_api + 'activity', 
+                res = requests.get(self.rest_api + '/activity', 
                                    params=activity_Q_payload, 
                                    headers=header)
                 self.assertEqual(302, res.status_code)
@@ -374,7 +374,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         header = {'Content-Type':'application/json'}
         header.update({'auth_token':login_token})
     
-        res = requests.get(self.rest_api + 'feed/%s'%user_mongo_id, headers=header)
+        res = requests.get(self.rest_api + '/feed/%s'%user_mongo_id, headers=header)
         print('Response:')
         print(res.status_code)
         print(res.text)            
