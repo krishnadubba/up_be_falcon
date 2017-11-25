@@ -21,6 +21,7 @@ def recipe_kafka_collection_post_producer(req, resp, resource):
                       resp.status]
         logging.debug("++++++++++++++++++++++")
         logging.debug("RECIPE_KAFKA_COLLECTION_POST_PRODUCER: %s" %req.kafka_topic_name)
+        logging.debug(req.get_param('expose_level'))
         logging.debug("----------------------")
         logging.debug(repr(parameters))
         logging.debug("++++++++++++++++++++++")    

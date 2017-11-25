@@ -22,9 +22,9 @@ def user_feed_add_recipe(message):
     contacts_id_name  = CONTACTS + user_id
     followers_id_name = FOLLOWERS + user_id
     
-    if expose_level == ExposeLevel.FRIENDS:
+    if int(expose_level) == ExposeLevel.FRIENDS:
         recipients = redis_conn.smembers(contacts_id_name)
-    elif expose_level == ExposeLevel.PUBLIC:
+    elif int(expose_level) == ExposeLevel.PUBLIC:
         recipients = redis_conn.sunion(contacts_id_name, followers_id_name)
         
     pipeline = redis_conn.pipeline(True)
@@ -36,8 +36,8 @@ def user_feed_add_recipe(message):
     
     # Add a hash for the recipe at "recipe:recipe_id"
     pipeline.hmset(recipe_id_name, recipe_dict)
-    logger.info('################# I am executed in celery worker START ###################')
-    logger.info(recipients)
+    logger.debug('################# I am executed in celery worker START ###################')
+    logger.debug(recipients)
     for recipient in recipients:
         # Use the count of this user feed bucket for notification
         user_feed = USER_FEED + recipient
@@ -46,7 +46,7 @@ def user_feed_add_recipe(message):
         pipeline.zremrangebyrank(user_feed, 0, -MAX_USER_FEED_LENGTH+1)
         #logger.info(redis_conn.zrange(user_feed, 0, -1, withscores=True))
     pipeline.execute()
-    logger.info('################# I am executed in celery worker END ###################')
+    logger.debug('################# I am executed in celery worker END ###################')
 
 @celery.task
 def user_feed_put_comment(message):

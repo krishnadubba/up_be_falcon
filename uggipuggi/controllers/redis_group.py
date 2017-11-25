@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import time
 import falcon
 import logging
+import requests
 from bson import json_util, ObjectId
 from google.cloud import storage as gc_storage
 

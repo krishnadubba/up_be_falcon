@@ -20,7 +20,6 @@ from uggipuggi.tests.utils.dummy_data_utils import get_dummy_email, get_dummy_pa
 
 
 DEBUG_OTP = '999999'
-
 class TestUggiPuggiRecipe(testing.TestBase):
     def setUp(self):
         try:

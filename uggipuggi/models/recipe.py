@@ -45,6 +45,7 @@ class Recipe(Document):
     # This should be private by default
     expose_level       = IntField(required=True, default=ExposeLevel.FRIENDS)
     
+    video_url          = URLField(required=False)
     ingredients_imgs   = ListField(URLField()) # list of urls of ingredients images
     ingredients_ids    = ListField(required=False) #Ingredients ids        
     tips               = ListField(required=False)    

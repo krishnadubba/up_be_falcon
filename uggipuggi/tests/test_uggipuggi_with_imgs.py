@@ -7,7 +7,6 @@ import os, sys
 import unittest
 import requests
 import subprocess
-from six import BytesIO
 from falcon import testing
 
 sys.path.append(os.path.dirname(os.path.dirname(sys.path[0])))
@@ -32,7 +31,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         self.rest_api = 'http://%s/'%uggipuggi_ip
         
     def test_a_groups(self):
-        count = 1
+        count = 100
         users_map = {}
         recipe_map = {}
         activity_map = {}
@@ -69,43 +68,6 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
             
             count += 1
             
-        print ("===============================================================")
-        print ()               
-        print ('Starting social network tests: addings groups ...')    
-        print ()
-        print ("===============================================================")                
-        header = {'Content-Type':'application/json'}    
-        for group in dummy_groups:
-            with self.subTest(name=group['group_name']):
-                group_payload = {}
-                group_payload['group_name'] = group['group_name']
-                group_payload['group_pic'] = group['group_pic']
-                login_token = users_map[group['admin']]['login_token']
-                header.update({'auth_token':login_token})
-                
-                res = requests.post(self.rest_api + '/groups', data=json.dumps(group_payload), 
-                                  headers=header)
-            
-                self.assertEqual(201, res.status_code)
-                self.assertTrue('group_id' in json.loads(res.content.decode('utf-8')))
-                
-                group_id = json.loads(res.content.decode('utf-8'))['group_id']
-                
-                # First memeber is the admin
-                member_payload = {}
-                member_payload['member_id'] = []
-                for member in group['members'][1:]:    
-                    member_payload['member_id'].append(users_map[member]['user_id'])
-                    
-                res = requests.post(self.rest_api + '/groups/%s'%group_id, data=json.dumps(member_payload), 
-                                    headers=header)
-                self.assertEqual(200, res.status_code)
-                
-                res = requests.get(self.rest_api + '/groups/%s?members=True'%group_id, headers=header)
-                self.assertEqual(302, res.status_code)
-                self.assertTrue('members' in json.loads(res.content.decode('utf-8')))
-                self.assertEqual(len(group['members']), len(json.loads(res.content.decode('utf-8'))['members']))
-                
         print ("===============================================================")
         print ()                   
         print ('Starting social network tests: Adding Contacts ...')                
@@ -152,6 +114,56 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                                   data=json.dumps(contact_payload), 
                                   headers=header)                
                 self.assertEqual(400, res.status_code)
+            
+        print ("===============================================================")
+        print ()               
+        print ('Starting social network tests: addings groups ...')    
+        print ()
+        print ("===============================================================")                
+        
+        #header = {'Content-Type':'application/json'}
+        for group in dummy_groups:
+            with self.subTest(name=group['group_name']):
+                group_payload = {}
+                group_payload['group_name'] = group['group_name']
+                group_payload['member_id'] = []
+                # Lets add a couple of member first.
+                for member in group['members'][:2]:    
+                    group_payload['member_id'].append(users_map[member]['user_id'])
+                
+                login_token = users_map[group['admin']]['login_token']
+                header = {'auth_token':login_token}
+                # Content-Type header is automatically done by requests for multi-part
+                here = os.path.dirname(os.path.realpath(__file__))
+                filepath = os.path.join(os.path.dirname(os.path.dirname(here)), 'test_data', 'group.png')
+                group_image = open(filepath, 'rb')
+                
+                res = requests.post(self.rest_api + '/groups', 
+                                    files={'group_pic': group_image},
+                                    data=group_payload, 
+                                    headers=header)
+                group_image.close()
+                self.assertEqual(201, res.status_code)
+                self.assertTrue('group_id' in json.loads(res.content.decode('utf-8')))
+                
+                group_id = json.loads(res.content.decode('utf-8'))['group_id']
+                
+                header.update({'Content-Type':'application/json'})
+                # Lets add some more members
+                member_payload = {}
+                member_payload['member_id'] = []
+                for member in group['members'][2:]:    
+                    member_payload['member_id'].append(users_map[member]['user_id'])
+                    
+                res = requests.post(self.rest_api + '/groups/%s'%group_id, data=json.dumps(member_payload), 
+                                    headers=header)
+                self.assertEqual(200, res.status_code)
+                
+                res = requests.get(self.rest_api + '/groups/%s?members=True'%group_id, headers=header)
+                self.assertEqual(302, res.status_code)
+                self.assertTrue('members' in json.loads(res.content.decode('utf-8')))
+                # We need num_group_mems + 1 as admin is added seperately to the group members
+                self.assertEqual(len(group['members']) + 1, len(json.loads(res.content.decode('utf-8'))['members']))                
         
         print ("===============================================================")                               
         print ()
@@ -187,12 +199,12 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                     continue
                 with self.subTest(name=recipe['name']):
                     login_token = users_map[current_author_id]['login_token']
+                    header = {'auth_token':login_token}
                     
                     recipe_payload = {"recipe_name": recipe['name'],
                                       "user_id": users_map[current_author_id]['user_id'],
                                       "likes_count": 0,
                                       "user_name": users_map[current_author_id]['display_name'],
-                                      "images":[food_gcs_base+recipe['image'].split('/')[-1]],
                                       "expose_level": 5,
                                       }
                     steps = []
@@ -209,22 +221,26 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                     for ig in recipe['ingredients']:
                         ingredients_metric.append(ig['unit'])
                         ingredients_quant.append(ig['quantity'])
-                        ingredients_imgs.append(food_gcs_base+ig['material']['image'].split('/')[-1])
+                        #ingredients_imgs.append(food_gcs_base+ig['material']['image'].split('/')[-1])
                         ingredients.append(ig['material']['name'])
                         
                     recipe_payload.update({'ingredients':ingredients,
-                                           'ingredients_imgs':ingredients_imgs,
+                                           #'ingredients_imgs':ingredients_imgs,
                                            'ingredients_quant':ingredients_quant,
                                            'ingredients_metric':ingredients_metric
                                            })                      
                     
-                    recipe_map[recipe['id']] = recipe_payload
+                    recipe_map[recipe['id']] = recipe_payload                    
                     
-                    header.update({'auth_token':login_token})
+                    here = os.path.dirname(os.path.realpath(__file__))                        
+                    filepath = os.path.join(os.path.dirname(os.path.dirname(here)), 'test_data', 'pasta.jpg')
+                    recipe_image = open(filepath, 'rb')
                     
-                    res = requests.post(self.rest_api + 'recipes', data=json.dumps(recipe_payload), 
+                    res = requests.post(self.rest_api + 'recipes', 
+                                        data=recipe_payload,
+                                        files={'images': recipe_image},
                                         headers=header)
-                    
+                    recipe_image.close()
                     self.assertEqual(201, res.status_code)
                     result_dict = json.loads(res.content.decode('utf-8')) 
                     self.assertTrue('recipe_id' in result_dict)
@@ -294,15 +310,22 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
             recipe_mongo_id = recipe_map[feed['recipe']['id']]['recipe_id']            
             with self.subTest(name=recipe_mongo_id+'::'+user_mongo_id):
                 activity_payload = {"recipe_id": recipe_mongo_id,
+                                    "recipe_name" : recipe_map[feed['recipe']['id']]['recipe_name'],
                                     "user_id": user_mongo_id,
                                     "user_name": users_map[feed['creator']['id']]['display_name'],
                                     "likes_count": 0,
-                                    "images":recipe_map[feed['recipe']['id']]['images']
                                     }
-                header = {'Content-Type':'application/json'}
-                header.update({'auth_token':users_map[feed['creator']['id']]['login_token']})
-                res = requests.post(self.rest_api + 'activity', data=json.dumps(activity_payload), 
+                here = os.path.dirname(os.path.realpath(__file__))                        
+                filepath = os.path.join(os.path.dirname(os.path.dirname(here)), 'test_data', 'pasta.jpg')
+                activity_image = open(filepath, 'rb')
+                
+                header = {'auth_token':users_map[feed['creator']['id']]['login_token']}
+                res = requests.post(self.rest_api + 'activity', 
+                                    data=activity_payload, 
+                                    files={'images': activity_image},
                                     headers=header)
+                activity_image.close()
+                
                 self.assertEqual(201, res.status_code)
                 result_dict = json.loads(res.content.decode('utf-8')) 
                 self.assertTrue('activity_id' in result_dict)                
@@ -311,11 +334,36 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 activity_map[feed['id']] = activity_payload   
             
                 activity_Q_payload = {}
-                res = requests.get(self.rest_api + 'activity', params=activity_Q_payload, 
+                res = requests.get(self.rest_api + 'activity', 
+                                   params=activity_Q_payload, 
                                    headers=header)
                 self.assertEqual(302, res.status_code)
                 results = json.loads(res.content.decode('utf-8'))['items']   
-      
+                         
+        print ("===============================================================")
+        print ()
+        print ('Starting social network tests: deleting from following list ...')
+        print ()
+        print ("===============================================================")                
+        # Delete the members from user's following list
+        header = {'Content-Type':'application/json'}    
+        for contact in dummy_following:
+            login_token = users_map[contact[0]]['login_token']
+            header.update({'auth_token':login_token})
+            contact_payload = {}
+            for cont in contact[1:]:
+                # We can only delete public users from following list (bcoz the list has only public profiles
+                # as you can only follow public profiles)
+                if 'public_profile' in users_map[cont]:
+                    with self.subTest(name=users_map[contact[0]]['user_id']+'::'+users_map[cont]['user_id']):
+                        contact_payload = {}
+                        # This time 'public_user_id' is a list (user can delete many in one go)
+                        contact_payload['public_user_id'] = [users_map[cont]['user_id']]
+                        res = requests.post(self.rest_api + '/following/%s'%users_map[contact[0]]['user_id'], 
+                                            data=json.dumps(contact_payload), 
+                                            headers=header)
+                        self.assertEqual(200, res.status_code)                        
+         
         print ("===============================================================")
         print ()   
         print ('Starting social network tests: Testing Feeds ...')
@@ -325,61 +373,11 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         login_token   = users_map['U0016']['login_token']
         header = {'Content-Type':'application/json'}
         header.update({'auth_token':login_token})
-        
+    
         res = requests.get(self.rest_api + 'feed/%s'%user_mongo_id, headers=header)
         print('Response:')
         print(res.status_code)
-        print(res.text)              
-      
-        #print ("===============================================================")
-        #print ()
-        #print ('Starting social network tests: deleting from following list ...')
-        #print ()
-        #print ("===============================================================")                
-        ## Delete the members from user's following list
-        #for contact in dummy_following:
-            #login_token = users_map[contact[0]]['login_token']
-            #header.update({'auth_token':login_token})
-            #contact_payload = {}
-            #for cont in contact[1:]:
-                ## We can only delete public users from following list (bcoz the list has only public profiles
-                ## as you can only follow public profiles)
-                #if 'public_profile' in users_map[cont]:
-                    #with self.subTest(name=users_map[contact[0]]['user_id']+'::'+users_map[cont]['user_id']):
-                        #contact_payload = {}
-                        ## This time 'public_user_id' is a list (user can delete many in one go)
-                        #contact_payload['public_user_id'] = [users_map[cont]['user_id']]
-                        #res = requests.post(self.rest_api + '/following/%s'%users_map[contact[0]]['user_id'], 
-                                            #data=json.dumps(contact_payload), 
-                                            #headers=header)
-                        #self.assertEqual(200, res.status_code)                        
-            
-
-class TestMain(testing.TestBase):
-
-    def setUp(self):
-        test_uggipuggi = get_test_uggipuggi()
-        self.api = test_uggipuggi.app
-        self.config = test_uggipuggi.config
-        self.db = test_uggipuggi.db
-
-    def test_db(self):
-        self.assertIsNotNone(self.db)
-
-    def test_config(self):
-        # list out important sections and options in config files that should be loaded
-        tests = [
-            {'section': 'cors', 'options': ['allowed_origins', 'allowed_headers']},
-            {'section': 'mongodb', 'options': ['name', 'host', 'port']},
-            {'section': 'logging', 'options': ['level']}
-        ]
-
-        for t in tests:
-            section = t['section']
-            for option in t['options']:
-                self.assertIn(option, self.config[section])
-
-
+        print(res.text)            
 
 if __name__ == '__main__':
     if 'logs' not in os.listdir(sys.path[0]):

@@ -98,12 +98,10 @@ def serialize(req, res, resource):
     def _to_json(obj):
         # base cases:
         if isinstance(obj, mongo.Document):
-            return obj.to_mongo()
+            return obj._data
         if isinstance(obj, dict):
             return {k: _to_json(v) for k, v in obj.items()}
-        if isinstance(obj, mongo.queryset.queryset.QuerySet):
-            return [_to_json(item) for item in obj]
-        if isinstance(obj, list) and isinstance(obj[0], mongo.Document):
+        if isinstance(obj, mongo.queryset.queryset.QuerySet) or isinstance(obj, list):
             return [_to_json(item) for item in obj]
         return obj
 
