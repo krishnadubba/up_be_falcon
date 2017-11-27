@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
+import time
 import falcon
 import logging
 import requests
@@ -130,7 +131,7 @@ class Collection(object):
         if len(concise_view_dict):
             req.redis_conn.hmset(RECIPE+str(recipe.id), concise_view_dict)
             
-        req.redis_conn.rpush(USER_RECIPES+req.user_id, str(recipe.id))
+        req.redis_conn.zadd(USER_RECIPES+req.user_id, str(recipe.id), int(time.time()))
         logger.info("Recipe created with id: %s" %str(recipe.id))
         resp.status = falcon.HTTP_CREATED
 
@@ -164,6 +165,8 @@ class Item(object):
         logger.debug("Deleting recipe data in database ...")
         recipe = self._try_get_recipe(id)
         recipe.delete()
+        # Remove the recipe from users_recipe list in Redis
+        req.redis_conn.zrem(USER_RECIPES+req.user_id, id)
         logger.info("Deleted recipe data in database: %s" %id)
         resp.status = falcon.HTTP_OK
 

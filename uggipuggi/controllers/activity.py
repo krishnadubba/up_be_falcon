@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
+import time
 import falcon
 import logging
 import requests
@@ -137,7 +138,7 @@ class Collection(object):
         if len(concise_view_dict):
             req.redis_conn.hmset(ACTIVITY+str(activity.id), concise_view_dict)
         
-        req.redis_conn.rpush(USER_ACTIVITY+req.user_id, str(activity.id))    
+        req.redis_conn.zadd(USER_ACTIVITY+req.user_id, str(activity.id), int(time.time()))
         logger.debug("Cooking Activity created with id: %s" %str(activity.id))
         
         resp.status = falcon.HTTP_CREATED
@@ -168,10 +169,12 @@ class Item(object):
     @falcon.before(deserialize)
     def on_delete(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
-        logger.debug("Deleting activity data in database ...")
+        logger.debug("Deleting activity item in database ...")
         activity = self._try_get_activity(id)
         activity.delete()
-        logger.debug("Deleted activity data in database")
+        # Remove activity from users activity list in Redis database
+        req.redis_conn.zrem(USER_ACTIVITY+req.user_id, id)
+        logger.debug("Deleted activity item in database")
         resp.status = falcon.HTTP_OK
 
     # TODO: handle PUT requests
@@ -182,7 +185,7 @@ class Item(object):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Finding activity in database ... %s" %repr(id))
         activity = self._try_get_activity(id)
-        logger.debug("Updating activity data in database ...")
+        logger.debug("Updating activity item in database ...")
         logger.debug(req.params['body'])
         # save to DB
         try:
@@ -204,6 +207,6 @@ class Item(object):
             logger.error('Invalid fields provided for cooking activity. {}'.format(e))
             raise HTTPBadRequest(title='Invalid Value', 
                                  description='Invalid fields provided for cooking activity. {}'.format(e))
-        logger.debug("Updated activity data in database")
+        logger.debug("Updated activity item in database")
         resp.body = {"activity_id": str(activity.id)}
         resp.status = falcon.HTTP_OK
