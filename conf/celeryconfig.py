@@ -23,7 +23,10 @@ CELERY_DEFAULT_EXCHANGE    = 'normal'
 CELERY_DEFAULT_ROUTING_KEY = 'normal'
 CELERY_ROUTES = {
     # -- HIGH PRIORITY QUEUE -- #
-    'uggipuggi.tasks.recipe_add_task.user_feed_add_recipe': {'queue': 'high'},
+    'uggipuggi.tasks.recipe_add_task.user_feed_add_recipe':   {'queue': 'high'},    
+    'uggipuggi.tasks.recipe_add_task.user_feed_add_activity': {'queue': 'high'},
+    # -- NORMAL PRIORITY QUEUE -- #
+    'uggipuggi.tasks.recipe_add_task.user_feed_put_comment':  {'queue': 'normal'},
     # -- LOW PRIORITY QUEUE -- #
     #'myapp.tasks.close_session': {'queue': 'low'},
 }

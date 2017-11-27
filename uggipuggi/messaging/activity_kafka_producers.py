@@ -9,6 +9,7 @@ activity_kafka_producer = Producer({'bootstrap.servers': kafka_bootstrap_servers
 def activity_kafka_collection_post_producer(req, resp, resource):
     if 'multipart/form-data' in req.content_type:
         parameters = [req.user_id, 
+                      req.get_param('user_name'),
                       req.get_param("recipe_id"),
                       resp.body['images'],
                       resp.body["activity_id"], 

@@ -42,7 +42,8 @@ class Recipe(Document):
     ingredients        = ListField(required=True) #Ingredients names
     ingredients_quant  = ListField(required=True) 
     ingredients_metric = ListField(required=True)
-    # This should be private by default
+    # This should be FRIENDS by default if profile is not public
+    # otherwise it should be public
     expose_level       = IntField(required=True, default=ExposeLevel.FRIENDS)
     
     video_url          = URLField(required=False)

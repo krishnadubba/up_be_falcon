@@ -8,7 +8,7 @@ sys.path.append(ROOT_DIR)
 
 # instantiate Celery object
 celery = Celery(include=[
-                         'uggipuggi.tasks.recipe_add_task'
+                         'uggipuggi.tasks.recipe_add_task',
                         ])
 
 # import celery config file
