@@ -9,7 +9,7 @@ from google.cloud import storage as gc_storage
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, \
                                LookUpError, InvalidQueryError 
 
-from uggipuggi.constants import GCS_RECIPE_BUCKET, PAGE_LIMIT, RECIPE
+from uggipuggi.constants import GCS_RECIPE_BUCKET, PAGE_LIMIT, RECIPE, USER_RECIPES
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.controllers.schema.recipe import RecipeSchema, RecipeCreateSchema
 from uggipuggi.models.recipe import Comment, Recipe 
@@ -33,6 +33,7 @@ def deserialize_update(req, res, resource, params):
 
 logger = logging.getLogger(__name__)
 
+@falcon.before(supply_redis_conn)    
 @falcon.after(serialize)
 class Collection(object):
     def __init__(self):
@@ -82,7 +83,6 @@ class Collection(object):
         
     #@falcon.before(deserialize_create)
     @falcon.before(deserialize)
-    @falcon.before(supply_redis_conn)
     @falcon.after(recipe_kafka_collection_post_producer)
     def on_post(self, req, resp):
         # Add recipe
@@ -129,6 +129,8 @@ class Collection(object):
         concise_view_dict = {key:recipe_data[key] for key in self.concise_view_fields if key in recipe_data}
         if len(concise_view_dict):
             req.redis_conn.hmset(RECIPE+str(recipe.id), concise_view_dict)
+            
+        req.redis_conn.rpush(USER_RECIPES+req.user_id, str(recipe.id))
         logger.info("Recipe created with id: %s" %str(recipe.id))
         resp.status = falcon.HTTP_CREATED
 

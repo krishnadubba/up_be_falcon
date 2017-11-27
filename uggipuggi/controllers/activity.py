@@ -10,7 +10,7 @@ from bson import json_util, ObjectId
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, \
                                LookUpError, InvalidQueryError
 
-from uggipuggi.constants import GCS_ACTIVITY_BUCKET, PAGE_LIMIT, ACTIVITY
+from uggipuggi.constants import GCS_ACTIVITY_BUCKET, PAGE_LIMIT, ACTIVITY, USER_ACTIVITY
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 #from uggipuggi.controllers.schema.activity import CookingActivitySchema, CookingActivityCreateSchema
 from uggipuggi.models.cooking_activity import CookingActivity
@@ -136,7 +136,8 @@ class Collection(object):
         concise_view_dict = {key:activity_data[key] for key in self.concise_view_fields if key in activity_data}
         if len(concise_view_dict):
             req.redis_conn.hmset(ACTIVITY+str(activity.id), concise_view_dict)
-            
+        
+        req.redis_conn.rpush(USER_ACTIVITY+req.user_id, str(activity.id))    
         logger.debug("Cooking Activity created with id: %s" %str(activity.id))
         
         resp.status = falcon.HTTP_CREATED

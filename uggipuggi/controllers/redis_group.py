@@ -64,7 +64,6 @@ class Collection(object):
             img_url = res.text
             logger.debug("Group_pic public url:")
             logger.debug(img_url)
-            #pipeline.hset(group_id_name, 'group_pic', img_url)
         else:                    
             logger.error("Group_pic upload to cloud storage failed!")
             raise HTTPBadRequest(title='Group_pic upload failed', 
@@ -86,6 +85,7 @@ class Collection(object):
         pipeline.sadd(group_members_id_name, *group_members_list)
         
         # Add this group to set of groups a user belongs to
+        # Note that now group_members_list include admin
         for member_id in group_members_list:
             user_groups_id = USER_GROUPS + member_id
             pipeline.sadd(user_groups_id, group_id_name)        
@@ -108,9 +108,9 @@ class Collection(object):
         else:
             group_members_id_name = GROUP_MEMBERS + group_id
             pipeline = req.redis_conn.pipeline(True)
-            group_keys = list(req.redis_conn.hgetall(group_id_name).keys())
+            group_keys = req.redis_conn.hgetall(group_id_name).keys()
             req.redis_conn.hdel(group_id_name, *group_keys)
-            group_members = list(req.redis_conn.smembers(group_members_id_name))
+            group_members = req.redis_conn.smembers(group_members_id_name)
             
             # Remove this group from all members group list
             for member in group_members:
