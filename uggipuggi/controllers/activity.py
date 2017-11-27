@@ -10,8 +10,8 @@ from bson import json_util, ObjectId
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, \
                                LookUpError, InvalidQueryError
 
-from uggipuggi.constants import GCS_ACTIVITY_BUCKET, PAGE_LIMIT
-from uggipuggi.controllers.hooks import deserialize, serialize
+from uggipuggi.constants import GCS_ACTIVITY_BUCKET, PAGE_LIMIT, ACTIVITY
+from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 #from uggipuggi.controllers.schema.activity import CookingActivitySchema, CookingActivityCreateSchema
 from uggipuggi.models.cooking_activity import CookingActivity
 from uggipuggi.libs.error import HTTPBadRequest
@@ -30,6 +30,7 @@ from uggipuggi.messaging.activity_kafka_producers import activity_kafka_collecti
 
 logger = logging.getLogger(__name__)
 
+@falcon.before(supply_redis_conn)
 @falcon.after(serialize)
 class Collection(object):
     def __init__(self):
@@ -42,6 +43,7 @@ class Collection(object):
             self.gcs_bucket.create()
 
         self.img_server = 'https://uggipuggi-1234.appspot.com' #uggipuggi_config['imgserver'].get('img_server_ip') 
+        self.concise_view_fields = ('images', 'recipe_name', 'user_name', 'likes_count', 'description') 
         
     @falcon.before(deserialize)
     def on_get(self, req, resp):
@@ -121,6 +123,7 @@ class Collection(object):
                 logger.debug("Display_pic public url:")
                 logger.debug(img_url)        
                 activity.update(images=[img_url])
+                activity_data.update({'images':[img_url]})
                 resp.body = {"activity_id": str(activity.id), "images": [img_url]}
             else:
                 resp.body = {"activity_id": str(activity.id)}
@@ -128,15 +131,23 @@ class Collection(object):
             activity = CookingActivity(**req.params['body'])
             activity.save()
             resp.body = {"activity_id": str(activity.id)}
+            
+        # Create activity concise view in Redis
+        concise_view_dict = {key:activity_data[key] for key in self.concise_view_fields if key in activity_data}
+        if len(concise_view_dict):
+            req.redis_conn.hmset(ACTIVITY+str(activity.id), concise_view_dict)
+            
         logger.debug("Cooking Activity created with id: %s" %str(activity.id))
         
         resp.status = falcon.HTTP_CREATED
 
 
+@falcon.before(supply_redis_conn)
 @falcon.after(serialize)
 class Item(object):
     def __init__(self):
         self.kafka_topic_name = 'activity_item'
+        self.concise_view_fields = ('images', 'recipe_name', 'user_name', 'likes_count', 'description')
         
     def _try_get_activity(self, id):
         try:
@@ -182,6 +193,12 @@ class Item(object):
                     resp.activity_author_id = activity.user_id
                 else:                    
                     activity.update(key=value)
+                    
+            # Updating activity concise view in Redis
+            concise_view_dict = {key:req.params['body'][key] for key in self.concise_view_fields if key in req.params['body']}
+            if len(concise_view_dict) > 0:
+                req.redis_conn.hmset(ACTIVITY+id, concise_view_dict)
+                
         except (ValidationError, LookUpError, InvalidQueryError, KeyError) as e:
             logger.error('Invalid fields provided for cooking activity. {}'.format(e))
             raise HTTPBadRequest(title='Invalid Value', 

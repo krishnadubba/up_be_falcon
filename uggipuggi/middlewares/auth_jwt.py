@@ -12,7 +12,7 @@ from random import randint
 from bson import json_util, ObjectId
 from datetime import datetime, timedelta
 from passlib.hash import bcrypt as crypt
-from uggipuggi.constants import OTP, OTP_LENGTH
+from uggipuggi.constants import OTP, OTP_LENGTH, USER
 from uggipuggi.models.user import Role, User, VerifyPhone
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.messaging.authentication_kafka_producers import kafka_verify_producer,\
@@ -176,12 +176,16 @@ class VerifyPhoneResource(object):
                 logging.debug("Current time!")
                 logging.debug(str(current_time))
                 full_user = self.get_user('phone', phone_number)
-                full_user.update(phone_verified=True)
-                full_user.update(account_active=True)
-                # This gives error if we use datetime type instead of str                
-                full_user.update(phone_last_verified=str(current_time))
+                full_user.update(**{'phone_verified':True,
+                                    'account_active': True,
+                                    'phone_last_verified':str(current_time)} # This gives error if we use datetime type instead of str
+                                 )
                 # Store phone to MongoDB mapping in Redis database
-                req.redis_conn.set(phone_number, str(full_user.id))
+                pipeline = req.redis_conn.pipeline(True)
+                pipeline.set(phone_number, str(full_user.id))                
+                pipeline.hmset(USER+str(full_user.id), {'account_active':True,
+                                                        'public_profile':False})
+                pipeline.execute()
                 logging.debug("User verification: Success")
                 self.add_new_jwtoken(resp, str(full_user.id), phone_last_verified=current_time)
                 resp.status = falcon.HTTP_ACCEPTED

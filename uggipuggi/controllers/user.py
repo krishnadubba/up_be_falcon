@@ -13,7 +13,6 @@ from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, Validation
 #sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 #from manage import config as uggipuggi_config
-from uggipuggi import constants
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.models.user import User, Role
 from uggipuggi.libs.error import HTTPBadRequest, HTTPUnauthorized
@@ -21,7 +20,7 @@ from uggipuggi.messaging.user_kafka_producers import user_kafka_item_get_produce
                                                      user_kafka_item_put_producer
 from uggipuggi.tasks.user_tasks import user_profile_pic_task
 from uggipuggi.constants import USER, GCS_ALLOWED_EXTENSION, GCS_USER_BUCKET,\
-                                BACKEND_ALLOWED_EXTENSIONS
+                                BACKEND_ALLOWED_EXTENSIONS, PAGE_LIMIT
 
 # -------- BEFORE_HOOK functions
 # -------- END functions
@@ -93,12 +92,13 @@ class Item(object):
 
     # TODO: handle PUT requests
     @falcon.before(deserialize)
+    @falcon.before(supply_redis_conn)
     @falcon.after(user_kafka_item_put_producer)
     def on_put(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         
         user = self._try_get_user(id)
-        
+        pipeline = req.redis_conn.pipeline(True)
         logger.debug("Updating user data in database ...")
         logger.debug(req.content_type)
         # save to DB
@@ -121,7 +121,7 @@ class Item(object):
                 logger.debug(img_url)
                 
                 user.update(display_pic=img_url)
-                
+                pipeline.hmset(USER+str(user.id), {'display_pic': img_url})
                 resp.body = img_url
                 data = req.get_param('body')
                 logger.debug(data)
@@ -135,7 +135,13 @@ class Item(object):
             
         # Using dictionary to update fields
         user.update(**data)
-
+        
+        # Update concise view in Redis database
+        concise_view_fields = ('status', 'display_name', 'public_profile')
+        concise_view_dict   = {key:data[key] for key in concise_view_fields if key in data}
+        pipeline.hmset(USER+str(user.id), concise_view_dict)
+        pipeline.execute()
+        
         logger.debug("Updated user data in database")
         
         resp.status = falcon.HTTP_OK
@@ -150,10 +156,12 @@ class Item(object):
             if request_user_id != id:
                 raise HTTPUnauthorized(title='Unauthorized Request',
                                        description='Not allowed to delete user resource: {}'.format(id))
-        logger.debug("Deleting user in database ...")           
+        logger.debug("Deactivating user in database ...")           
         user = self._try_get_user(id)
-        user.delete()
-        logger.debug("Deleted user in database")
+        user.update(account_active=False)
+        
+        #user.delete()
+        logger.debug("Deactivated user in database")
         resp.status = falcon.HTTP_OK
         
     @falcon.before(deserialize)    

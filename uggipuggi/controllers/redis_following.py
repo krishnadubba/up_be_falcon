@@ -5,7 +5,7 @@ import time
 import falcon
 import logging
 from bson import json_util, ObjectId
-from uggipuggi.constants import FOLLOWERS, FOLLOWING
+from uggipuggi.constants import FOLLOWERS, FOLLOWING, USER
 from uggipuggi.services.user import get_user  
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.messaging.following_kafka_producers import following_kafka_item_post_producer,\
@@ -46,14 +46,26 @@ class Item(object):
                 user_following_list = FOLLOWING + id
                 public_user_id = req.params['body']['public_user_id']
                 req.redis_conn.srem(user_following_list, *public_user_id)
+                # Update the count of following number in the concise view
+                req.redis_conn.hmset(USER + id, 
+                                    {'num_following':req.redis_conn.scard(user_following_list)})
+                
                 logger.debug("Deleted member from user following list in database")
                 
                 pipeline = req.redis_conn.pipeline(True)
-                for follower in public_user_id:
-                    public_user_followers_list = FOLLOWERS + follower
+                for followee in public_user_id:
+                    public_user_followers_list = FOLLOWERS + followee
                     pipeline.srem(public_user_followers_list, id)
                     logger.debug("Removed user to public user's followers list in database")                            
-                pipeline.execute()    
+                pipeline.execute()
+                
+                # Change the number of followers of the followee in concise user view
+                for followee in public_user_id:
+                    public_user_followers_list = FOLLOWERS + followee
+                    # Update the count of followers number in the concise view
+                    req.redis_conn.hmset(USER + followee, 
+                                     {'num_followers':req.redis_conn.scard(public_user_followers_list)})                
+
                 resp.status = falcon.HTTP_OK
             else:
                 logger.warn("Please provide public_user_id to delete from users following list")
@@ -82,11 +94,20 @@ class Item(object):
             user_following_list = FOLLOWING + id        
             # Add celebrity to user's following list
             req.redis_conn.sadd(user_following_list, public_user_id)
+            # Update the count of following number in the concise view
+            req.redis_conn.hmset(USER + id, 
+                                 {'num_following':req.redis_conn.scard(user_following_list)}) 
+            
             logger.debug("Added member to user following list in database")
             
             # Add user to public user (celebrity) followers list
             public_user_followers_list = FOLLOWERS + public_user_id
             req.redis_conn.sadd(public_user_followers_list, id)
+            
+            # Change the number of followers of the followee in concise user view
+            req.redis_conn.hmset(USER + public_user_id, 
+                                 {'num_followers':req.redis_conn.scard(public_user_followers_list)})
+            
             logger.debug("Added user to following followers in database")            
             resp.status = falcon.HTTP_OK
         else:

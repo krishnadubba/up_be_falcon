@@ -5,7 +5,7 @@ import time
 import falcon
 import logging
 from bson import json_util, ObjectId
-from uggipuggi.constants import FOLLOWERS
+from uggipuggi.constants import FOLLOWERS, USER
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.messaging.followers_kafka_producers import followers_kafka_item_post_producer
 
@@ -42,6 +42,10 @@ class Item(object):
             try:
                 # req.params['body']['follower_user_id'] is a list
                 req.redis_conn.srem(followers_list, *req.params['body']['follower_user_id'])
+                
+                # Change the number of followers of the followee in concise user view
+                req.redis_conn.hmset(USER + id, {'num_followers':req.redis_conn.scard(followers_list)})
+                
                 logger.debug("Deleted member from user followers in database")
                 resp.status = falcon.HTTP_OK
             except KeyError:
