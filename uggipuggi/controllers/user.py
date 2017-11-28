@@ -110,7 +110,14 @@ class Item(object):
             # img_data has three components
             # file (the image data that you can see using read()), filename, type
             img_data = req.get_param('display_pic')            
-
+            user_data = {}
+            for key in req._params:
+                if key in User._fields and key not in ['display_pic']:
+                    if isinstance(User._fields[key], mongoengine.fields.ListField):
+                        user_data[key] = req.get_param_as_list(key)
+                    else:    
+                        user_data[key] = req.get_param(key)
+                        
             res = requests.post(self.img_server + '/img_post', 
                                 files={'img': img_data.file}, 
                                 data={'gcs_bucket': GCS_USER_BUCKET,
@@ -123,27 +130,26 @@ class Item(object):
                 img_url = res.text
                 logger.debug("Display_pic public url:")
                 logger.debug(img_url)
-                
-                user.update(display_pic=img_url)
+                user_data.update({'display_pic':img_url})
+                user.update(**user_data)
                 pipeline.hmset(USER+str(user.id), {'display_pic': img_url})
                 resp.body = img_url
-                data = req.get_param('body')
-                logger.debug(data)
+                logger.debug(user_data)
             else:
                 raise HTTPBadRequest(title='Image upload to cloud server failed!',
                                      description='Status Code: %s'%repr(res.status_code))
                 
         else:
-            data = req.params.get('body')
-            logger.debug(data)
-            
-        # Using dictionary to update fields
-        user.update(**data)
+            user_data = req.params.get('body')
+            logger.debug(user_data)
+            # Using dictionary to update fields
+            user.update(**user_data)
         
         # Update concise view in Redis database
         concise_view_fields = ('status', 'display_name', 'public_profile')
-        concise_view_dict   = {key:data[key] for key in concise_view_fields if key in data}
-        pipeline.hmset(USER+str(user.id), concise_view_dict)
+        concise_view_dict   = {key:user_data[key] for key in concise_view_fields if key in user_data}
+        if len(concise_view_dict) > 0:
+            pipeline.hmset(USER+str(user.id), concise_view_dict)
         pipeline.execute()
         
         logger.debug("Updated user %s data in database" %id)
