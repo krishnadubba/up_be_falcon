@@ -95,6 +95,10 @@ class Item(object):
     @falcon.before(supply_redis_conn)
     @falcon.after(user_kafka_item_put_producer)
     def on_put(self, req, resp, id):
+        if request_user_id != id or not User.objects.get(id=req.user_id).role_satisfy(Role.ADMIN):
+            raise HTTPUnauthorized(title='Unauthorized Request',
+                                   description='Not allowed to alter user resource: {}'.format(id))
+
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         
         user = self._try_get_user(id)
@@ -142,20 +146,20 @@ class Item(object):
         pipeline.hmset(USER+str(user.id), concise_view_dict)
         pipeline.execute()
         
-        logger.debug("Updated user data in database")
+        logger.debug("Updated user %s data in database" %id)
         
         resp.status = falcon.HTTP_OK
         
     @falcon.before(deserialize)        
     def on_delete(self, req, resp, id):
         logger.debug("Checking if user is authorized to request profile delete ...")
-        request_user_id = req.user_id        
-        request_user = User.objects.get(id=request_user_id)
-        if not request_user.role_satisfy(Role.ADMIN):
-            # ensure requested user profile delete is request from user him/herself
-            if request_user_id != id:
+        # ensure requested user profile delete is request from user him/herself or admin        
+        if req.user_id != id:
+            request_user = User.objects.get(id=req.user_id)        
+            if not request_user.role_satisfy(Role.ADMIN):
                 raise HTTPUnauthorized(title='Unauthorized Request',
                                        description='Not allowed to delete user resource: {}'.format(id))
+            
         logger.debug("Deactivating user in database ...")           
         user = self._try_get_user(id)
         user.update(account_active=False)
@@ -165,17 +169,15 @@ class Item(object):
         resp.status = falcon.HTTP_OK
         
     @falcon.before(deserialize)    
-    @falcon.after(serialize)
+    @falcon.before(supply_redis_conn)    
+    @falcon.after(serialize)    
     def on_get(self, req, resp, id):
-        request_user_id = req.user_id        
-        request_user = User.objects.get(id=request_user_id)
-        if not request_user.role_satisfy(Role.EMPLOYEE):
-            # ensure requested user profile is request user him/herself
-            if request_user_id != id:
-                raise HTTPUnauthorized(title='Unauthorized Request',
-                                       description='Not allowed to request for user resource: {}'.format(id))
-        user = self._try_get_user(id)
-        # Converting MongoEngine recipe to dictionary
-        resp.body = user._data
+        # ensure requested user full profile request is from user him/herself or admin                
+        if req.user_id != id or not User.objects.get(id=req.user_id).role_satisfy(Role.ADMIN):
+            resp.body = req.redis_conn.hgetall(USER+id)
+        else:
+            user = self._try_get_user(id)
+            # Converting MongoEngine User record to dictionary
+            resp.body = user._data
         resp.status = falcon.HTTP_OK
-        
+            

@@ -6,7 +6,6 @@ DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 TWEET_CHAR_LENGTH = 1000
 DEFAULT_USER_STATUS = 'Hi, I am using UggiPuggi'
-#INTEGER_MAX = sys.maxint - 1
 INTEGER_MAX = sys.maxsize - 1
 
 PAGE_LIMIT = 20
@@ -26,27 +25,29 @@ AUTH_HEADER_USER_ID = "X-Gobbl-User-ID"
 AUTH_SHARED_SECRET_ENV = "DUBBA_SECRET"
 
 # REDIS constants 
-MAX_USER_FEED_LENGTH = 500
+MAX_USER_FEED_LENGTH = 150
 MAX_USER_FEED_LOAD   = 50
 
 # REDIS namespaces
 RECIPE        = 'recipe:'
-ACTIVITY      = 'activity:'
-GROUP         = 'group:'
-GROUP_MEMBERS = 'group_members:'
-USER_GROUPS   = 'user_groups:'
-USER_RECIPES  = 'user_recipes:'
-USER_ACTIVITY = 'user_activity:'
+ACTIVITY      = 'act:'
+GROUP         = 'grp:'
+GROUP_FEED    = 'grp_feed:'
+GROUP_MEMBERS = 'grp_members:'
+USER          = 'u:'
+USER_FEED     = 'u_feed:'
+USER_GROUPS   = 'u_grps:'
+USER_RECIPES  = 'u_recipes:'
+USER_PINNED   = 'u_pinned:'
+USER_LIKED    = 'u_liked:'
+USER_ACTIVITY = 'u_act:'
 CONTACTS      = 'contacts:'
 FOLLOWING     = 'following:'
 FOLLOWERS     = 'followers:'
-USER_FEED     = 'user_feed:'
-GROUP_FEED    = 'group_feed:'
-USER          = 'user:'
 OTP           = 'otp:'
 RECIPE_COMMENTORS   = 'recipe_commentors:'
-ACTIVITY_COMMENTORS = 'activity_commentors:'
-USER_NOTIFICATION_FEED = 'user_notification_feed:'
+ACTIVITY_COMMENTORS = 'act_commentors:'
+USER_NOTIFICATION_FEED = 'u_notify_feed:'
 
 # Google Cloud Storage stuff
 GCS_USER_BUCKET = 'gcs_user_public_server_bucket'

@@ -83,9 +83,9 @@ def deserialize(req, res, resource, params, schema=None):
                                                  'in params:\n{}'.format(e.asdict()))
 
         req.params['query'] = query
-        logging.info("%%%%%%%%%%%%%%%%%%")
-        logging.info(req.params['query'])
-        logging.info("%%%%%%%%%%%%%%%%%%")
+        logging.debug("%%%%%%%%%%%%%%%%%%")
+        logging.debug(req.params['query'])
+        logging.debug("%%%%%%%%%%%%%%%%%%")
 
 def serialize(req, res, resource):
     """
