@@ -62,6 +62,12 @@ ACL_MAP = {
         'put':    Role.USER,
         'delete': Role.USER
     },
+    '/user_recipes/+': {
+        'get':    Role.USER,
+    },    
+    '/user_activity/+': {
+        'get':    Role.USER,
+    },        
     '/get_userid': {
         'post': Role.USER
     },    

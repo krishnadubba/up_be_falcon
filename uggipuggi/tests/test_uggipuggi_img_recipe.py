@@ -33,7 +33,7 @@ class TestUggiPuggiRecipe(testing.TestBase):
         self.verify_token = None
         self.login_token  = None
         self.test_user    = None
-        count = 20000
+        count = 2000
         
         self.user_name = get_dummy_display_name(count)
         self.payload = {
@@ -113,14 +113,25 @@ class TestUggiPuggiRecipe(testing.TestBase):
         res = requests.get(self.rest_api + '/recipes/%s' %self.recipe_id+'0', headers=header)
         self.assertEqual(400, res.status_code)
         
+        res = requests.get(self.rest_api + '/user_recipes/%s' %self.user_id, headers=header)
+        self.assertTrue('count' in res.text)
+        self.assertTrue('items' in res.text)
+        self.assertEqual(1, len(res.text['items']))
+        
+        print(res.text)
+        print(res.status_code)
         # Delete recipe
-        res = requests.delete(self.rest_api + '/recipes/%s'%self.recipe_id,
+        res = requests.delete(self.rest_api + '/recipes/%s' %self.recipe_id,
                               headers=header)        
         self.assertEqual(200, res.status_code)
         # We deleted the recipe, so we should not find it now
         res = requests.get(self.rest_api + '/recipes/%s' %self.recipe_id, headers=header)
         self.assertEqual(400, res.status_code)        
-
+        
+        self.assertTrue('count' in res.text)
+        self.assertTrue('items' in res.text)
+        self.assertEqual(0, len(res.text['items']))
+        
 
 if __name__ == '__main__':
     if 'logs' not in os.listdir(sys.path[0]):

@@ -44,7 +44,8 @@ class Collection(object):
             self.gcs_bucket.create()
 
         self.img_server = 'https://uggipuggi-1234.appspot.com' #uggipuggi_config['imgserver'].get('img_server_ip') 
-        self.concise_view_fields = ('images', 'recipe_name', 'user_name', 'likes_count', 'description') 
+        self.concise_view_fields = ('images', 'recipe_name', 'user_name', 'user_id',
+                                    'likes_count', 'description') 
         
     @falcon.before(deserialize)
     def on_get(self, req, resp):
@@ -149,7 +150,8 @@ class Collection(object):
 class Item(object):
     def __init__(self):
         self.kafka_topic_name = 'activity_item'
-        self.concise_view_fields = ('images', 'recipe_name', 'user_name', 'likes_count', 'description')
+        self.concise_view_fields = ('images', 'recipe_name', 'user_name', 'user_id', 
+                                    'likes_count', 'description')
         
     def _try_get_activity(self, id):
         try:
