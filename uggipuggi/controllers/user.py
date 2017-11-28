@@ -7,7 +7,7 @@ import sys
 import falcon
 import logging
 import requests
-
+import mongoengine
 from google.cloud import storage as gc_storage
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError
 #sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -20,7 +20,7 @@ from uggipuggi.messaging.user_kafka_producers import user_kafka_item_get_produce
                                                      user_kafka_item_put_producer
 from uggipuggi.tasks.user_tasks import user_profile_pic_task
 from uggipuggi.constants import USER, GCS_ALLOWED_EXTENSION, GCS_USER_BUCKET,\
-                                BACKEND_ALLOWED_EXTENSIONS, PAGE_LIMIT
+                                BACKEND_ALLOWED_EXTENSIONS, PAGE_LIMIT, GAE_IMG_SERVER
 
 # -------- BEFORE_HOOK functions
 # -------- END functions
@@ -75,7 +75,6 @@ class Item(object):
             logger.debug("GCS Bucket %s does not exist, creating one" %GCS_USER_BUCKET)
             self.gcs_bucket.create()
 
-        self.img_server = 'https://uggipuggi-1234.appspot.com' #uggipuggi_config['imgserver'].get('img_server_ip')            
         self.kafka_topic_name = 'user_item'
             
     def _check_file_extension(self, filename, allowed_extensions):
@@ -95,14 +94,13 @@ class Item(object):
     @falcon.before(supply_redis_conn)
     @falcon.after(user_kafka_item_put_producer)
     def on_put(self, req, resp, id):
-        if request_user_id != id or not User.objects.get(id=req.user_id).role_satisfy(Role.ADMIN):
+        if req.user_id != id and not User.objects.get(id=req.user_id).role_satisfy(Role.ADMIN):
             raise HTTPUnauthorized(title='Unauthorized Request',
                                    description='Not allowed to alter user resource: {}'.format(id))
 
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         
         user = self._try_get_user(id)
-        pipeline = req.redis_conn.pipeline(True)
         logger.debug("Updating user data in database ...")
         logger.debug(req.content_type)
         # save to DB
@@ -118,7 +116,7 @@ class Item(object):
                     else:    
                         user_data[key] = req.get_param(key)
                         
-            res = requests.post(self.img_server + '/img_post', 
+            res = requests.post(GAE_IMG_SERVER + '/img_post', 
                                 files={'img': img_data.file}, 
                                 data={'gcs_bucket': GCS_USER_BUCKET,
                                       'file_name': str(user.id) + '_' + 'display_pic.jpg',
@@ -132,7 +130,6 @@ class Item(object):
                 logger.debug(img_url)
                 user_data.update({'display_pic':img_url})
                 user.update(**user_data)
-                pipeline.hmset(USER+str(user.id), {'display_pic': img_url})
                 resp.body = img_url
                 logger.debug(user_data)
             else:
@@ -146,11 +143,10 @@ class Item(object):
             user.update(**user_data)
         
         # Update concise view in Redis database
-        concise_view_fields = ('status', 'display_name', 'public_profile')
+        concise_view_fields = ('status', 'display_name', 'public_profile', 'display_pic')
         concise_view_dict   = {key:user_data[key] for key in concise_view_fields if key in user_data}
         if len(concise_view_dict) > 0:
-            pipeline.hmset(USER+str(user.id), concise_view_dict)
-        pipeline.execute()
+            req.redis_conn.hmset(USER+str(user.id), concise_view_dict)
         
         logger.debug("Updated user %s data in database" %id)
         
@@ -160,11 +156,9 @@ class Item(object):
     def on_delete(self, req, resp, id):
         logger.debug("Checking if user is authorized to request profile delete ...")
         # ensure requested user profile delete is request from user him/herself or admin        
-        if req.user_id != id:
-            request_user = User.objects.get(id=req.user_id)        
-            if not request_user.role_satisfy(Role.ADMIN):
-                raise HTTPUnauthorized(title='Unauthorized Request',
-                                       description='Not allowed to delete user resource: {}'.format(id))
+        if req.user_id != id and not User.objects.get(id=req.user_id).role_satisfy(Role.ADMIN):
+            raise HTTPUnauthorized(title='Unauthorized Request',
+                                   description='Not allowed to delete user resource: {}'.format(id))
             
         logger.debug("Deactivating user in database ...")           
         user = self._try_get_user(id)
@@ -179,7 +173,7 @@ class Item(object):
     @falcon.after(serialize)    
     def on_get(self, req, resp, id):
         # ensure requested user full profile request is from user him/herself or admin                
-        if req.user_id != id or not User.objects.get(id=req.user_id).role_satisfy(Role.ADMIN):
+        if req.user_id != id and not User.objects.get(id=req.user_id).role_satisfy(Role.ADMIN):
             resp.body = req.redis_conn.hgetall(USER+id)
         else:
             user = self._try_get_user(id)

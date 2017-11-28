@@ -50,9 +50,10 @@ ACTIVITY_COMMENTORS = 'act_commentors:'
 USER_NOTIFICATION_FEED = 'u_notify_feed:'
 
 # Google Cloud Storage stuff
-GCS_USER_BUCKET = 'gcs_user_public_server_bucket'
-GCS_GROUP_BUCKET = 'gcs_group_public_server_bucket'
-GCS_RECIPE_BUCKET = 'gcs_recipe_public_server_bucket'
-GCS_ACTIVITY_BUCKET = 'gcs_activity_public_server_bucket'
+GAE_IMG_SERVER = 'https://uggipuggi-dev.appspot.com'
+GCS_USER_BUCKET = 'gcs_user_public_server_bucket_dev'
+GCS_GROUP_BUCKET = 'gcs_group_public_server_bucket_dev'
+GCS_RECIPE_BUCKET = 'gcs_recipe_public_server_bucket_dev'
+GCS_ACTIVITY_BUCKET = 'gcs_activity_public_server_bucket_dev'
 BACKEND_ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'bmp']
 GCS_ALLOWED_EXTENSION = 'image/jpeg'

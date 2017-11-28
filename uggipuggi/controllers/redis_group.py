@@ -9,10 +9,12 @@ from bson import json_util, ObjectId
 from google.cloud import storage as gc_storage
 
 from uggipuggi.libs.error import HTTPBadRequest
-from uggipuggi.constants import GROUP, GROUP_MEMBERS, USER_GROUPS, GCS_GROUP_BUCKET
+from uggipuggi.constants import GROUP, GROUP_MEMBERS, USER_GROUPS, GCS_GROUP_BUCKET, \
+                                GAE_IMG_SERVER
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
-from uggipuggi.messaging.group_kafka_producers import group_kafka_item_put_producer, group_kafka_item_post_producer,\
-       group_kafka_item_delete_producer, group_kafka_collection_post_producer, group_kafka_collection_delete_producer 
+from uggipuggi.messaging.group_kafka_producers import group_kafka_item_put_producer, \
+                   group_kafka_item_post_producer, group_kafka_item_delete_producer, \
+          group_kafka_collection_post_producer, group_kafka_collection_delete_producer 
 
 
 logger = logging.getLogger(__name__)
@@ -29,8 +31,6 @@ class Collection(object):
             logger.debug("GCS Bucket %s does not exist, creating one" %GCS_GROUP_BUCKET)
             self.gcs_bucket.create()
 
-        self.img_server = 'https://uggipuggi-1234.appspot.com' #uggipuggi_config['imgserver'].get('img_server_ip')   
-        
     @falcon.before(deserialize)
     def on_get(self, req, resp):
         # Get all groups of user
@@ -51,7 +51,7 @@ class Collection(object):
         group_members_id_name = GROUP_MEMBERS + group_id
         
         img_data = req.get_param('group_pic')
-        res = requests.post(self.img_server + '/img_post', 
+        res = requests.post(GAE_IMG_SERVER + '/img_post', 
                             files={'img': img_data.file}, 
                             data={'gcs_bucket': GCS_GROUP_BUCKET,
                                   'file_name': group_id_name + '_' + 'group_pic.jpg',
@@ -136,8 +136,6 @@ class Item(object):
             logger.debug("GCS Bucket %s does not exist, creating one" %GCS_GROUP_BUCKET)
             self.gcs_bucket.create()
 
-        self.img_server = 'https://uggipuggi-1234.appspot.com' #uggipuggi_config['imgserver'].get('img_server_ip')        
-
     @falcon.before(deserialize)
     #@falcon.after(group_kafka_item_get_producer)
     def on_get(self, req, resp, id):
@@ -192,7 +190,7 @@ class Item(object):
             pipeline = req.redis_conn.pipeline(True)
             if 'multipart/form-data' in req.content_type:
                 img_data = req.get_param('group_pic')
-                res = requests.post(self.img_server + '/img_post', 
+                res = requests.post(GAE_IMG_SERVER + '/img_post', 
                                     files={'img': img_data.file}, 
                                     data={'gcs_bucket': GCS_GROUP_BUCKET,
                                           'file_name': group_id_name + '_' + 'group_pic.jpg',

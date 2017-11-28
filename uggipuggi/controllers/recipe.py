@@ -10,7 +10,7 @@ from google.cloud import storage as gc_storage
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, \
                                LookUpError, InvalidQueryError 
 
-from uggipuggi.constants import GCS_RECIPE_BUCKET, PAGE_LIMIT, RECIPE, USER_RECIPES
+from uggipuggi.constants import GCS_RECIPE_BUCKET, PAGE_LIMIT, RECIPE, USER_RECIPES, GAE_IMG_SERVER
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.controllers.schema.recipe import RecipeSchema, RecipeCreateSchema
 from uggipuggi.models.recipe import Comment, Recipe 
@@ -46,7 +46,6 @@ class Collection(object):
             logger.debug("GCS Bucket %s does not exist, creating one" %GCS_RECIPE_BUCKET)
             self.gcs_bucket.create()
 
-        self.img_server = 'https://uggipuggi-1234.appspot.com' #uggipuggi_config['imgserver'].get('img_server_ip')        
         self.concise_view_fields = ('images', 'recipe_name', 'user_name', 'user_id', 'likes_count', 
                                     'shares_count', 'rating_total', 'prep_time', 'cook_time')
         
@@ -103,7 +102,8 @@ class Collection(object):
             logger.debug(recipe_data)
             recipe = Recipe(**recipe_data)
             recipe.save()
-            res = requests.post(self.img_server + '/img_post', 
+            resp.body = {"recipe_id": str(recipe.id)}
+            res = requests.post(GAE_IMG_SERVER + '/img_post', 
                                 files={'img': img_data.file}, 
                                 data={'gcs_bucket': GCS_RECIPE_BUCKET,
                                       'file_name': str(recipe.id) + '_' + 'recipe_images.jpg',
@@ -117,7 +117,7 @@ class Collection(object):
                 logger.debug(img_url)        
                 recipe.update(images=[img_url])
                 recipe_data.update({'images':[img_url]})
-                resp.body = {"recipe_id": str(recipe.id), "images": [img_url]}
+                resp.body.update({"images": [img_url]})
             else:
                 raise HTTPBadRequest(title='Image upload to cloud server failed!',
                                      description='Status Code: %s'%repr(res.status_code))                
@@ -128,7 +128,7 @@ class Collection(object):
         
         # Create recipe concise view in Redis
         concise_view_dict = {key:recipe_data[key] for key in self.concise_view_fields if key in recipe_data}
-        if len(concise_view_dict):
+        if len(concise_view_dict) > 0:
             req.redis_conn.hmset(RECIPE+str(recipe.id), concise_view_dict)
             
         req.redis_conn.zadd(USER_RECIPES+req.user_id, str(recipe.id), int(time.time()))
@@ -191,7 +191,7 @@ class Item(object):
                         recipe_data[key] = req.get_param(key)                    
                     
             logger.debug(recipe_data)
-            res = requests.post(self.img_server + '/img_post', 
+            res = requests.post(GAE_IMG_SERVER + '/img_post', 
                                 files={'img': img_data.file}, 
                                 data={'gcs_bucket': GCS_RECIPE_BUCKET,
                                       'file_name': str(recipe.id) + '_' + 'recipe_images.jpg',
@@ -205,12 +205,14 @@ class Item(object):
             else:
                 raise HTTPBadRequest(title='Image upload to cloud server failed!',
                                      description='Status Code: %s'%repr(res.status_code))            
-            req.params['body'] = recipe_data
+                    
+        else:
+            recipe_data = req.params['body']
             
-        logger.debug(req.params['body'])
+        logger.debug(recipe_data)
         # save to DB
         try:            
-            for key, value in req.params['body'].items():
+            for key, value in recipe_data.items():
                 # Adding comments to the recipe
                 if key == 'comment':
                     comment = Comment(content=value['content'],
@@ -224,7 +226,7 @@ class Item(object):
                     recipe.update(key=value)
 
             # Updating recipe concise view in Redis
-            concise_view_dict = {key:req.params['body'][key] for key in self.concise_view_fields if key in req.params['body']}
+            concise_view_dict = {key:recipe_data[key] for key in self.concise_view_fields if key in recipe_data}
             if len(concise_view_dict) > 0:
                 req.redis_conn.hmset(RECIPE+id, concise_view_dict)
 

@@ -11,7 +11,8 @@ from bson import json_util, ObjectId
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, \
                                LookUpError, InvalidQueryError
 
-from uggipuggi.constants import GCS_ACTIVITY_BUCKET, PAGE_LIMIT, ACTIVITY, USER_ACTIVITY
+from uggipuggi.constants import GCS_ACTIVITY_BUCKET, PAGE_LIMIT, ACTIVITY, USER_ACTIVITY,\
+                                GAE_IMG_SERVER
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 #from uggipuggi.controllers.schema.activity import CookingActivitySchema, CookingActivityCreateSchema
 from uggipuggi.models.cooking_activity import CookingActivity
@@ -43,7 +44,6 @@ class Collection(object):
             logger.debug("GCS Bucket %s does not exist, creating one" %GCS_ACTIVITY_BUCKET)
             self.gcs_bucket.create()
 
-        self.img_server = 'https://uggipuggi-1234.appspot.com' #uggipuggi_config['imgserver'].get('img_server_ip') 
         self.concise_view_fields = ('images', 'recipe_name', 'user_name', 'user_id',
                                     'likes_count', 'description') 
         
@@ -112,7 +112,8 @@ class Collection(object):
             logger.debug(activity_data)
             activity = CookingActivity(**activity_data)
             activity.save()
-            res = requests.post(self.img_server + '/img_post', 
+            resp.body   = {"activity_id": str(activity.id)}
+            res = requests.post(GAE_IMG_SERVER + '/img_post', 
                                 files={'img': img_data.file}, 
                                 data={'gcs_bucket': GCS_ACTIVITY_BUCKET,
                                       'file_name': str(activity.id) + '_' + 'activity_images.jpg',
@@ -126,21 +127,21 @@ class Collection(object):
                 logger.debug(img_url)        
                 activity.update(images=[img_url])
                 activity_data.update({'images':[img_url]})
-                resp.body = {"activity_id": str(activity.id), "images": [img_url]}
-            else:
-                resp.body = {"activity_id": str(activity.id)}
-        else:            
-            activity = CookingActivity(**req.params['body'])
+                resp.body.update({"images": [img_url]})
+        else:
+            activity_data = req.params['body']
+            activity = CookingActivity(**activity_data)
             activity.save()
-            resp.body = {"activity_id": str(activity.id)}
-            
+            resp.body   = {"activity_id": str(activity.id)}
+                    
         # Create activity concise view in Redis
         concise_view_dict = {key:activity_data[key] for key in self.concise_view_fields if key in activity_data}
-        if len(concise_view_dict):
+        if len(concise_view_dict) > 0:
             req.redis_conn.hmset(ACTIVITY+str(activity.id), concise_view_dict)
         
         req.redis_conn.zadd(USER_ACTIVITY+req.user_id, str(activity.id), int(time.time()))
         logger.debug("Cooking Activity created with id: %s" %str(activity.id))
+
         
         resp.status = falcon.HTTP_CREATED
 
@@ -163,9 +164,8 @@ class Item(object):
     @falcon.before(deserialize)    
     def on_get(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
-        activity = self._try_get_activity(id)
-        resp.body = activity._data
-        resp.body = activity._data
+        activity    = self._try_get_activity(id)
+        resp.body   = activity._data
         resp.status = falcon.HTTP_FOUND
 
     @falcon.before(deserialize)
@@ -189,9 +189,37 @@ class Item(object):
         activity = self._try_get_activity(id)
         logger.debug("Updating activity item in database ...")
         logger.debug(req.params['body'])
+        
+        if 'multipart/form-data' in req.content_type:
+            img_data = req.get_param('images')
+            activity_data = {}
+            for key in req._params:
+                if key in CookingActivity._fields and key not in ['images']:
+                    if isinstance(CookingActivity._fields[key], mongoengine.fields.ListField):
+                        activity_data[key] = req.get_param_as_list(key)
+                    else:    
+                        activity_data[key] = req.get_param(key)
+                        
+            res = requests.post(GAE_IMG_SERVER + '/img_post', 
+                                files={'img': img_data.file}, 
+                                data={'gcs_bucket': GCS_ACTIVITY_BUCKET,
+                                      'file_name': str(activity.id) + '_' + 'activity_images.jpg',
+                                      'file_type': img_data.type
+                                     })
+            logger.debug(res.status_code)
+            logger.debug(res.text)
+            if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
+                img_url = res.text
+                logger.debug("Display_pic public url:")
+                logger.debug(img_url)        
+                activity.update(images=[img_url])
+                activity_data.update({'images':[img_url]})
+        else:
+            activity_data = req.params['body']
+
         # save to DB
         try:
-            for key, value in req.params['body'].items():
+            for key, value in activity_data.items():
                 if key == 'comment':
                     comment = Comment(content=value['content'], user_id=value['user_id'])
                     activity.comments.append(comment)
@@ -201,7 +229,7 @@ class Item(object):
                     activity.update(key=value)
                     
             # Updating activity concise view in Redis
-            concise_view_dict = {key:req.params['body'][key] for key in self.concise_view_fields if key in req.params['body']}
+            concise_view_dict = {key:activity_data[key] for key in self.concise_view_fields if key in activity_data}
             if len(concise_view_dict) > 0:
                 req.redis_conn.hmset(ACTIVITY+id, concise_view_dict)
                 
