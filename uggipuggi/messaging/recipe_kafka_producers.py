@@ -13,11 +13,8 @@ def recipe_kafka_collection_post_producer(req, resp, resource):
     # Consumer reads pushes notifications to interested parties and feeds
     if 'multipart/form-data' in req.content_type and req.get_param('expose_level') != ExposeLevel.PRIVATE:
         parameters = [req.user_id, 
-                      req.get_param('user_name'), 
-                      req.get_param('recipe_name'), 
                       req.get_param('expose_level'), 
                       resp.body['recipe_id'],
-                      resp.body['images'],
                       resp.status]
         logging.debug("++++++++++++++++++++++")
         logging.debug("RECIPE_KAFKA_COLLECTION_POST_PRODUCER: %s" %req.kafka_topic_name)
