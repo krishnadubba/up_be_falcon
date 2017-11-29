@@ -22,7 +22,7 @@ class CookingActivity(Document):
     recipe_id    = StringField(required=False)
     likes_count  = IntField(required=True, default=0)
     description  = StringField(max_length=TWEET_CHAR_LENGTH)
-    images       = ListField(URLField())  # list of urls
+    images       = ListField(StringField())  # list of urls
     # If the recipe id is private recipe, then we give warning when sharing activity involving it
     recipients   = ListField(StringField(default='*'))  # list of peolpe allowed to see
     tags         = ListField()

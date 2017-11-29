@@ -10,7 +10,9 @@ from google.cloud import storage as gc_storage
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, \
                                LookUpError, InvalidQueryError 
 
-from uggipuggi.constants import GCS_RECIPE_BUCKET, PAGE_LIMIT, RECIPE, USER_RECIPES, GAE_IMG_SERVER
+from uggipuggi.constants import GCS_RECIPE_BUCKET, PAGE_LIMIT, RECIPE, USER_RECIPES,\
+                                GAE_IMG_SERVER, IMG_STORE_PATH
+from uggipuggi.controllers.image_store import ImageStore
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.controllers.schema.recipe import RecipeSchema, RecipeCreateSchema
 from uggipuggi.models.recipe import Comment, Recipe 
@@ -38,6 +40,7 @@ logger = logging.getLogger(__name__)
 @falcon.after(serialize)
 class Collection(object):
     def __init__(self):
+        self.img_store  = ImageStore(IMG_STORE_PATH)
         self.kafka_topic_name = 'recipe_collection'
         self.gcs_client = gc_storage.Client()            
         self.gcs_bucket = self.gcs_client.bucket(GCS_RECIPE_BUCKET)
@@ -103,24 +106,38 @@ class Collection(object):
             recipe = Recipe(**recipe_data)
             recipe.save()
             resp.body = {"recipe_id": str(recipe.id)}
-            res = requests.post(GAE_IMG_SERVER + '/img_post', 
-                                files={'img': img_data.file}, 
-                                data={'gcs_bucket': GCS_RECIPE_BUCKET,
-                                      'file_name': str(recipe.id) + '_' + 'recipe_images.jpg',
-                                      'file_type': img_data.type
-                                     })
-            logger.debug(res.status_code)
-            logger.debug(res.text)
-            if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
-                img_url = res.text
-                logger.debug("Display_pic public url:")
-                logger.debug(img_url)        
-                recipe.update(images=[img_url])
-                recipe_data.update({'images':[img_url]})
-                resp.body.update({"images": [img_url]})
-            else:
-                raise HTTPBadRequest(title='Image upload to cloud server failed!',
-                                     description='Status Code: %s'%repr(res.status_code))                
+            
+            img_url = ''
+            image_name = str(recipe.id) + '_' + 'recipe_images.jpg'
+            try:
+                img_url = self.img_store.save(img_data.file, image_name, img_data.type)                
+            except IOError:
+                raise HTTPBadRequest(title='Recipe_pic storing failed', 
+                                     description='Recipe_pic upload to cloud storage failed!')            
+
+            recipe.update(images=[img_url])
+            recipe_data.update({'images':[img_url]})
+            resp.body.update({"images": [img_url]})
+            
+            #res = requests.post(GAE_IMG_SERVER + '/img_post', 
+                                #files={'img': img_data.file}, 
+                                #data={'gcs_bucket': GCS_RECIPE_BUCKET,
+                                      #'file_name': str(recipe.id) + '_' + 'recipe_images.jpg',
+                                      #'file_type': img_data.type
+                                     #})
+            #logger.debug(res.status_code)
+            #logger.debug(res.text)
+            #if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
+                #img_url = res.text
+                #logger.debug("Display_pic public url:")
+                #logger.debug(img_url)        
+                #recipe.update(images=[img_url])
+                #recipe_data.update({'images':[img_url]})
+                #resp.body.update({"images": [img_url]})
+            #else:
+                #raise HTTPBadRequest(title='Image upload to cloud server failed!',
+                                     #description='Status Code: %s'%repr(res.status_code))
+            
         else:    
             recipe = Recipe(**req.params['body'])
             recipe.save()

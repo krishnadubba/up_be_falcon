@@ -31,7 +31,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         self.rest_api = 'http://%s/'%uggipuggi_ip
         
     def test_a_groups(self):
-        count = 100
+        count = 3000
         users_map = {}
         recipe_map = {}
         activity_map = {}
@@ -139,7 +139,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 group_image = open(filepath, 'rb')
                 
                 res = requests.post(self.rest_api + '/groups', 
-                                    files={'group_pic': group_image},
+                                    files={'group_pic': ('group.png', group_image, 'image/png')},
                                     data=group_payload, 
                                     headers=header)
                 group_image.close()
@@ -238,7 +238,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                     
                     res = requests.post(self.rest_api + 'recipes', 
                                         data=recipe_payload,
-                                        files={'images': recipe_image},
+                                        files={'images': ('pasta.jpg', recipe_image, 'image/jpeg')},
                                         headers=header)
                     recipe_image.close()
                     self.assertEqual(201, res.status_code)
@@ -322,7 +322,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 header = {'auth_token':users_map[feed['creator']['id']]['login_token']}
                 res = requests.post(self.rest_api + '/activity', 
                                     data=activity_payload, 
-                                    files={'images': activity_image},
+                                    files={'images': ('pasta.jpg', activity_image, 'image/jpeg')},
                                     headers=header)
                 activity_image.close()
                 

@@ -63,7 +63,7 @@ class User(Document):
     email           = EmailField(required=False)  # No need to be unique  
     first_name      = StringField(required=False)
     last_name       = StringField(required=False)
-    display_pic     = URLField(required=False)
+    display_pic     = StringField(required=False)
     dp_thumbnail    = URLField(required=False)
     gender          = StringField(required=False, min_length=4, max_length=6)        
     facebook_id     = LongField(required=False)  # Facebook ID is numeric but can be pretty big

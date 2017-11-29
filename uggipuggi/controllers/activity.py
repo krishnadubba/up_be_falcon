@@ -12,7 +12,8 @@ from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, Validation
                                LookUpError, InvalidQueryError
 
 from uggipuggi.constants import GCS_ACTIVITY_BUCKET, PAGE_LIMIT, ACTIVITY, USER_ACTIVITY,\
-                                GAE_IMG_SERVER
+                                GAE_IMG_SERVER, IMG_STORE_PATH
+from uggipuggi.controllers.image_store import ImageStore
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 #from uggipuggi.controllers.schema.activity import CookingActivitySchema, CookingActivityCreateSchema
 from uggipuggi.models.cooking_activity import CookingActivity
@@ -36,6 +37,7 @@ logger = logging.getLogger(__name__)
 @falcon.after(serialize)
 class Collection(object):
     def __init__(self):
+        self.img_store  = ImageStore(IMG_STORE_PATH)
         self.kafka_topic_name = 'activity_collection'
         self.gcs_client = gc_storage.Client()            
         self.gcs_bucket = self.gcs_client.bucket(GCS_ACTIVITY_BUCKET)
@@ -113,21 +115,34 @@ class Collection(object):
             activity = CookingActivity(**activity_data)
             activity.save()
             resp.body   = {"activity_id": str(activity.id)}
-            res = requests.post(GAE_IMG_SERVER + '/img_post', 
-                                files={'img': img_data.file}, 
-                                data={'gcs_bucket': GCS_ACTIVITY_BUCKET,
-                                      'file_name': str(activity.id) + '_' + 'activity_images.jpg',
-                                      'file_type': img_data.type
-                                     })
-            logger.debug(res.status_code)
-            logger.debug(res.text)
-            if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
-                img_url = res.text
-                logger.debug("Display_pic public url:")
-                logger.debug(img_url)        
-                activity.update(images=[img_url])
-                activity_data.update({'images':[img_url]})
-                resp.body.update({"images": [img_url]})
+            
+            img_url = ''
+            image_name = str(activity.id) + '_' + 'activity_images.jpg'
+            try:
+                img_url = self.img_store.save(img_data.file, image_name, img_data.type)                
+            except IOError:
+                raise HTTPBadRequest(title='Activity_pic storing failed', 
+                                     description='Activity_pic upload to cloud storage failed!') 
+            activity.update(images=[img_url])
+            activity_data.update({'images':[img_url]})
+            resp.body.update({"images": [img_url]})
+            
+            #res = requests.post(GAE_IMG_SERVER + '/img_post', 
+                                #files={'img': img_data.file}, 
+                                #data={'gcs_bucket': GCS_ACTIVITY_BUCKET,
+                                      #'file_name': str(activity.id) + '_' + 'activity_images.jpg',
+                                      #'file_type': img_data.type
+                                     #})
+            #logger.debug(res.status_code)
+            #logger.debug(res.text)
+            #if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
+                #img_url = res.text
+                #logger.debug("Display_pic public url:")
+                #logger.debug(img_url)        
+                #activity.update(images=[img_url])
+                #activity_data.update({'images':[img_url]})
+                #resp.body.update({"images": [img_url]})
+                
         else:
             activity_data = req.params['body']
             activity = CookingActivity(**activity_data)

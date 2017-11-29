@@ -10,7 +10,8 @@ from google.cloud import storage as gc_storage
 
 from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.constants import GROUP, GROUP_MEMBERS, USER_GROUPS, GCS_GROUP_BUCKET, \
-                                GAE_IMG_SERVER
+                                GAE_IMG_SERVER, IMG_STORE_PATH
+from uggipuggi.controllers.image_store import ImageStore
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.messaging.group_kafka_producers import group_kafka_item_put_producer, \
                    group_kafka_item_post_producer, group_kafka_item_delete_producer, \
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 @falcon.after(serialize)
 class Collection(object):
     def __init__(self):
+        self.img_store  = ImageStore(IMG_STORE_PATH)
         self.kafka_topic_name = 'group_collection'
         self.gcs_client = gc_storage.Client()            
         self.gcs_bucket = self.gcs_client.bucket(GCS_GROUP_BUCKET)
@@ -51,23 +53,32 @@ class Collection(object):
         group_members_id_name = GROUP_MEMBERS + group_id
         
         img_data = req.get_param('group_pic')
-        res = requests.post(GAE_IMG_SERVER + '/img_post', 
-                            files={'img': img_data.file}, 
-                            data={'gcs_bucket': GCS_GROUP_BUCKET,
-                                  'file_name': group_id_name + '_' + 'group_pic.jpg',
-                                  'file_type': img_data.type
-                                 })
-        logger.debug(res.status_code)
-        logger.debug(res.text)
+        
         img_url = ''
-        if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
-            img_url = res.text
-            logger.debug("Group_pic public url:")
-            logger.debug(img_url)
-        else:                    
-            logger.error("Group_pic upload to cloud storage failed!")
+        image_name = group_id_name + '_' + 'group_pic.jpg'
+        try:
+            img_url = self.img_store.save(img_data.file, image_name, img_data.type)
+        except IOError:
             raise HTTPBadRequest(title='Group_pic upload failed', 
-                                 description='Group_pic upload to cloud storage failed!')        
+                                 description='Group_pic upload to cloud storage failed!')            
+        
+        #res = requests.post(GAE_IMG_SERVER + '/img_post', 
+                            #files={'img': img_data.file}, 
+                            #data={'gcs_bucket': GCS_GROUP_BUCKET,
+                                  #'file_name': group_id_name + '_' + 'group_pic.jpg',
+                                  #'file_type': img_data.type
+                                 #})
+        #logger.debug(res.status_code)
+        #logger.debug(res.text)
+        #img_url = ''
+        #if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
+            #img_url = res.text
+            #logger.debug("Group_pic public url:")
+            #logger.debug(img_url)
+        #else:                    
+            #logger.error("Group_pic upload to cloud storage failed!")
+            #raise HTTPBadRequest(title='Group_pic upload failed', 
+                                 #description='Group_pic upload to cloud storage failed!')        
 
         pipeline = req.redis_conn.pipeline(True)        
         pipeline.hmset(group_id_name, {

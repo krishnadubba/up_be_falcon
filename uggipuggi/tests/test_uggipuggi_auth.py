@@ -34,7 +34,7 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
         self.verify_token = None
         self.login_token  = None
         self.test_user    = None
-        count = 4
+        count = 2
         self.payload = {
                         "phone": get_dummy_phone(count),
                         "country_code": "IN",
@@ -132,7 +132,7 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
                     {
                         'name': 'verify_gcs_storage',
                         'desc': 'success',
-                        'payload': {'display_pic':image},
+                        'payload': {'display_pic':('image.jpg', image, 'image/jpeg')},
                         'auth_token': self.login_token,
                         'expected': {'status': 200}
                     },

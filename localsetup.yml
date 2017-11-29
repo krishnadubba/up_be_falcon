@@ -12,7 +12,7 @@ services:
     image: kr:latest
     networks: [proxy]
     ports: ['8000:8000']
-    volumes: ['~/.config/gcloud:/.config/gcloud']
+    volumes: ['~/.config/gcloud:/.config/gcloud', '~/images:/images']
   celery:
     command: celery worker -l debug -A uggipuggi.celery.celery -n worker.high -Q high
     depends_on: [redis]

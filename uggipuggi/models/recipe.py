@@ -51,7 +51,7 @@ class Recipe(Document):
     ingredients_ids    = ListField(required=False) #Ingredients ids        
     tips               = ListField(required=False)    
     description        = StringField(required=False, max_length=TWEET_CHAR_LENGTH)
-    images             = ListField(URLField())  # list of urls
+    images             = ListField(StringField())  # list of urls
     tags               = ListField(required=False)
     category           = ListField(required=False)         # Should this be a class?
     rating_count       = IntField(required=False, default=0)

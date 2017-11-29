@@ -35,6 +35,9 @@ if not SERVER_SECURE_MODE == 'DEBUG':
 
 # role-based permission control
 ACL_MAP = {
+    '/images/+': {
+        'get':  Role.USER,
+    },    
     '/recipes': {
         'get':  Role.USER,
         'post': Role.USER
@@ -555,8 +558,7 @@ class AuthMiddleware(object):
            isinstance(resource, VerifyPhoneResource) or \
            isinstance(resource, PasswordChangeResource) or \
            isinstance(resource, ForgotPasswordResource) or \
-           isinstance(resource, Test) or \
-           "http://falconframework.org" in req.url:
+           isinstance(resource, Test):
             logging.debug("DON'T NEED TOKEN")
             return
         

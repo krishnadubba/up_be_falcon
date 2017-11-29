@@ -14,8 +14,8 @@ from bson import json_util
 from mongoengine import connection
 from falcon_multipart.middleware import MultipartMiddleware
 from uggipuggi.controllers import recipe, tag, status, rating, user, user_feed, batch, activity,\
-                                   redis_group, redis_contacts, redis_followers, redis_following,\
-                                   user_recipes, user_activity
+                                  redis_group, redis_contacts, redis_followers, redis_following,\
+                                  user_recipes, user_activity, image_store
 from uggipuggi.services.user import get_user  
 from uggipuggi.middlewares import auth_jwt
 from uggipuggi.constants import DATETIME_FORMAT, AUTH_SHARED_SECRET_ENV, \
@@ -87,6 +87,8 @@ class UggiPuggi(object):
         self.app.add_route('/logout', self.logout)
         self.app.add_route('/forgot_password', self.forgot_password)
         self.app.add_route('/password_change', self.pw_change)
+        self.app.add_route('/images/{id}', image_store.Item())
+        
         # batch resources
         self.app.add_route('/batch/recipes', batch.RecipeCollection())
         self.logger.info('Loading routes FINISHED')

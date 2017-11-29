@@ -50,6 +50,7 @@ ACTIVITY_COMMENTORS = 'act_commentors:'
 USER_NOTIFICATION_FEED = 'u_notify_feed:'
 
 # Google Cloud Storage stuff
+IMG_STORE_PATH = '/images/'
 GAE_IMG_SERVER = 'https://uggipuggi-dev.appspot.com'
 GCS_USER_BUCKET = 'gcs_user_public_server_bucket_dev'
 GCS_GROUP_BUCKET = 'gcs_group_public_server_bucket_dev'

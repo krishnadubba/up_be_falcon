@@ -14,12 +14,13 @@ from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, Validation
 
 #from manage import config as uggipuggi_config
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
+from uggipuggi.controllers.image_store import ImageStore
 from uggipuggi.models.user import User, Role
 from uggipuggi.libs.error import HTTPBadRequest, HTTPUnauthorized
 from uggipuggi.messaging.user_kafka_producers import user_kafka_item_get_producer,\
                                                      user_kafka_item_put_producer
 from uggipuggi.tasks.user_tasks import user_profile_pic_task
-from uggipuggi.constants import USER, GCS_ALLOWED_EXTENSION, GCS_USER_BUCKET,\
+from uggipuggi.constants import USER, GCS_ALLOWED_EXTENSION, GCS_USER_BUCKET, IMG_STORE_PATH,\
                                 BACKEND_ALLOWED_EXTENSIONS, PAGE_LIMIT, GAE_IMG_SERVER
 
 # -------- BEFORE_HOOK functions
@@ -68,6 +69,7 @@ class Collection(object):
 
 class Item(object):
     def __init__(self):
+        self.img_store  = ImageStore(IMG_STORE_PATH)        
         self.gcs_client = gc_storage.Client()            
         self.gcs_bucket = self.gcs_client.bucket(GCS_USER_BUCKET)
 
@@ -116,25 +118,38 @@ class Item(object):
                     else:    
                         user_data[key] = req.get_param(key)
                         
-            res = requests.post(GAE_IMG_SERVER + '/img_post', 
-                                files={'img': img_data.file}, 
-                                data={'gcs_bucket': GCS_USER_BUCKET,
-                                      'file_name': str(user.id) + '_' + 'display_pic.jpg',
-                                      'file_type': img_data.type
-                                      })            
-            logger.debug(res.status_code)
-            logger.debug(res.text)
-            if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
-                img_url = res.text
-                logger.debug("Display_pic public url:")
-                logger.debug(img_url)
-                user_data.update({'display_pic':img_url})
-                user.update(**user_data)
-                resp.body = img_url
-                logger.debug(user_data)
-            else:
-                raise HTTPBadRequest(title='Image upload to cloud server failed!',
-                                     description='Status Code: %s'%repr(res.status_code))
+            image_name = str(user.id) + '_' + 'display_pic'
+            try:
+                image_path = self.img_store.save(img_data.file, image_name, img_data.type)
+            except IOError:
+                raise HTTPBadRequest(title='Failed to store display pic to file system!',
+                                     description='IOError')
+            
+            user_data.update({'display_pic':image_name})
+            user.update(**user_data)
+            resp.body = image_name            
+            logger.debug("Display_pic public url:")
+            logger.debug(image_name)
+                            
+            #res = requests.post(GAE_IMG_SERVER + '/img_post', 
+                                #files={'img': img_data.file}, 
+                                #data={'gcs_bucket': GCS_USER_BUCKET,
+                                      #'file_name': str(user.id) + '_' + 'display_pic.jpg',
+                                      #'file_type': img_data.type
+                                      #})            
+            #logger.debug(res.status_code)
+            #logger.debug(res.text)
+            #if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
+                #img_url = res.text
+                #logger.debug("Display_pic public url:")
+                #logger.debug(img_url)
+                #user_data.update({'display_pic':img_url})
+                #user.update(**user_data)
+                #resp.body = img_url
+                #logger.debug(user_data)
+            #else:
+                #raise HTTPBadRequest(title='Image upload to cloud server failed!',
+                                     #description='Status Code: %s'%repr(res.status_code))
                 
         else:
             user_data = req.params.get('body')
