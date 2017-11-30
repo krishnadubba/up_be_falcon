@@ -31,7 +31,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         self.rest_api = 'http://%s/'%uggipuggi_ip
         
     def test_a_groups(self):
-        count = 3000
+        count = 1000
         users_map = {}
         recipe_map = {}
         activity_map = {}
@@ -314,6 +314,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                                     "user_id": user_mongo_id,
                                     "user_name": users_map[feed['creator']['id']]['display_name'],
                                     "likes_count": 0,
+                                    "expose_level": 5,
                                     }
                 here = os.path.dirname(os.path.realpath(__file__))                        
                 filepath = os.path.join(os.path.dirname(os.path.dirname(here)), 'test_data', 'pasta.jpg')

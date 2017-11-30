@@ -117,7 +117,7 @@ class Collection(object):
             resp.body   = {"activity_id": str(activity.id)}
             
             img_url = ''
-            image_name = str(activity.id) + '_' + 'activity_images.jpg'
+            image_name = '_'.join([str(activity.id), str(int(time.time())), 'activity_images'])
             try:
                 img_url = self.img_store.save(img_data.file, image_name, img_data.type)                
             except IOError:
@@ -139,8 +139,6 @@ class Collection(object):
         
         req.redis_conn.zadd(USER_ACTIVITY+req.user_id, str(activity.id), int(time.time()))
         logger.debug("Cooking Activity created with id: %s" %str(activity.id))
-
-        
         resp.status = falcon.HTTP_CREATED
 
 

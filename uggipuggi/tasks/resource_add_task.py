@@ -4,10 +4,11 @@ import requests
 from bson import json_util
 from celery.utils.log import get_task_logger
 
+from uggipuggi.models import ExposeLevel
 from uggipuggi.celery.celery import celery
 from uggipuggi.services.recipe import get_recipe
 from uggipuggi.services.activity import get_activity
-from uggipuggi.models.recipe import Comment, ExposeLevel, Recipe
+from uggipuggi.models.recipe import Comment, Recipe
 from uggipuggi.models.cooking_activity import CookingActivity
 from uggipuggi.controllers.hooks import get_redis_conn
  

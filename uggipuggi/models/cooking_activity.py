@@ -4,6 +4,7 @@ from __future__ import absolute_import
 from mongoengine import Document, EmbeddedDocument, EmbeddedDocumentField, StringField,\
                   EmailField, IntField, DateTimeField, BooleanField, URLField, ListField
 from uggipuggi.constants import TWEET_CHAR_LENGTH
+from uggipuggi.models import ExposeLevel
 
 class Comment(EmbeddedDocument):
     user_id = StringField(required=True)
@@ -23,6 +24,7 @@ class CookingActivity(Document):
     likes_count  = IntField(required=True, default=0)
     description  = StringField(max_length=TWEET_CHAR_LENGTH)
     images       = ListField(StringField())  # list of urls
+    expose_level = IntField(required=True, default=ExposeLevel.FRIENDS)
     # If the recipe id is private recipe, then we give warning when sharing activity involving it
     recipients   = ListField(StringField(default='*'))  # list of peolpe allowed to see
     tags         = ListField()

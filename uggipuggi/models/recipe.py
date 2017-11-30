@@ -4,23 +4,8 @@ from __future__ import absolute_import
 from mongoengine import Document, EmbeddedDocument, EmbeddedDocumentField, StringField, EmailField,\
                  IntField, DateTimeField, BooleanField, LongField, FloatField, URLField, ListField
 from uggipuggi.constants import TWEET_CHAR_LENGTH
+from uggipuggi.models import ExposeLevel
 
-class ExposeLevel(object):
-    # defines all available roles for users
-    # this will and should determine the access control permissions for each endpoint
-    PRIVATE = 10
-    FRIENDS = 5
-    PUBLIC  = 1
-    
-    EXPOSE_MAP = {
-        PRIVATE: 'private',
-        FRIENDS: 'friends',
-        PUBLIC : 'public',
-    }
-
-    @staticmethod
-    def get_expose_level(expose):
-        return ExposeLevel.EXPOSE_MAP.get(expose_level, 'private')
     
 class Comment(EmbeddedDocument):
     user_id   = StringField(required=True)

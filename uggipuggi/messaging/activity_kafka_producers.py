@@ -2,12 +2,13 @@ import os
 import logging
 from conf import get_config
 from confluent_kafka import Producer
+from uggipuggi.models import ExposeLevel
 
 kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')
 activity_kafka_producer = Producer({'bootstrap.servers': kafka_bootstrap_servers})     
 
 def activity_kafka_collection_post_producer(req, resp, resource):
-    if 'multipart/form-data' in req.content_type:
+    if 'multipart/form-data' in req.content_type and req.get_param('expose_level') != ExposeLevel.PRIVATE:
         parameters = [req.user_id,
                       req.get_param("expose_level"),
                       req.get_param("recipe_id"),

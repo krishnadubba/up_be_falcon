@@ -2,7 +2,7 @@ import os
 import logging
 from conf import get_config
 from confluent_kafka import Producer
-from uggipuggi.models.recipe import ExposeLevel
+from uggipuggi.models import ExposeLevel
 
 kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')
 recipe_producer = Producer({'bootstrap.servers': kafka_bootstrap_servers})
