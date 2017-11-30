@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import
 import re
+import time
 import json
 import os, sys
 import unittest
@@ -34,7 +35,7 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
         self.verify_token = None
         self.login_token  = None
         self.test_user    = None
-        count = 2
+        count = 0
         self.payload = {
                         "phone": get_dummy_phone(count),
                         "country_code": "IN",
@@ -159,7 +160,19 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
                 print (res.status_code)
                 print (res.text)                
                 self.assertEqual(test['expected']['status'], res.status_code)
-
+                
+        time.sleep(10)        
+        header = {'auth_token':self.login_token}
+        header.update({'Content-Type':'application/json'})
+        for test in tests:
+            with self.subTest(name=test['name']):
+                res = requests.get(self.rest_api + '/users/%s' %self.test_user,
+                                   headers=header)
+                print (res.status_code)
+                print (res.text)                
+                self.assertEqual(test['expected']['status'], res.status_code)                
+                self.assertTrue('http://lh3.googleusercontent.com' in json.loads(res.content.decode('utf-8'))['display_pic'])
+                
 if __name__ == '__main__':
     if 'logs' not in os.listdir(sys.path[0]):
         os.mkdir('logs')

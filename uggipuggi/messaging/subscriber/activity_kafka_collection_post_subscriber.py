@@ -19,7 +19,7 @@ from confluent_kafka import Consumer, KafkaError
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(sys.path[0])))
 sys.path.append(ROOT_DIR)
 
-from uggipuggi.tasks.recipe_add_task import user_feed_add_activity
+from uggipuggi.tasks.resource_add_task import user_feed_add_activity
 
 # load config via env
 kafka_bootstrap_servers = os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')

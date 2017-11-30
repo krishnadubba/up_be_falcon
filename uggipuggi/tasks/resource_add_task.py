@@ -66,7 +66,7 @@ def user_feed_add_recipe(message):
     mongo_conn = get_mongodb_connection()
     recipe = get_recipe(recipe_id)
     if recipe:
-        recipe.update({'images': img_urls})
+        recipe.update(**{"images": img_urls})
     else:
         logger.error('Recipe not found: %s' %recipe_id)
         
@@ -129,7 +129,7 @@ def user_feed_add_activity(message):
     mongo_conn = get_mongodb_connection()
     activity = get_activity(activity_id)
     if activity:
-        activity.update({'images': img_urls})
+        activity.update(**{'images': img_urls})
     else:
         logger.error('Recipe not found: %s' %activity_id)
     

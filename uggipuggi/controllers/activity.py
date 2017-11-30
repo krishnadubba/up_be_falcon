@@ -125,24 +125,7 @@ class Collection(object):
                                      description='Activity_pic upload to cloud storage failed!') 
             activity.update(images=[img_url])
             activity_data.update({'images':[img_url]})
-            resp.body.update({"images": [img_url]})
-            
-            #res = requests.post(GAE_IMG_SERVER + '/img_post', 
-                                #files={'img': img_data.file}, 
-                                #data={'gcs_bucket': GCS_ACTIVITY_BUCKET,
-                                      #'file_name': str(activity.id) + '_' + 'activity_images.jpg',
-                                      #'file_type': img_data.type
-                                     #})
-            #logger.debug(res.status_code)
-            #logger.debug(res.text)
-            #if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
-                #img_url = res.text
-                #logger.debug("Display_pic public url:")
-                #logger.debug(img_url)        
-                #activity.update(images=[img_url])
-                #activity_data.update({'images':[img_url]})
-                #resp.body.update({"images": [img_url]})
-                
+            resp.body.update({"images": [img_url]})                
         else:
             activity_data = req.params['body']
             activity = CookingActivity(**activity_data)

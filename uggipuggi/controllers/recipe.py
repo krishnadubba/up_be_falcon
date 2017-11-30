@@ -119,25 +119,6 @@ class Collection(object):
             recipe_data.update({'images':[img_url]})
             resp.body.update({"images": [img_url]})
             
-            #res = requests.post(GAE_IMG_SERVER + '/img_post', 
-                                #files={'img': img_data.file}, 
-                                #data={'gcs_bucket': GCS_RECIPE_BUCKET,
-                                      #'file_name': str(recipe.id) + '_' + 'recipe_images.jpg',
-                                      #'file_type': img_data.type
-                                     #})
-            #logger.debug(res.status_code)
-            #logger.debug(res.text)
-            #if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
-                #img_url = res.text
-                #logger.debug("Display_pic public url:")
-                #logger.debug(img_url)        
-                #recipe.update(images=[img_url])
-                #recipe_data.update({'images':[img_url]})
-                #resp.body.update({"images": [img_url]})
-            #else:
-                #raise HTTPBadRequest(title='Image upload to cloud server failed!',
-                                     #description='Status Code: %s'%repr(res.status_code))
-            
         else:    
             recipe = Recipe(**req.params['body'])
             recipe.save()
@@ -157,6 +138,7 @@ class Collection(object):
 @falcon.before(supply_redis_conn)
 class Item(object):
     def __init__(self):
+        self.img_store  = ImageStore(IMG_STORE_PATH)
         self.kafka_topic_name = 'recipe_item'
         self.concise_view_fields = ('images', 'recipe_name', 'user_name', 'user_id', 'likes_count',
                                     'shares_count', 'rating_total', 'prep_time', 'cook_time')
@@ -207,21 +189,19 @@ class Item(object):
                     else:    
                         recipe_data[key] = req.get_param(key)                    
                     
+            # Store the image locally, then we use a background process to upload
+            # the image to google cloud storage
+            img_url = ''
+            image_name = '_'.join([str(recipe.id), str(int(time.time())), 'recipe_images'])
+            try:
+                img_url = self.img_store.save(img_data.file, image_name, img_data.type)                
+            except IOError:
+                raise HTTPBadRequest(title='Recipe_pic storing failed', 
+                                     description='Recipe_pic upload to cloud storage failed!')            
+
+            recipe_data.update({'images':[img_url]})
+         
             logger.debug(recipe_data)
-            res = requests.post(GAE_IMG_SERVER + '/img_post', 
-                                files={'img': img_data.file}, 
-                                data={'gcs_bucket': GCS_RECIPE_BUCKET,
-                                      'file_name': str(recipe.id) + '_' + 'recipe_images.jpg',
-                                      'file_type': img_data.type
-                                     })
-            logger.debug(res.status_code)
-            logger.debug(res.text)
-            if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
-                img_url = res.text
-                recipe_data.update({'images':[img_url]})
-            else:
-                raise HTTPBadRequest(title='Image upload to cloud server failed!',
-                                     description='Status Code: %s'%repr(res.status_code))            
                     
         else:
             recipe_data = req.params['body']

@@ -13,6 +13,10 @@ def activity_kafka_collection_post_producer(req, resp, resource):
                       req.get_param("recipe_id"),
                       resp.body["activity_id"], 
                       resp.status]
+        try:
+            parameters.append(resp.body['images'])
+        except KeyError:
+            parameters.append([])        
         logging.debug("++++++++++++++++++++++")
         logging.debug("ACTIVITY_KAFKA_COLLECTION_POST_PRODUCER: %s" %req.kafka_topic_name)
         logging.debug("----------------------")

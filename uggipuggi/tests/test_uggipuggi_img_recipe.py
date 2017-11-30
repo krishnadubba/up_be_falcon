@@ -34,7 +34,7 @@ class TestUggiPuggiRecipe(testing.TestBase):
         self.verify_token = None
         self.login_token  = None
         self.test_user    = None
-        count = 3000
+        count = 3002
         
         self.user_name = get_dummy_display_name(count)
         self.payload = {
@@ -122,6 +122,9 @@ class TestUggiPuggiRecipe(testing.TestBase):
         print (res_json)
         print(res.status_code)        
         self.assertEqual(1, len(res_json['items']))
+        # This is not a list but a string
+        print(json.loads(res.content.decode('utf-8'))['items'][0]['images'])        
+        self.assertTrue('http://lh3.googleusercontent.com' in json.loads(res.content.decode('utf-8'))['items'][0]['images'])
         
         # Delete recipe
         res = requests.delete(self.rest_api + '/recipes/%s' %self.recipe_id,

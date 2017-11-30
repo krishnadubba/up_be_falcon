@@ -3,8 +3,8 @@ from kombu import Exchange, Queue
 
 BROKER_TRANSPORT = "redis"
 BROKER_HOST = "redis"  # Maps to redis host.
-BROKER_PORT = 6379         # Maps to redis port.
-BROKER_VHOST = "0"         # Maps to database number.
+BROKER_PORT = 6379     # Maps to redis port.
+BROKER_VHOST = "0"     # Maps to database number.
 
 CELERY_RESULT_BACKEND = "redis"
 CELERY_REDIS_HOST = "redis"
@@ -23,10 +23,11 @@ CELERY_DEFAULT_EXCHANGE    = 'normal'
 CELERY_DEFAULT_ROUTING_KEY = 'normal'
 CELERY_ROUTES = {
     # -- HIGH PRIORITY QUEUE -- #
-    'uggipuggi.tasks.recipe_add_task.user_feed_add_recipe':   {'queue': 'high'},    
-    'uggipuggi.tasks.recipe_add_task.user_feed_add_activity': {'queue': 'high'},
+    'uggipuggi.tasks.resource_add_task.user_feed_add_recipe':   {'queue': 'high'},    
+    'uggipuggi.tasks.resource_add_task.user_feed_add_activity': {'queue': 'high'},
     # -- NORMAL PRIORITY QUEUE -- #
-    'uggipuggi.tasks.recipe_add_task.user_feed_put_comment':  {'queue': 'normal'},
+    'uggipuggi.tasks.resource_add_task.user_feed_put_comment':  {'queue': 'high'},
+    'uggipuggi.tasks.user_tasks.user_display_pic_task':  {'queue': 'high'},
     # -- LOW PRIORITY QUEUE -- #
     #'myapp.tasks.close_session': {'queue': 'low'},
 }

@@ -12,6 +12,7 @@ from random import randint
 from bson import json_util, ObjectId
 from datetime import datetime, timedelta
 from passlib.hash import bcrypt as crypt
+
 from uggipuggi.constants import OTP, OTP_LENGTH, USER
 from uggipuggi.models.user import Role, User, VerifyPhone
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn

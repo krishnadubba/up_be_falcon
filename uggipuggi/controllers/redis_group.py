@@ -52,44 +52,30 @@ class Collection(object):
         group_id_name = GROUP + group_id
         group_members_id_name = GROUP_MEMBERS + group_id
         
-        img_data = req.get_param('group_pic')
-        
         img_url = ''
-        image_name = group_id_name + '_' + 'group_pic.jpg'
-        try:
-            img_url = self.img_store.save(img_data.file, image_name, img_data.type)
-        except IOError:
-            raise HTTPBadRequest(title='Group_pic upload failed', 
-                                 description='Group_pic upload to cloud storage failed!')            
-        
-        #res = requests.post(GAE_IMG_SERVER + '/img_post', 
-                            #files={'img': img_data.file}, 
-                            #data={'gcs_bucket': GCS_GROUP_BUCKET,
-                                  #'file_name': group_id_name + '_' + 'group_pic.jpg',
-                                  #'file_type': img_data.type
-                                 #})
-        #logger.debug(res.status_code)
-        #logger.debug(res.text)
-        #img_url = ''
-        #if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
-            #img_url = res.text
-            #logger.debug("Group_pic public url:")
-            #logger.debug(img_url)
-        #else:                    
-            #logger.error("Group_pic upload to cloud storage failed!")
-            #raise HTTPBadRequest(title='Group_pic upload failed', 
-                                 #description='Group_pic upload to cloud storage failed!')        
-
+        if 'multipart/form-data' in req.content_type:
+            img_data   = req.get_param('group_pic')            
+            group_name = req.get_param('group_name')
+            group_members_list = req.get_param_as_list('member_id')
+            image_name = '_'.join([group_id_name, str(int(time.time())), 'group_pic'])
+            try:
+                img_url = self.img_store.save(img_data.file, image_name, img_data.type)
+            except IOError:
+                raise HTTPBadRequest(title='Group_pic upload failed', 
+                                     description='Group_pic upload to cloud storage failed!')            
+ 
+        else:
+            group_name = req.params['body']['group_name']
+            group_members_list = req.params['body']['member_id']
+            
         pipeline = req.redis_conn.pipeline(True)        
         pipeline.hmset(group_id_name, {
-            'group_name'  : req.get_param('group_name'),
+            'group_name'  : group_name,
             'group_pic'   : img_url,
             'created_time': time.time(),
             'admin'       : req.user_id
         })
-                
-        # Get group members list
-        group_members_list = req.get_param_as_list('member_id')
+                        
         # Add admin (current user) to group_members        
         group_members_list.append(req.user_id)
         # Add members to the groups' members list
@@ -99,7 +85,7 @@ class Collection(object):
         # Note that now group_members_list include admin
         for member_id in group_members_list:
             user_groups_id = USER_GROUPS + member_id
-            pipeline.sadd(user_groups_id, group_id_name)        
+            pipeline.sadd(user_groups_id, group_id_name)
         
         pipeline.execute()
         resp.body = {"group_id": group_id}
@@ -201,23 +187,14 @@ class Item(object):
             pipeline = req.redis_conn.pipeline(True)
             if 'multipart/form-data' in req.content_type:
                 img_data = req.get_param('group_pic')
-                res = requests.post(GAE_IMG_SERVER + '/img_post', 
-                                    files={'img': img_data.file}, 
-                                    data={'gcs_bucket': GCS_GROUP_BUCKET,
-                                          'file_name': group_id_name + '_' + 'group_pic.jpg',
-                                          'file_type': img_data.type
-                                         })
-                logger.debug(res.status_code)
-                logger.debug(res.text)
-                if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
-                    img_url = res.text
-                    logger.debug("Group_pic public url:")
-                    logger.debug(img_url)
+                image_name = '_'.join([group_id_name, str(int(time.time())), 'group_pic'])
+                try:
+                    img_url = self.img_store.save(img_data.file, image_name, img_data.type)
                     pipeline.hset(group_id_name, 'group_pic', img_url)
-                else:                    
-                    logger.error("Group_pic upload to cloud storage failed!")
+                except IOError:
                     raise HTTPBadRequest(title='Group_pic upload failed', 
-                                         description='Group_pic upload to cloud storage failed!')
+                                         description='Group_pic upload to cloud storage failed!')                  
+
             else:    
                 for key in req.params['body']:
                     pipeline.hset(group_id_name, key, req.params['body'][key])

@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import os
 import six
 import sys
+import time
 import falcon
 import logging
 import requests
@@ -19,7 +20,7 @@ from uggipuggi.models.user import User, Role
 from uggipuggi.libs.error import HTTPBadRequest, HTTPUnauthorized
 from uggipuggi.messaging.user_kafka_producers import user_kafka_item_get_producer,\
                                                      user_kafka_item_put_producer
-from uggipuggi.tasks.user_tasks import user_profile_pic_task
+from uggipuggi.tasks.user_tasks import user_display_pic_task
 from uggipuggi.constants import USER, GCS_ALLOWED_EXTENSION, GCS_USER_BUCKET, IMG_STORE_PATH,\
                                 BACKEND_ALLOWED_EXTENSIONS, PAGE_LIMIT, GAE_IMG_SERVER
 
@@ -118,9 +119,11 @@ class Item(object):
                     else:    
                         user_data[key] = req.get_param(key)
                         
-            image_name = str(user.id) + '_' + 'display_pic'
+            image_name = '_'.join([str(user.id), str(int(time.time())), 'display_pic'])
             try:
                 image_path = self.img_store.save(img_data.file, image_name, img_data.type)
+                # Call Celery background task to upload image to GCS
+                user_display_pic_task.delay(str(user.id), image_path)
             except IOError:
                 raise HTTPBadRequest(title='Failed to store display pic to file system!',
                                      description='IOError')
@@ -129,28 +132,7 @@ class Item(object):
             user.update(**user_data)
             resp.body = image_name            
             logger.debug("Display_pic public url:")
-            logger.debug(image_name)
-                            
-            #res = requests.post(GAE_IMG_SERVER + '/img_post', 
-                                #files={'img': img_data.file}, 
-                                #data={'gcs_bucket': GCS_USER_BUCKET,
-                                      #'file_name': str(user.id) + '_' + 'display_pic.jpg',
-                                      #'file_type': img_data.type
-                                      #})            
-            #logger.debug(res.status_code)
-            #logger.debug(res.text)
-            #if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
-                #img_url = res.text
-                #logger.debug("Display_pic public url:")
-                #logger.debug(img_url)
-                #user_data.update({'display_pic':img_url})
-                #user.update(**user_data)
-                #resp.body = img_url
-                #logger.debug(user_data)
-            #else:
-                #raise HTTPBadRequest(title='Image upload to cloud server failed!',
-                                     #description='Status Code: %s'%repr(res.status_code))
-                
+            logger.debug(image_name)                
         else:
             user_data = req.params.get('body')
             logger.debug(user_data)

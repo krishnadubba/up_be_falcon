@@ -39,8 +39,8 @@ class ImageStore(object):
 
     def save(self, image_stream, image_name, image_content_type):
         ext = mimetypes.guess_extension(image_content_type)
-        if ext == 'jpe':
-            ext = 'jpg'
+        if ext == '.jpe':
+            ext = '.jpg'
         image_name = '{filename}{ext}'.format(filename=image_name, ext=ext)
         image_path = os.path.join(self._storage_path, image_name)
 
