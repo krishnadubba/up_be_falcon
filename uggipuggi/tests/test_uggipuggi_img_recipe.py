@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import
 import re
+import time
 import json
 import os, sys
 import unittest
@@ -33,7 +34,7 @@ class TestUggiPuggiRecipe(testing.TestBase):
         self.verify_token = None
         self.login_token  = None
         self.test_user    = None
-        count = 2000
+        count = 3000
         
         self.user_name = get_dummy_display_name(count)
         self.payload = {
@@ -95,7 +96,7 @@ class TestUggiPuggiRecipe(testing.TestBase):
         header = {'auth_token':self.login_token}
         print (first_recipe_payload)
         res = requests.post(self.rest_api + '/recipes',
-                            files={'images': recipe_image},
+                            files={'images': ('pasta.jpg', recipe_image, 'image/jpeg')},
                             data=first_recipe_payload,
                             headers=header)
         recipe_image.close()
@@ -113,13 +114,15 @@ class TestUggiPuggiRecipe(testing.TestBase):
         res = requests.get(self.rest_api + '/recipes/%s' %self.recipe_id+'0', headers=header)
         self.assertEqual(400, res.status_code)
         
+        time.sleep(10)
         res = requests.get(self.rest_api + '/user_recipes/%s' %self.user_id, headers=header)
-        self.assertTrue('count' in res.text)
-        self.assertTrue('items' in res.text)
-        self.assertEqual(1, len(res.text['items']))
+        res_json = json.loads(res.text)
+        self.assertTrue('count' in res_json)
+        self.assertTrue('items' in res_json)
+        print (res_json)
+        print(res.status_code)        
+        self.assertEqual(1, len(res_json['items']))
         
-        print(res.text)
-        print(res.status_code)
         # Delete recipe
         res = requests.delete(self.rest_api + '/recipes/%s' %self.recipe_id,
                               headers=header)        
@@ -127,10 +130,6 @@ class TestUggiPuggiRecipe(testing.TestBase):
         # We deleted the recipe, so we should not find it now
         res = requests.get(self.rest_api + '/recipes/%s' %self.recipe_id, headers=header)
         self.assertEqual(400, res.status_code)        
-        
-        self.assertTrue('count' in res.text)
-        self.assertTrue('items' in res.text)
-        self.assertEqual(0, len(res.text['items']))
         
 
 if __name__ == '__main__':

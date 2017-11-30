@@ -108,7 +108,7 @@ class Collection(object):
             resp.body = {"recipe_id": str(recipe.id)}
             
             img_url = ''
-            image_name = str(recipe.id) + '_' + 'recipe_images.jpg'
+            image_name = '_'.join([str(recipe.id), str(int(time.time())), 'recipe_images'])
             try:
                 img_url = self.img_store.save(img_data.file, image_name, img_data.type)                
             except IOError:

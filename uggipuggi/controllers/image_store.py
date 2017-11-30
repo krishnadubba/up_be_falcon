@@ -10,6 +10,7 @@ from uggipuggi.constants import IMG_STORE_PATH
 
 logger = logging.getLogger(__name__)
 
+mimetypes.init()
 ALLOWED_IMAGE_TYPES = (
     'image/jpeg',
     'image/png',
@@ -37,8 +38,9 @@ class ImageStore(object):
         self._fopen = fopen
 
     def save(self, image_stream, image_name, image_content_type):
-        mimetypes.init()
         ext = mimetypes.guess_extension(image_content_type)
+        if ext == 'jpe':
+            ext = 'jpg'
         image_name = '{filename}{ext}'.format(filename=image_name, ext=ext)
         image_path = os.path.join(self._storage_path, image_name)
 

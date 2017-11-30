@@ -1,22 +1,46 @@
 import os, sys, time
+import falcon
+import requests
 from bson import json_util
 from celery.utils.log import get_task_logger
+from google.cloud import storage as gc_storage
+
 from uggipuggi.celery.celery import celery
 from uggipuggi.controllers.hooks import get_redis_conn
 from uggipuggi.constants import CONTACTS, FOLLOWERS, USER_FEED, USER_NOTIFICATION_FEED,\
-                                RECIPE_COMMENTORS, RECIPE, ACTIVITY, USER, MAX_USER_FEED_LENGTH
+                                RECIPE_COMMENTORS, RECIPE, ACTIVITY, USER, MAX_USER_FEED_LENGTH,\
+                                GCS_RECIPE_BUCKET, GAE_IMG_SERVER, IMG_STORE_PATH, FILE_EXT_MAP
 from uggipuggi.models.recipe import ExposeLevel
 
 logger = get_task_logger(__name__)
 
+
 @celery.task
 def user_feed_add_recipe(message):
     logger.info('Celery worker: user_feed_add_recipe')
-    user_id, expose_level, recipe_id, status = json_util.loads(message.strip("'<>() ").replace('\'', '\"'))
+    user_id, expose_level, recipe_id, status, recipe_imgs = json_util.loads(message.strip("'<>() ").replace('\'', '\"'))
     
     redis_conn = get_redis_conn()
-    # Get all contacts and followers userids
-    recipe_id_name    = RECIPE + recipe_id
+    pipeline = redis_conn.pipeline(True)    
+    recipe_id_name = RECIPE + recipe_id
+    img_urls = []
+    for img_file in recipe_imgs:
+        img_stream = open(img_file, 'rb')
+        res = requests.post(GAE_IMG_SERVER, 
+                            files={'img': img_stream}, 
+                            data={'gcs_bucket': GCS_RECIPE_BUCKET,
+                            'file_name': os.path.basename(img_file), 
+                            'file_type': FILE_EXT_MAP[img_file.split('.')[-1]]
+                            })
+        if repr(res.status_code) == falcon.HTTP_OK.split(' ')[0]:
+            img_url = res.text
+            logger.debug("Display_pic public url:")
+            logger.debug(img_url)
+            img_urls.append(img_url)
+            
+    pipeline.hmset(recipe_id_name, {'images': img_urls})
+            
+    # Get all contacts and followers userids    
     contacts_id_name  = CONTACTS + user_id
     
     if int(expose_level) == ExposeLevel.FRIENDS:
@@ -24,9 +48,7 @@ def user_feed_add_recipe(message):
     elif int(expose_level) == ExposeLevel.PUBLIC:
         followers_id_name = FOLLOWERS + user_id        
         recipients = redis_conn.sunion(contacts_id_name, followers_id_name)
-        
-    pipeline = redis_conn.pipeline(True)
-    
+            
     # Add the author to recipe commentor list, so we can notify 
     # him when others comments on this recipe
     recipe_commentors_id = RECIPE_COMMENTORS + recipe_id    
@@ -41,7 +63,7 @@ def user_feed_add_recipe(message):
         # Remove old feed if the feed is bigger than MAX_USER_FEED_LENGTH posts
         pipeline.zremrangebyrank(user_feed, 0, -MAX_USER_FEED_LENGTH+1)
         #logger.info(redis_conn.zrange(user_feed, 0, -1, withscores=True))
-    pipeline.execute()
+    pipeline.execute()    
     logger.debug('################# I am executed in celery worker END ###################')
 
 @celery.task

@@ -50,8 +50,9 @@ ACTIVITY_COMMENTORS = 'act_commentors:'
 USER_NOTIFICATION_FEED = 'u_notify_feed:'
 
 # Google Cloud Storage stuff
+FILE_EXT_MAP = {'jpg': 'image/jpeg', 'jpe': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png'}
 IMG_STORE_PATH = '/images/'
-GAE_IMG_SERVER = 'https://uggipuggi-dev.appspot.com'
+GAE_IMG_SERVER = 'https://uggipuggi-dev.appspot.com/img_post'
 GCS_USER_BUCKET = 'gcs_user_public_server_bucket_dev'
 GCS_GROUP_BUCKET = 'gcs_group_public_server_bucket_dev'
 GCS_RECIPE_BUCKET = 'gcs_recipe_public_server_bucket_dev'
