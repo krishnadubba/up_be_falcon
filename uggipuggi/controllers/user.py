@@ -46,7 +46,7 @@ class ID(object):
         
 class Collection(object):
     def __init__(self):
-        pass
+        self.concise_view_fields = ('status', 'display_name', 'public_profile', 'display_pic')
 
     @falcon.before(deserialize)
     @falcon.after(serialize)
@@ -63,7 +63,7 @@ class Collection(object):
             raise HTTPBadRequest(title='Invalid Value',
                                  description='Invalid arguments in URL query:\n{}'.format(e))
 
-        users_qset = User.objects(**query_params)[start:end]
+        users_qset = User.objects(**query_params).only(*self.concise_view_fields)[start:end]
         users = [obj.to_mongo().to_dict() for obj in users_qset]
         resp.body = {'items': users, 'count': len(users)}
         resp.status = falcon.HTTP_OK
@@ -79,7 +79,8 @@ class Item(object):
             self.gcs_bucket.create()
 
         self.kafka_topic_name = 'user_item'
-            
+        self.concise_view_fields = ('status', 'display_name', 'public_profile', 'display_pic')
+        
     def _check_file_extension(self, filename, allowed_extensions):
         if ('.' not in filename or
                 filename.split('.').pop().lower() not in allowed_extensions):
@@ -140,8 +141,7 @@ class Item(object):
             user.update(**user_data)
         
         # Update concise view in Redis database
-        concise_view_fields = ('status', 'display_name', 'public_profile', 'display_pic')
-        concise_view_dict   = {key:user_data[key] for key in concise_view_fields if key in user_data}
+        concise_view_dict   = {key:user_data[key] for key in self.concise_view_fields if key in user_data}
         if len(concise_view_dict) > 0:
             req.redis_conn.hmset(USER+str(user.id), concise_view_dict)
         

@@ -80,17 +80,18 @@ class Collection(object):
         logger.debug(query_params)
         logger.debug(start)
         logger.debug(end)
-        activities_qset = CookingActivity.objects(**query_params)[start:end]
+        # Retrieve only a subset of fields using only(*list_of_required_fields)
+        activities_qset = CookingActivity.objects(**query_params).only(*self.concise_view_fields)[start:end]
         # Is this faster?
         # [obj._data for obj in activities_qset._iter_results()]
         activities = [obj.to_mongo() for obj in activities_qset]
         logger.debug("Query results: %d" %len(activities))
-        if len(activities) > 0:
+        if activities_qset.count() > 0:
             logger.debug("Sample result:")
             logger.debug(activities[0].to_dict())
         # No need to use json_util.dumps here (?)                             
         resp.body = {'items': [res.to_dict() for res in activities],
-                     'count': len(activities)}
+                     'count': activities_qset.count()}
                                     
         resp.status = falcon.HTTP_FOUND
         
