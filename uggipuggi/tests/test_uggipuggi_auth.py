@@ -128,10 +128,10 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
                         
         
         header = {'Content-Type':'application/json'}            
-        for test in tests:
-            with self.subTest(name='User_feed'):
-                header.update({'auth_token':test['auth_token']})
-                res = requests.post(self.rest_api + '/feed', headers=header)
+        with self.subTest(name='User_feed'):
+            header.update({'auth_token':self.login_token})
+            res = requests.get(self.rest_api + '/feed', headers=header)
+            self.assertEqual(200, res.status_code)               
                 
         here = os.path.dirname(os.path.realpath(__file__))                        
         filepath = os.path.join(os.path.dirname(os.path.dirname(here)), 'test_data', 'image.jpg')
