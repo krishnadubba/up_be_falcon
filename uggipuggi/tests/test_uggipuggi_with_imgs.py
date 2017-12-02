@@ -31,7 +31,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         self.rest_api = 'http://%s/'%uggipuggi_ip
         
     def test_a_groups(self):
-        count = 1000
+        count = 2000
         users_map = {}
         recipe_map = {}
         activity_map = {}
@@ -205,7 +205,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                                       "user_id": users_map[current_author_id]['user_id'],
                                       "likes_count": 0,
                                       "user_name": users_map[current_author_id]['display_name'],
-                                      "expose_level": 5,
+                                      "expose_level": 1,
                                       }
                     steps = []
                     for direction in recipe['direction'].split('\n'):

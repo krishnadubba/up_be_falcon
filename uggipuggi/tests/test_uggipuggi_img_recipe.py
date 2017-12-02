@@ -63,7 +63,7 @@ class TestUggiPuggiRecipe(testing.TestBase):
                           "user_id":self.user_id,
                           "likes_count": 0,
                           "user_name": self.user_name,
-                          "expose_level": 5,
+                          "expose_level": 1,
                          }
         steps = []
         for direction in recipe['direction'].split('\n'):
