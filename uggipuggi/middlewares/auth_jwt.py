@@ -3,17 +3,20 @@ import logging
 import falcon
 import jwt
 import os
+import time
 import json
 import plivo
 import random
 import string
+import itertools
 
 from random import randint
 from bson import json_util, ObjectId
 from datetime import datetime, timedelta
 from passlib.hash import bcrypt as crypt
 
-from uggipuggi.constants import OTP, OTP_LENGTH, USER
+from uggipuggi.constants import OTP, OTP_LENGTH, USER, USER_RECIPES, USER_FEED,\
+                                PUBLIC_RECIPES
 from uggipuggi.models.user import Role, User, VerifyPhone
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.messaging.authentication_kafka_producers import kafka_verify_producer,\
@@ -194,9 +197,25 @@ class VerifyPhoneResource(object):
                 pipeline = req.redis_conn.pipeline(True)
                 pipeline.set(phone_number, str(full_user.id))                
                 pipeline.hmset(USER+str(full_user.id), {'account_active':True,
-                                                        'public_profile':False})
+                                                        'public_profile':False})                
                 pipeline.execute()
-                logging.debug("User verification: Success")
+                
+                # Add some public recipes to user feed if the user is new
+                user_feed = USER_FEED + str(full_user.id)
+                if not req.redis_conn.exists(user_feed):
+                    # Get public recipe list along with time stamp
+                    recipes_scored_list = req.redis_conn.zrange(PUBLIC_RECIPES, 0, 50, withscores=True)
+                    recipes_scored_flat_list = list(itertools.chain.from_iterable(recipes_scored_list))
+                    if len(recipes_scored_flat_list) > 0:
+                        logging.debug("Adding following public recipes to user feed:")
+                        logging.debug(recipes_scored_flat_list)
+                        req.redis_conn.zadd(user_feed, *recipes_scored_flat_list)
+                    else:    
+                        logging.warn("No public recipes available to add user feed!")
+                else: 
+                    logging.info("User is a returning user!")
+                    
+                logging.info("User verification: Success")
                 self.add_new_jwtoken(resp, str(full_user.id), phone_last_verified=current_time)
                 resp.status = falcon.HTTP_ACCEPTED
             else:

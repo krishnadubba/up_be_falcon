@@ -353,7 +353,7 @@ recipes = [
       'id': 'R0001',
       'name': 'City Park Salad',
       'image': 'assets/img/city_spark_salad.png',
-      'author': users[8],
+      'author': users[4],
       'direction': """<b>White Balsamic Vinaigrette:</b>
       <ul>
         <li>Add all ingredients or a mixing bowl or squeeze bottle.</li>
@@ -412,7 +412,7 @@ recipes = [
           'created_date': ""
         },
         {
-          'author': users[4],
+          'author': users[5],
           'content': 'Very nice salad…',
           'created_date': ""
         },
@@ -485,7 +485,7 @@ recipes = [
         'id': 'R0003',
         'name': 'Cajun Crawfish Pasta',
         'image': 'assets/img/one-pot-cajun-pasta.jpg',
-        'author': users[10],
+        'author': users[11],
         'direction':"""<ul>
         <li>If you don't have cooked noodles on hand already, cook the noodles and cool them before starting to cook the rest of the dish. Set aside for now. You can cook the noodles while prepping the remaining ingredients in the recipe and that should take about the same amount of time.</li>
         <li>In a medium-sized pot, melt the four tablespoons of butter over medium high heat.</li>
@@ -538,7 +538,7 @@ recipes = [
                 'content': 'Have fun tomorrow! Post pictures of it next week. This pasta looks insanely good.',
                 },
             {
-                'author': users[10],
+                'author': users[11],
                 'content': 'Thanks so much for visiting and pinning Crawfish is very tasty. Try it if you’re ever able to!',
                 },
             {
@@ -726,7 +726,7 @@ recipes = [
         'id': 'R0007',
         'name': 'Japanese Style Grilled Fish',
         'image': 'assets/img/nutrition01.jpg',
-        'author': users[11],
+        'author': users[10],
         'direction':"""Cane + Nuts is a simple, delicious Frangelico cocktail recipe that also includes spiced rum and Coca-Cola. Great holiday drink!
         <ul>
         <li>Add both liquors to the rocks glass filled with ice then top with Coca-Cola.</li>
@@ -763,7 +763,7 @@ recipes = [
                 'content': 'This recipe took me back to elementary school in the best way possible. We were always so excited for pizza days at lunch, but it was even better when the pizza was a French bread pizza. Nothing compares. I like how you took it to another level by using homemade sauce. I may have to give this a shot the next time I give in to eating pizza!',
                 },
             {
-                'author': users[11],
+                'author': users[10],
                 'content': 'Glad you like it, Katherine! let me know if you end up making it!',
                 },
             {
@@ -777,7 +777,7 @@ recipes = [
 
 feeds = [
     {   'id': 'A00007',
-        'creator': users[0],
+        'creator': users[5],
         'recipe': recipes[6]
         },
     {   'id': 'A00001',
@@ -793,7 +793,7 @@ feeds = [
         'recipe': recipes[4],
         },
     {    'id': 'A00006',
-        'creator': users[11],
+        'creator': users[10],
         'recipe': recipes[5],
         },
     {   'id': 'A00002',

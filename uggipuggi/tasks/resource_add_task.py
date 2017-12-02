@@ -16,7 +16,7 @@ from uggipuggi.services.db_service import get_mongodb_connection
 from uggipuggi.controllers.utils.gcloud_utils import upload_image_to_gcs
 from uggipuggi.constants import CONTACTS, FOLLOWERS, USER_FEED, USER_NOTIFICATION_FEED,\
                                 RECIPE_COMMENTORS, RECIPE, ACTIVITY, USER, MAX_USER_FEED_LENGTH,\
-                                GCS_RECIPE_BUCKET, GCS_ACTIVITY_BUCKET, GAE_IMG_SERVER
+                                GCS_RECIPE_BUCKET, GCS_ACTIVITY_BUCKET, GAE_IMG_SERVER, PUBLIC_RECIPES
 
 logger = get_task_logger(__name__)
 
@@ -47,6 +47,8 @@ def user_feed_add_recipe(message):
     elif int(expose_level) == ExposeLevel.PUBLIC:
         followers_id_name = FOLLOWERS + user_id        
         recipients = redis_conn.sunion(contacts_id_name, followers_id_name)
+        logger.debug('Adding to public recipes')
+        pipeline.zadd(PUBLIC_RECIPES, recipe_id_name, time.time())        
             
     # Add the author to recipe commentor list, so we can notify 
     # him when others comments on this recipe
