@@ -73,7 +73,7 @@ class UggiPuggi(object):
         self.app.add_route('/user_recipes/{id}', user_recipes.Item())
         self.app.add_route('/user_activity/{id}', user_activity.Item())
         
-        self.app.add_route('/feed/{id}', user_feed.Item())
+        self.app.add_route('/feed', user_feed.Item())
         
         self.app.add_route('/groups', redis_group.Collection())
         self.app.add_route('/groups/{id}', redis_group.Item())

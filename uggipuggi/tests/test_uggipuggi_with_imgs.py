@@ -375,7 +375,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         header = {'Content-Type':'application/json'}
         header.update({'auth_token':login_token})
     
-        res = requests.get(self.rest_api + '/feed/%s'%user_mongo_id, headers=header)
+        res = requests.get(self.rest_api + '/feed', headers=header)
         print('Response:')
         print(res.status_code)
         print(res.text)            

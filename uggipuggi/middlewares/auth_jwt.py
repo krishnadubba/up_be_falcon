@@ -78,7 +78,7 @@ ACL_MAP = {
     '/get_userid': {
         'post': Role.USER
     },    
-    '/feed/+': {
+    '/feed': {
         'get':    Role.USER,
     },    
     '/groups': {
