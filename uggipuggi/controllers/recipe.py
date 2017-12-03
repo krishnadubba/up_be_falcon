@@ -11,7 +11,9 @@ from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, Validation
                                LookUpError, InvalidQueryError 
 
 from uggipuggi.constants import GCS_RECIPE_BUCKET, PAGE_LIMIT, RECIPE, USER_RECIPES, USER,\
-                                GAE_IMG_SERVER, IMG_STORE_PATH, RECIPE_CONCISE_VIEW_FIELDS
+                                GAE_IMG_SERVER, IMG_STORE_PATH, RECIPE_CONCISE_VIEW_FIELDS,\
+                                PUBLIC_RECIPES
+from uggipuggi.models import ExposeLevel
 from uggipuggi.controllers.image_store import ImageStore
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.controllers.schema.recipe import RecipeSchema, RecipeCreateSchema
@@ -103,8 +105,7 @@ class Collection(object):
                         recipe_data[key] = req.get_param_as_list(key)
                     else:    
                         recipe_data[key] = req.get_param(key)                    
-                    
-            logger.debug(recipe_data)
+                                
             recipe = Recipe(**recipe_data)
             recipe.save()
             resp.body = {"recipe_id": str(recipe.id)}
@@ -128,10 +129,18 @@ class Collection(object):
         
         # Create recipe concise view in Redis
         concise_view_dict = {key:recipe[key] for key in RECIPE_CONCISE_VIEW_FIELDS}
-       
+        if len(concise_view_dict['images']) == 0 and img_url != "":
+            # This happens for multipart, as recipe.update is not yet flushed 
+            concise_view_dict['images'] = [img_url]
+        logger.debug('======================================')
+        logger.debug(concise_view_dict)
+        logger.debug('======================================')
         pipeline = req.redis_conn.pipeline(True)
         pipeline.hmset(RECIPE+str(recipe.id), concise_view_dict)            
         pipeline.zadd(USER_RECIPES+req.user_id, str(recipe.id), int(time.time()))
+        if recipe.expose_level == ExposeLevel.PUBLIC:
+            logger.debug('Adding recipe to public recipes')            
+            pipeline.zadd(PUBLIC_RECIPES, RECIPE + str(recipe.id), int(time.time()))
         pipeline.execute()
         logger.info("Recipe created with id: %s" %str(recipe.id))
         resp.status = falcon.HTTP_CREATED

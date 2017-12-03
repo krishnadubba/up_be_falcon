@@ -578,7 +578,7 @@ class AuthMiddleware(object):
            isinstance(resource, VerifyPhoneResource) or \
            isinstance(resource, PasswordChangeResource) or \
            isinstance(resource, ForgotPasswordResource) or \
-           isinstance(resource, Test):
+           isinstance(resource, Test) or ("/images/" in req.url and req.method.lower=='get'):
             logging.debug("DON'T NEED TOKEN")
             return
         
