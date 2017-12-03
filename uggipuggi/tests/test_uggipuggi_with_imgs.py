@@ -13,6 +13,7 @@ from falcon import testing
 sys.path.append(os.path.dirname(os.path.dirname(sys.path[0])))
 
 from uggipuggi.tests import get_test_uggipuggi
+from uggipuggi.tests.utils.get_random_users import get_n_uggipuggi_random_users
 from uggipuggi.tests.utils.dummy_data import users_gcs_base, food_gcs_base, users as dummy_users,\
                                              groups as dummy_groups, contacts as dummy_contacts,\
                                              following as dummy_following, recipes as dummy_recipes, feeds as dummy_feeds
@@ -32,10 +33,11 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         self.rest_api = 'http://%s/'%uggipuggi_ip
         
     def test_a_groups(self):
-        count = 2000
+        count = 0
         users_map = {}
         recipe_map = {}
         activity_map = {}
+        users_data = get_n_uggipuggi_random_users(50, user_data_file='/tmp/uggipuggi_test_users.p')
         print ("===============================================================")
         print ()           
         print ('Starting social network tests: adding Users ...')
@@ -44,8 +46,8 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         for user in dummy_users:
             current_author_id = user['id']
             payload = {
-                       "phone": get_dummy_phone(count),
-                       "country_code": "IN",
+                       "phone": users_data[count]['phone'],
+                       "country_code": users_data[count]['country'],
                       }
             
             if 'public_profile' in user:
@@ -53,7 +55,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 
             header = {'Content-Type':'application/json'}    
             users_map[current_author_id] = payload
-            users_map[current_author_id]['display_name'] = user['name']                        
+            users_map[current_author_id]['display_name'] = users_data[count]['display_name']
             res = requests.post(self.rest_api + '/register', data=json.dumps(payload), 
                                 headers=header)
             verify_token = json.loads(res.content.decode('utf-8'))['auth_token']
@@ -66,14 +68,25 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
             user_mongo_id = json.loads(res.content.decode('utf-8'))['user_identifier']
             users_map[current_author_id].update({'login_token':login_token})
             users_map[current_author_id].update({'user_id':user_mongo_id})
-            
+                        
+            header = {'auth_token':login_token}
+            user_image = open(users_data[count]['display_pic'], 'rb')
+            required_fields = ('email', 'first_name', 'last_name', 'gender', 'display_name')
+            additional_payload = {key:users_data[count][key] for key in required_fields}
+            res = requests.put(self.rest_api + '/users/%s' %user_mongo_id,
+                               files={'display_pic':('image.jpg', user_image, 'image/jpeg')}, 
+                               data=additional_payload,
+                               headers=header)
+            user_image.close()
+            self.assertEqual(200, res.status_code)
             count += 1
             
         print ("===============================================================")
         print ()                   
         print ('Starting social network tests: Adding Contacts ...')                
         print ()
-        print ("===============================================================")        
+        print ("===============================================================")
+        header = {'Content-Type':'application/json'}    
         for contact in dummy_contacts:
             with self.subTest(name=users_map[contact[0]]['user_id']):
                 login_token = users_map[contact[0]]['login_token']
@@ -205,10 +218,9 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                     
                     recipe_payload = {"recipe_name": recipe['name'],
                                       "user_id": users_map[current_author_id]['user_id'],
-                                      "likes_count": 0,
-                                      "user_name": users_map[current_author_id]['display_name'],
                                       "expose_level": 1,
                                       "category": random.choice(range(8)),
+                                      "description": "This is a very easy and awesome dish. My family love this a lot!"
                                       }
                     steps = []
                     for direction in recipe['direction'].split('\n'):
@@ -313,12 +325,9 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
             recipe_mongo_id = recipe_map[feed['recipe']['id']]['recipe_id']            
             with self.subTest(name=recipe_mongo_id+'::'+user_mongo_id):
                 activity_payload = {"recipe_id": recipe_mongo_id,
-                                    "recipe_name" : recipe_map[feed['recipe']['id']]['recipe_name'],
                                     "user_id": user_mongo_id,
-                                    "user_name": users_map[feed['creator']['id']]['display_name'],
-                                    "likes_count": 0,
-                                    "expose_level": 5,
-                                    }
+                                    "expose_level": 1,
+                                   }
                 here = os.path.dirname(os.path.realpath(__file__))                        
                 filepath = os.path.join(os.path.dirname(os.path.dirname(here)), 'test_data', 'pasta.jpg')
                 activity_image = open(filepath, 'rb')

@@ -43,11 +43,13 @@ class ImageStore(object):
             ext = '.jpg'
         image_name = '{filename}{ext}'.format(filename=image_name, ext=ext)
         image_path = os.path.join(self._storage_path, image_name)
-        logger.debug(image_path)
+        
         with self._fopen(image_path, 'wb') as image_file:
+            logger.debug("Starting reading the file stream")
             chunk = image_stream.read()
+            logger.debug("Starting writing file to local file system: %s" %image_path)
             image_file.write(chunk)
-        logger.debug(image_path)
+            logger.debug("Successfully saved file to local file system")
         return image_path
 
     def open(self, name):

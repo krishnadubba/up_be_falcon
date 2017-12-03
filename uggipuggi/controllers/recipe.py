@@ -77,8 +77,7 @@ class Collection(object):
         
         # Retrieve only a subset of fields using only(*list_of_required_fields)
         recipes_qset = Recipe.objects(**query_params).only(*RECIPE_CONCISE_VIEW_FIELDS)[start:end]
-        
-        
+                
         recipes = [obj.to_mongo().to_dict() for obj in recipes_qset]        
         # No need to use json_util.dumps here (?)                                     
         resp.body = {'items': recipes, 'count': recipes_qset.count()}        
@@ -92,9 +91,12 @@ class Collection(object):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         # save to DB
         img_url = ""
+        recipe_data = {}
+        user_display_pic, user_display_name = req.redis_conn.hmget(USER+req.user_id, "display_pic", 'display_name')        
+        recipe_data['author_avatar'] = user_display_pic        
+        recipe_data['author_display_name'] = user_display_name
         if 'multipart/form-data' in req.content_type:
-            img_data = req.get_param('images')
-            recipe_data = {}
+            img_data = req.get_param('images')            
             for key in req._params:
                 if key in Recipe._fields and key not in ['images']:
                     if isinstance(Recipe._fields[key], mongoengine.fields.ListField):
@@ -117,25 +119,16 @@ class Collection(object):
                                      description='Recipe_pic upload to cloud storage failed!')            
 
             recipe.update(images=[img_url])
-            recipe_data.update({'images':[img_url]})
             resp.body.update({"images": [img_url]})
             
         else:    
-            recipe = Recipe(**req.params['body'])
+            recipe = Recipe(**recipe_data.update(req.params['body']))
             recipe.save()
             resp.body = {"recipe_id": str(recipe.id)}
         
         # Create recipe concise view in Redis
-        concise_view_dict = {key:recipe_data[key] for key in RECIPE_CONCISE_VIEW_FIELDS if key in recipe_data}
-        
-        user_display_pic, display_name = req.redis_conn.hmget(USER+req.user_id, "display_pic", 'display_name')
-        
-        concise_view_dict.update({"display_pic":user_display_pic,
-                                  "user_id": req.user_id,
-                                  "display_name": display_name,
-                                  'comments_count': 0
-                                 })
-        
+        concise_view_dict = {key:recipe[key] for key in RECIPE_CONCISE_VIEW_FIELDS}
+       
         pipeline = req.redis_conn.pipeline(True)
         pipeline.hmset(RECIPE+str(recipe.id), concise_view_dict)            
         pipeline.zadd(USER_RECIPES+req.user_id, str(recipe.id), int(time.time()))

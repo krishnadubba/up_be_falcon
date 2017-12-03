@@ -18,18 +18,19 @@ class Comment(EmbeddedDocument):
     
 class CookingActivity(Document):
     user_id      = StringField(required=True)
-    user_name    = StringField(required=True)
+    author_avatar= StringField(required=True)
     recipe_name  = StringField(required=True)
-    recipe_id    = StringField(required=False)
+    recipe_id    = StringField(required=True)
     likes_count  = IntField(required=True, default=0)
-    description  = StringField(max_length=TWEET_CHAR_LENGTH)
+    comments_count = IntField(required=True, default=0)
+    author_display_name = StringField(required=True)   
+    description  = StringField(required=True, default="", max_length=TWEET_CHAR_LENGTH)
     images       = ListField(StringField())  # list of urls
     expose_level = IntField(required=True, default=ExposeLevel.FRIENDS)
     # If the recipe id is private recipe, then we give warning when sharing activity involving it
     recipients   = ListField(StringField(default='*'))  # list of peolpe allowed to see
     tags         = ListField()
     category     = StringField()    
-    shares_count = IntField(default=0)
     prep_time    = IntField(default=15)    
     cook_time    = IntField(default=15)    
     comments     = ListField(EmbeddedDocumentField(Comment), required=False)    

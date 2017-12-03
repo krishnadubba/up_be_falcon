@@ -11,8 +11,8 @@ from bson import json_util, ObjectId
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, \
                                LookUpError, InvalidQueryError
 
-from uggipuggi.constants import GCS_ACTIVITY_BUCKET, PAGE_LIMIT, ACTIVITY, USER_ACTIVITY,\
-                                GAE_IMG_SERVER, IMG_STORE_PATH
+from uggipuggi.constants import GCS_ACTIVITY_BUCKET, PAGE_LIMIT, ACTIVITY, USER_ACTIVITY, USER,\
+                                GAE_IMG_SERVER, IMG_STORE_PATH, ACTIVITY_CONCISE_VIEW_FIELDS, RECIPE
 from uggipuggi.controllers.image_store import ImageStore
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 #from uggipuggi.controllers.schema.activity import CookingActivitySchema, CookingActivityCreateSchema
@@ -46,9 +46,6 @@ class Collection(object):
             logger.debug("GCS Bucket %s does not exist, creating one" %GCS_ACTIVITY_BUCKET)
             self.gcs_bucket.create()
 
-        self.concise_view_fields = ('images', 'recipe_name', 'user_name', 'user_id',
-                                    'likes_count', 'description') 
-        
     @falcon.before(deserialize)
     def on_get(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
@@ -81,7 +78,7 @@ class Collection(object):
         logger.debug(start)
         logger.debug(end)
         # Retrieve only a subset of fields using only(*list_of_required_fields)
-        activities_qset = CookingActivity.objects(**query_params).only(*self.concise_view_fields)[start:end]
+        activities_qset = CookingActivity.objects(**query_params).only(*ACTIVITY_CONCISE_VIEW_FIELDS)[start:end]
         # Is this faster?
         # [obj._data for obj in activities_qset._iter_results()]
         activities = [obj.to_mongo() for obj in activities_qset]
@@ -102,9 +99,12 @@ class Collection(object):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         
         # save to DB
+        activity_data = {}
+        user_display_pic, user_display_name = req.redis_conn.hmget(USER+req.user_id, "display_pic", 'display_name')
+        activity_data['author_avatar'] = user_display_pic
+        activity_data['author_display_name'] = user_display_name
         if 'multipart/form-data' in req.content_type:
             img_data = req.get_param('images')
-            activity_data = {}
             for key in req._params:
                 if key in CookingActivity._fields and key not in ['images']:
                     if isinstance(CookingActivity._fields[key], mongoengine.fields.ListField):
@@ -112,6 +112,7 @@ class Collection(object):
                     else:    
                         activity_data[key] = req.get_param(key)                    
                     
+            activity_data['recipe_name'] = req.redis_conn.hmget(RECIPE+activity_data['recipe_id'], "recipe_name")[0]
             logger.debug(activity_data)
             activity = CookingActivity(**activity_data)
             activity.save()
@@ -125,18 +126,16 @@ class Collection(object):
                 raise HTTPBadRequest(title='Activity_pic storing failed', 
                                      description='Activity_pic upload to cloud storage failed!') 
             activity.update(images=[img_url])
-            activity_data.update({'images':[img_url]})
             resp.body.update({"images": [img_url]})                
         else:
-            activity_data = req.params['body']
-            activity = CookingActivity(**activity_data)
+            activity_data['recipe_name'] = req.redis_conn.hmget(RECIPE+req.params['body']['recipe_id'], "recipe_name")[0]
+            activity = CookingActivity(**activity_data.update(req.params['body']))
             activity.save()
-            resp.body   = {"activity_id": str(activity.id)}
+            resp.body = {"activity_id": str(activity.id)}
                     
         # Create activity concise view in Redis
-        concise_view_dict = {key:activity_data[key] for key in self.concise_view_fields if key in activity_data}
-        if len(concise_view_dict) > 0:
-            req.redis_conn.hmset(ACTIVITY+str(activity.id), concise_view_dict)
+        concise_view_dict = {key:activity[key] for key in ACTIVITY_CONCISE_VIEW_FIELDS}
+        req.redis_conn.hmset(ACTIVITY+str(activity.id), concise_view_dict)
         
         req.redis_conn.zadd(USER_ACTIVITY+req.user_id, str(activity.id), int(time.time()))
         logger.debug("Cooking Activity created with id: %s" %str(activity.id))
@@ -148,8 +147,6 @@ class Collection(object):
 class Item(object):
     def __init__(self):
         self.kafka_topic_name = 'activity_item'
-        self.concise_view_fields = ('images', 'recipe_name', 'user_name', 'user_id', 
-                                    'likes_count', 'description')
         
     def _try_get_activity(self, id):
         try:
@@ -226,7 +223,7 @@ class Item(object):
                     activity.update(key=value)
                     
             # Updating activity concise view in Redis
-            concise_view_dict = {key:activity_data[key] for key in self.concise_view_fields if key in activity_data}
+            concise_view_dict = {key:activity_data[key] for key in ACTIVITY_CONCISE_VIEW_FIELDS if key in activity_data}
             if len(concise_view_dict) > 0:
                 req.redis_conn.hmset(ACTIVITY+id, concise_view_dict)
                 
