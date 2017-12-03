@@ -20,17 +20,19 @@ class Comment(EmbeddedDocument):
     
 class Recipe(Document):
     recipe_name        = StringField(required=True)
-    user_id            = StringField(required=True) #User phone number is used to identify owner
-    user_name          = StringField(required=True) #User display name
+    user_id            = StringField(required=True) #User mongodb ID is used to identify owner
     steps              = ListField(required=True)
     likes_count        = IntField(required=True, default=0)
     ingredients        = ListField(required=True) #Ingredients names
     ingredients_quant  = ListField(required=True) 
     ingredients_metric = ListField(required=True)
+    comments_disabled  = BooleanField(required=True, default=False)
+    category           = IntField(required=True)         # Should this be a class?
     # This should be FRIENDS by default if profile is not public
     # otherwise it should be public
     expose_level       = IntField(required=True, default=ExposeLevel.FRIENDS)
-    
+
+    user_name          = StringField(required=False) #User display name    
     video_url          = URLField(required=False)
     ingredients_imgs   = ListField(URLField()) # list of urls of ingredients images
     ingredients_ids    = ListField(required=False) #Ingredients ids        
@@ -38,10 +40,7 @@ class Recipe(Document):
     description        = StringField(required=False, max_length=TWEET_CHAR_LENGTH)
     images             = ListField(StringField())  # list of urls
     tags               = ListField(required=False)
-    category           = ListField(required=False)         # Should this be a class?
-    rating_count       = IntField(required=False, default=0)
-    shares_count       = IntField(required=False, default=0)
-    rating_total       = FloatField(required=False, default=0.0)
+    saves_count        = IntField(required=False, default=0)
     prep_time          = IntField(required=False, default=15) # In minutes   
     cook_time          = IntField(required=False, default=15) # In minutes   
     last_modified      = DateTimeField(required=False)

@@ -28,6 +28,10 @@ AUTH_SHARED_SECRET_ENV = "DUBBA_SECRET"
 MAX_USER_FEED_LENGTH = 150
 MAX_USER_FEED_LOAD   = 50
 
+RECIPE_CONCISE_VIEW_FIELDS = ('images', 'recipe_name', 'likes_count', 
+                              'saves_count', 'comments_count', 'cook_time',
+                              "display_pic", "user_id", "display_name", 'comments_count')
+
 # REDIS namespaces
 RECIPE        = 'recipe:'
 ACTIVITY      = 'act:'

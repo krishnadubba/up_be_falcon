@@ -11,7 +11,7 @@ from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, Validation
                                LookUpError, InvalidQueryError 
 
 from uggipuggi.constants import GCS_RECIPE_BUCKET, PAGE_LIMIT, RECIPE, USER_RECIPES,\
-                                GAE_IMG_SERVER, IMG_STORE_PATH
+                                GAE_IMG_SERVER, IMG_STORE_PATH, RECIPE_CONCISE_VIEW_FIELDS
 from uggipuggi.controllers.image_store import ImageStore
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.controllers.schema.recipe import RecipeSchema, RecipeCreateSchema
@@ -49,9 +49,6 @@ class Collection(object):
             logger.debug("GCS Bucket %s does not exist, creating one" %GCS_RECIPE_BUCKET)
             self.gcs_bucket.create()
 
-        self.concise_view_fields = ('images', 'recipe_name', 'user_name', 'user_id', 'likes_count', 
-                                    'shares_count', 'rating_total', 'prep_time', 'cook_time')
-        
     @falcon.before(deserialize)
     def on_get(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
@@ -79,7 +76,7 @@ class Collection(object):
         query_params.update(**updated_params)  # update modified params for filtering
         
         # Retrieve only a subset of fields using only(*list_of_required_fields)
-        recipes_qset = Recipe.objects(**query_params).only(*self.concise_view_fields)[start:end]
+        recipes_qset = Recipe.objects(**query_params).only(*RECIPE_CONCISE_VIEW_FIELDS)[start:end]
         
         
         recipes = [obj.to_mongo().to_dict() for obj in recipes_qset]        
@@ -128,11 +125,20 @@ class Collection(object):
             resp.body = {"recipe_id": str(recipe.id)}
         
         # Create recipe concise view in Redis
-        concise_view_dict = {key:recipe_data[key] for key in self.concise_view_fields if key in recipe_data}
-        if len(concise_view_dict) > 0:
-            req.redis_conn.hmset(RECIPE+str(recipe.id), concise_view_dict)
-            
-        req.redis_conn.zadd(USER_RECIPES+req.user_id, str(recipe.id), int(time.time()))
+        concise_view_dict = {key:recipe_data[key] for key in RECIPE_CONCISE_VIEW_FIELDS if key in recipe_data}
+        
+        user_display_pic, display_name = req.redis_conn.hmget(USER+req.user_id, "display_pic", 'display_name')
+        
+        concise_view_dict.update({"display_pic":user_display_pic,
+                                  "user_id": req.user_id,
+                                  "display_name": display_name,
+                                  'comments_count': 0
+                                 })
+        
+        pipeline = req.redis_conn.pipeline(True)
+        pipeline.hmset(RECIPE+str(recipe.id), concise_view_dict)            
+        pipeline.zadd(USER_RECIPES+req.user_id, str(recipe.id), int(time.time()))
+        pipeline.execute()
         logger.info("Recipe created with id: %s" %str(recipe.id))
         resp.status = falcon.HTTP_CREATED
 
@@ -143,9 +149,7 @@ class Item(object):
     def __init__(self):
         self.img_store  = ImageStore(IMG_STORE_PATH)
         self.kafka_topic_name = 'recipe_item'
-        self.concise_view_fields = ('images', 'recipe_name', 'user_name', 'user_id', 'likes_count',
-                                    'shares_count', 'rating_total', 'prep_time', 'cook_time')
-
+        
     def _try_get_recipe(self, id):
         try:
             return Recipe.objects.get(id=id)
@@ -226,7 +230,7 @@ class Item(object):
                     recipe.update(key=value)
 
             # Updating recipe concise view in Redis
-            concise_view_dict = {key:recipe_data[key] for key in self.concise_view_fields if key in recipe_data}
+            concise_view_dict = {key:recipe_data[key] for key in RECIPE_CONCISE_VIEW_FIELDS if key in recipe_data}
             if len(concise_view_dict) > 0:
                 req.redis_conn.hmset(RECIPE+id, concise_view_dict)
 

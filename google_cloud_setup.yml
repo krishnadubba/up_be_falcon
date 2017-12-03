@@ -13,12 +13,13 @@ services:
     ports: ['8000:8000']
   celery:
     command: celery worker -l debug -A uggipuggi.celery.celery -n worker.high -Q high
-    depends_on: [redis]
+    depends_on: [redis, mongo]
     environment: {CELERY_BROKER_URL: 'redis://redis:6379/0', CELERY_RESULT_BACKEND: 'redis://redis:6379/0',
       KAFKA_BOOTSTRAP_SERVERS: 'kafka:9092'}
     image: kr:latest
     networks: [proxy]
     ports: ['8002:8000']
+    volumes: ['~/images:/images']
   kafka:
     depends_on: [zookeeper]
     environment: {KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092', KAFKA_BROKER_ID: 1,
