@@ -64,6 +64,7 @@ class TestUggiPuggiRecipe(testing.TestBase):
                           "likes_count": 0,
                           "user_name": self.user_name,
                           "expose_level": 1,
+                          "category": 1,
                          }
         steps = []
         for direction in recipe['direction'].split('\n'):
@@ -100,6 +101,7 @@ class TestUggiPuggiRecipe(testing.TestBase):
                             data=first_recipe_payload,
                             headers=header)
         recipe_image.close()
+        print (res.text)
         self.assertEqual(201, res.status_code)
         self.assertTrue('recipe_id' in json.loads(res.content.decode('utf-8')))
         if 'recipe_id' in json.loads(res.content.decode('utf-8')):

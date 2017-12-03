@@ -180,6 +180,11 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
                 self.assertEqual(test['expected']['status'], res.status_code)                
                 self.assertTrue('http://lh3.googleusercontent.com' in json.loads(res.content.decode('utf-8'))['display_pic'])
                 
+        res = requests.get(self.rest_api + '/feed', headers=header)
+        print('Response:')
+        print(res.status_code)
+        print(res.text)
+                
 if __name__ == '__main__':
     if 'logs' not in os.listdir(sys.path[0]):
         os.mkdir('logs')

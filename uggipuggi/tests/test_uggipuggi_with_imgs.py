@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 import re
 import json
+import random
 import os, sys
 import unittest
 import requests
@@ -169,7 +170,8 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         print ()
         print ('Starting social network tests: adding Following ...')
         print ()
-        print ("===============================================================")        
+        print ("===============================================================")
+        header = {'Content-Type':'application/json'}    
         for contact in dummy_following:
             login_token = users_map[contact[0]]['login_token']
             header.update({'auth_token':login_token})
@@ -206,6 +208,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                                       "likes_count": 0,
                                       "user_name": users_map[current_author_id]['display_name'],
                                       "expose_level": 1,
+                                      "category": random.choice(range(8)),
                                       }
                     steps = []
                     for direction in recipe['direction'].split('\n'):

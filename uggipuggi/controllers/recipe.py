@@ -10,7 +10,7 @@ from google.cloud import storage as gc_storage
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, \
                                LookUpError, InvalidQueryError 
 
-from uggipuggi.constants import GCS_RECIPE_BUCKET, PAGE_LIMIT, RECIPE, USER_RECIPES,\
+from uggipuggi.constants import GCS_RECIPE_BUCKET, PAGE_LIMIT, RECIPE, USER_RECIPES, USER,\
                                 GAE_IMG_SERVER, IMG_STORE_PATH, RECIPE_CONCISE_VIEW_FIELDS
 from uggipuggi.controllers.image_store import ImageStore
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
@@ -110,6 +110,7 @@ class Collection(object):
             img_url = ''
             image_name = '_'.join([str(recipe.id), str(int(time.time())), 'recipe_images'])
             try:
+                logger.debug(image_name)
                 img_url = self.img_store.save(img_data.file, image_name, img_data.type)                
             except IOError:
                 raise HTTPBadRequest(title='Recipe_pic storing failed', 

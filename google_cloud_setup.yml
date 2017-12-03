@@ -19,7 +19,6 @@ services:
     image: kr:latest
     networks: [proxy]
     ports: ['8002:8000']
-    volumes: ['~/images:/images']
   kafka:
     depends_on: [zookeeper]
     environment: {KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092', KAFKA_BROKER_ID: 1,

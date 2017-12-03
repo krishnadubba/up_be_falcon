@@ -43,11 +43,11 @@ class ImageStore(object):
             ext = '.jpg'
         image_name = '{filename}{ext}'.format(filename=image_name, ext=ext)
         image_path = os.path.join(self._storage_path, image_name)
-
+        logger.debug(image_path)
         with self._fopen(image_path, 'wb') as image_file:
             chunk = image_stream.read()
             image_file.write(chunk)
-
+        logger.debug(image_path)
         return image_path
 
     def open(self, name):
