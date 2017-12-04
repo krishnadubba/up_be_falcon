@@ -27,7 +27,7 @@ class Item(object):
         pipeline = req.redis_conn.pipeline(True)
         for activity_id in activity_ids:
             pipeline.hgetall(ACTIVITY + activity_id)
-        all_concise_activities = pipeline.execute()            
+        all_concise_recipes = {k: v for k, v in zip(activity_ids, pipeline.execute())}
         resp.body = {'items': all_concise_activities, 'count': len(all_concise_activities)}
         resp.status = falcon.HTTP_OK
         

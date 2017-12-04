@@ -29,7 +29,7 @@ def get_n_uggipuggi_random_users(n, user_data_file=None, user_pics_dir=None):
             first_name   = user['name']['first']
             last_name    = user['name']['last']
             gender       = user['gender']
-            email        = user['email'].replace('\\','')
+            email        = user['login']['username'] + '@uggipuggi.com' #user['email'].replace('\\','')
             phone        = user['phone'].replace('-','')
             country      = user['nat']
             

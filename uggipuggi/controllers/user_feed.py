@@ -32,5 +32,5 @@ class Item(object):
         pipeline = req.redis_conn.pipeline(True)
         for feed_id in user_feed_item_ids:
             pipeline.hgetall(feed_id)
-        resp.body = pipeline.execute()
+        resp.body = {k: v for k, v in zip(user_feed_item_ids, pipeline.execute())}
         resp.status = falcon.HTTP_OK

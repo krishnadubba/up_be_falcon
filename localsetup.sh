@@ -1,10 +1,11 @@
 #!/bin/bash
 docker swarm init
 docker network create -d overlay proxy
+./build/generate_build_info.sh
 docker build -t kr .
 docker stack deploy -c localsetup.yml uggi
 DOCKER_GWBRIDGE_IP=`ifconfig docker_gwbridge | awk '/inet addr/ {gsub("addr:", "", $2); print $2}'`
-xdg-open http://$DOCKER_GWBRIDGE_IP/test
+xdg-open http://$DOCKER_GWBRIDGE_IP/ping
 xdg-open http://$DOCKER_GWBRIDGE_IP/visualizer
 echo '======================================================'
 echo 'For logs: docker service logs -f stackname_servicename'

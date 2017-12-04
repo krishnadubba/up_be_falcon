@@ -19,3 +19,6 @@ __pycache__/
 # log, pid, etc..
 run/
 *.log
+
+# This is build generated
+uggipuggi/helpers/build_info.py

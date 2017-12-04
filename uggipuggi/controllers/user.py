@@ -130,6 +130,7 @@ class Item(object):
                                      description='IOError')
             
             user_data.update({'display_pic':image_name})
+            logger.debug(user_data)
             user.update(**user_data)
             resp.body = image_name            
             logger.debug("Display_pic public url:")

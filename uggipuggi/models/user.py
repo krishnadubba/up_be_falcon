@@ -45,7 +45,7 @@ class Subscription(object):
 
 class User(Document):
 
-    country_code    = StringField(required=True, min_length=2, max_length=10)  # follows ISO_3166-1
+    country_code    = StringField(required=True, min_length=2, max_length=3)  # follows ISO_3166-1
     phone           = StringField(required=True, unique=True)  # contact number
     
     role            = IntField(required=True, default=Role.USER)    
@@ -59,7 +59,7 @@ class User(Document):
     # Not mandatory
     #phone_last_verified = DateTimeField(required=False)    
     phone_last_verified = StringField(required=False)    
-    display_name    = StringField(required=False, min_length=4, max_length=20)
+    display_name    = StringField(required=False, min_length=4, max_length=40)
     email           = EmailField(required=False)  # No need to be unique  
     first_name      = StringField(required=False)
     last_name       = StringField(required=False)

@@ -15,7 +15,7 @@ from mongoengine import connection
 from falcon_multipart.middleware import MultipartMiddleware
 from uggipuggi.controllers import recipe, tag, status, rating, user, user_feed, batch, activity,\
                                   redis_group, redis_contacts, redis_followers, redis_following,\
-                                  user_recipes, user_activity, image_store, saved_recipes
+                                  user_recipes, user_activity, image_store, saved_recipes, Ping
 from uggipuggi.services.user import get_user  
 from uggipuggi.middlewares import auth_jwt
 from uggipuggi.constants import DATETIME_FORMAT, AUTH_SHARED_SECRET_ENV, \
@@ -59,7 +59,7 @@ class UggiPuggi(object):
 
     def _load_routes(self):
         self.logger.info('Loading routes ...')
-        self.app.add_route('/test', auth_jwt.Test())
+        self.app.add_route('/ping', Ping())
         self.app.add_route('/recipes', recipe.Collection())
         self.app.add_route('/recipes/{id}', recipe.Item())
         

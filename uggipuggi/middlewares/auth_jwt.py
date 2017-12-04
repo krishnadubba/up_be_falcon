@@ -18,6 +18,7 @@ from passlib.hash import bcrypt as crypt
 from uggipuggi.constants import OTP, OTP_LENGTH, USER, USER_RECIPES, USER_FEED,\
                                 PUBLIC_RECIPES
 from uggipuggi.models.user import Role, User, VerifyPhone
+from uggipuggi.controllers import Ping
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.messaging.authentication_kafka_producers import kafka_verify_producer,\
                      kafka_register_producer, kafka_login_producer, kafka_logout_producer,\
@@ -121,11 +122,7 @@ ACL_MAP = {
         'post': Role.USER,
     },     
 }
-                    
-class Test(object):
-    def on_get(self, req, resp):
-        resp.body = json_util.dumps({"Uggi": "Puggi"})
-        resp.status = falcon.HTTP_200 
+
       
 @falcon.before(supply_redis_conn)      
 @falcon.before(deserialize)
@@ -577,11 +574,13 @@ class AuthMiddleware(object):
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
 
     def process_resource(self, req, resp, resource, params): # pylint: disable=unused-argument
+        logging.debug(req.url)
+        logging.debug(req.method.lower())
         if isinstance(resource, RegisterResource) or \
            isinstance(resource, VerifyPhoneResource) or \
            isinstance(resource, PasswordChangeResource) or \
            isinstance(resource, ForgotPasswordResource) or \
-           isinstance(resource, Test) or ("/images/" in req.url and req.method.lower=='get'):
+           isinstance(resource, Ping) or ("/images/" in req.url and req.method.lower()=='get'):
             logging.debug("DON'T NEED TOKEN")
             return
         
