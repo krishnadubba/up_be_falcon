@@ -34,7 +34,7 @@ class TestUggiPuggiRecipe(testing.TestBase):
         self.verify_token = None
         self.login_token  = None
         self.test_user    = None
-        count = 3002
+        count = 3000
         
         self.user_name = get_dummy_display_name(count)
         self.payload = {
@@ -61,7 +61,6 @@ class TestUggiPuggiRecipe(testing.TestBase):
         recipe = dummy_recipes[recipe_index]
         recipe_payload = {"recipe_name": recipe['name'],
                           "user_id":self.user_id,
-                          "likes_count": 0,
                           "user_name": self.user_name,
                           "expose_level": 1,
                           "category": 1,
@@ -116,6 +115,14 @@ class TestUggiPuggiRecipe(testing.TestBase):
         res = requests.get(self.rest_api + '/recipes/%s' %self.recipe_id+'0', headers=header)
         self.assertEqual(400, res.status_code)
         
+        header = {'Content-Type':'application/json'}
+        header.update({'auth_token':self.login_token})
+        res = requests.get(self.rest_api + '/recipes?category=1', headers=header)
+        self.assertEqual(302, res.status_code)
+        print(res.text)
+        items = json.loads(res.text)['items']        
+        self.assertEqual(1, len(items))        
+
         time.sleep(10)
         res = requests.get(self.rest_api + '/user_recipes/%s' %self.user_id, headers=header)
         res_json = json.loads(res.text)
@@ -125,9 +132,9 @@ class TestUggiPuggiRecipe(testing.TestBase):
         print(res.status_code)        
         self.assertEqual(1, len(res_json['items']))
         # This is not a list but a string
-        print(json.loads(res.content.decode('utf-8'))['items'][0]['images'])        
-        self.assertTrue('http://lh3.googleusercontent.com' in json.loads(res.content.decode('utf-8'))['items'][0]['images'])
-        
+        print(json.loads(res.content.decode('utf-8'))['items'][0][self.recipe_id])
+        self.assertTrue('http://lh3.googleusercontent.com' in json.loads(res.content.decode('utf-8'))['items'][0][self.recipe_id][0])
+
         # Delete recipe
         res = requests.delete(self.rest_api + '/recipes/%s' %self.recipe_id,
                               headers=header)        

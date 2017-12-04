@@ -34,7 +34,8 @@ RECIPE_CONCISE_VIEW_FIELDS = ('images', 'recipe_name', 'likes_count', 'descripti
 ACTIVITY_CONCISE_VIEW_FIELDS = ('images', 'recipe_name', 'likes_count', 'description', 
                                 'comments_count', 'cook_time', 'recipe_id',
                                 "author_avatar", "user_id", "author_display_name")
-
+RECIPE_VERY_CONCISE_VIEW_FIELDS = ('images', 'recipe_name', 'likes_count', 
+                                   'saves_count', 'comments_count')
 # REDIS namespaces
 RECIPE        = 'recipe:'
 ACTIVITY      = 'act:'
@@ -50,6 +51,7 @@ USER_LIKED    = 'u_liked:'
 USER_ACTIVITY = 'u_act:'
 SAVED_RECIPES = 's_recipes:'
 PUBLIC_RECIPES= 'p_recipes'
+GROUP_RECIPES = 'g_recipes'
 CONTACTS      = 'contacts:'
 FOLLOWING     = 'following:'
 FOLLOWERS     = 'followers:'

@@ -27,8 +27,8 @@ class Recipe(Document):
     ingredients_metric = ListField(required=True)
     comments_disabled  = BooleanField(required=True, default=False)
     category           = IntField(required=True)     # Should this be a class?
-    author_display_name = StringField(required=True) #User display name
-    author_avatar      = StringField(required=True)    
+    author_display_name = StringField(required=True, default='UggiPuggi User') #User display name
+    author_avatar      = StringField(required=True, default="")    
     likes_count        = IntField(required=True, default=0)    
     comments_count     = IntField(required=True, default=0)
     saves_count        = IntField(required=True, default=0)

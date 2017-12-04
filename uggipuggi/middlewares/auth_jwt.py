@@ -94,6 +94,9 @@ ACL_MAP = {
         'put':    Role.USER,
         'delete': Role.USER
     },
+    '/group_recipes/+': {
+        'get':    Role.USER,
+    },            
     '/contacts/+': {
         'get':    Role.USER,
         'put':    Role.USER,

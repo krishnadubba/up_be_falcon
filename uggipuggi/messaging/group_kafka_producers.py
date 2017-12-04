@@ -86,3 +86,13 @@ def group_kafka_item_delete_producer(req, resp, resource):
                             key=req.user_id) #req.encode('utf-8'))
     group_producer.flush()
     
+def group_recipes_kafka_item_get_producer(req, resp, resource):
+    parameters = [req.kafka_topic_name, req.user_id, resource]
+    logging.debug("++++++++++++++++++++++")
+    logging.debug("GROUP_RECIPES_KAFKA_ITEM_GET_PRODUCER")
+    logging.debug("++++++++++++++++++++++")
+    logging.debug(repr(parameters))
+    logging.debug("++++++++++++++++++++++")    
+    p = Producer({'bootstrap.servers': kafka_bootstrap_servers})
+    p.produce(req.kafka_topic_name, repr(parameters)) #req.encode('utf-8'))
+    p.flush()    
