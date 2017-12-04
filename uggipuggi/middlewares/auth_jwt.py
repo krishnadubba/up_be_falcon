@@ -72,6 +72,9 @@ ACL_MAP = {
     '/user_recipes/+': {
         'get':    Role.USER,
     },    
+    '/saved_recipes/+': {
+        'get':    Role.USER,
+    },        
     '/user_activity/+': {
         'get':    Role.USER,
     },        

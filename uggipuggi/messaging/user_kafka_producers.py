@@ -42,6 +42,17 @@ def user_recipes_kafka_item_get_producer(req, resp, resource):
     p.produce(req.kafka_topic_name, repr(parameters)) #req.encode('utf-8'))
     p.flush()
     
+def user_saved_kafka_item_get_producer(req, resp, resource):
+    parameters = [req.kafka_topic_name, req.user_id, resource]
+    logging.debug("++++++++++++++++++++++")
+    logging.debug("USER_SAVED_KAFKA_ITEM_GET_PRODUCER")
+    logging.debug("++++++++++++++++++++++")
+    logging.debug(repr(parameters))
+    logging.debug("++++++++++++++++++++++")    
+    p = Producer({'bootstrap.servers': kafka_bootstrap_servers})
+    p.produce(req.kafka_topic_name, repr(parameters)) #req.encode('utf-8'))
+    p.flush()
+    
 def user_activity_kafka_item_get_producer(req, resp, resource):
     parameters = [req.kafka_topic_name, req.user_id, resource]
     logging.debug("++++++++++++++++++++++")

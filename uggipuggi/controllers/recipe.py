@@ -11,8 +11,7 @@ from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, Validation
                                LookUpError, InvalidQueryError 
 
 from uggipuggi.constants import GCS_RECIPE_BUCKET, PAGE_LIMIT, RECIPE, USER_RECIPES, USER,\
-                                GAE_IMG_SERVER, IMG_STORE_PATH, RECIPE_CONCISE_VIEW_FIELDS,\
-                                PUBLIC_RECIPES
+                                GAE_IMG_SERVER, IMG_STORE_PATH, RECIPE_CONCISE_VIEW_FIELDS
 from uggipuggi.models import ExposeLevel
 from uggipuggi.controllers.image_store import ImageStore
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
@@ -138,9 +137,6 @@ class Collection(object):
         pipeline = req.redis_conn.pipeline(True)
         pipeline.hmset(RECIPE+str(recipe.id), concise_view_dict)            
         pipeline.zadd(USER_RECIPES+req.user_id, str(recipe.id), int(time.time()))
-        if recipe.expose_level == ExposeLevel.PUBLIC:
-            logger.debug('Adding recipe to public recipes')            
-            pipeline.zadd(PUBLIC_RECIPES, RECIPE + str(recipe.id), int(time.time()))
         pipeline.execute()
         logger.info("Recipe created with id: %s" %str(recipe.id))
         resp.status = falcon.HTTP_CREATED
