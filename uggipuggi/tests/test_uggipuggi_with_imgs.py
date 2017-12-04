@@ -208,6 +208,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         print ("===============================================================")
         total_categories = 8
         category_count = [0] * total_categories
+        some_login_token = None
         for user in dummy_users:
             current_author_id = user['id']
             # Add all the recipes authored by this user
@@ -217,6 +218,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 with self.subTest(name=recipe['name']):
                     login_token = users_map[current_author_id]['login_token']
                     header = {'auth_token':login_token}
+                    some_login_token = login_token
                     category = random.choice(range(total_categories))
                     category_count[category] += 1
                     recipe_payload = {"recipe_name": recipe['name'],
@@ -273,9 +275,8 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                     res = requests.get(self.rest_api + '/recipes/%s' %self.recipe_id+'0', headers=header)
                     self.assertEqual(400, res.status_code)
         
-        login_token = dummy_users[0]['login_token']
         header = {'Content-Type':'application/json'}
-        header.update({'auth_token':login_token})
+        header.update({'auth_token':some_login_token})
         for category in range(total_categories):
             res = requests.get(self.rest_api + '/recipes?category=%d' %category, headers=header)
             self.assertEqual(302, res.status_code)
