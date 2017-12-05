@@ -65,3 +65,14 @@ def activity_kafka_item_delete_producer(req, resp, resource):
                                     key=req.user_id) #req.encode('utf-8'))
     activity_kafka_producer.flush()
     
+def activity_liked_kafka_item_post_producer(req, resp, resource):    
+    parameters = [req.user_id, resp.body["activity_id"], resp.status]
+    logging.debug("++++++++++++++++++++++")
+    logging.debug("ACTIVITY_LIKED_KAFKA_ITEM_POST_PRODUCER: %s" %req.kafka_topic_name)
+    logging.debug("----------------------")
+    logging.debug(repr(parameters))
+    logging.debug("++++++++++++++++++++++")
+    recipe_producer.produce(topic=req.kafka_topic_name, 
+                            value=repr(parameters),
+                            key=req.user_id) #req.encode('utf-8'))
+    recipe_producer.flush()      

@@ -42,7 +42,7 @@ def recipe_kafka_item_get_producer(req, resp, resource):
     logging.debug("++++++++++++++++++++++")    
     recipe_producer.produce(topic=req.kafka_topic_name, 
                             value=repr(parameters),
-                            key=req.params['body']['user_id']) #req.encode('utf-8'))
+                            key=req.user_id) #req.encode('utf-8'))
     recipe_producer.flush()
     
 def recipe_kafka_item_put_producer(req, resp, resource):
@@ -69,6 +69,29 @@ def recipe_kafka_item_delete_producer(req, resp, resource):
     logging.debug("++++++++++++++++++++++")
     recipe_producer.produce(topic=req.kafka_topic_name, 
                             value=repr(parameters),
-                            key=req.params['body']['user_id']) #req.encode('utf-8'))
+                            key=req.user_id) #req.encode('utf-8'))
     recipe_producer.flush()
     
+def recipe_saved_kafka_item_post_producer(req, resp, resource):    
+    parameters = [req.user_id, resp.body["recipe_id"], resp.status]
+    logging.debug("++++++++++++++++++++++")
+    logging.debug("RECIPE_SAVED_KAFKA_ITEM_POST_PRODUCER: %s" %req.kafka_topic_name)
+    logging.debug("----------------------")
+    logging.debug(repr(parameters))
+    logging.debug("++++++++++++++++++++++")
+    recipe_producer.produce(topic=req.kafka_topic_name, 
+                            value=repr(parameters),
+                            key=req.user_id) #req.encode('utf-8'))
+    recipe_producer.flush()
+
+def recipe_liked_kafka_item_post_producer(req, resp, resource):    
+    parameters = [req.user_id, resp.body["recipe_id"], resp.status]
+    logging.debug("++++++++++++++++++++++")
+    logging.debug("RECIPE_LIKED_KAFKA_ITEM_POST_PRODUCER: %s" %req.kafka_topic_name)
+    logging.debug("----------------------")
+    logging.debug(repr(parameters))
+    logging.debug("++++++++++++++++++++++")
+    recipe_producer.produce(topic=req.kafka_topic_name, 
+                            value=repr(parameters),
+                            key=req.user_id) #req.encode('utf-8'))
+    recipe_producer.flush()    

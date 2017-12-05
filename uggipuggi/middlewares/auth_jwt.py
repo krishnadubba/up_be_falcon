@@ -71,19 +71,28 @@ ACL_MAP = {
         'delete': Role.USER
     },
     '/user_recipes/+': {
-        'get':    Role.USER,
+        'get': Role.USER,
     },    
     '/saved_recipes/+': {
-        'get':    Role.USER,
+        'get': Role.USER,
     },        
     '/user_activity/+': {
-        'get':    Role.USER,
-    },        
+        'get': Role.USER,
+    },
+    '/recipe_liked/+':{
+        'post': Role.USER,
+    },
+    '/recipe_saved/+':{
+        'post': Role.USER,
+    },
+    '/activity_liked/+':{
+        'post': Role.USER,
+    },
     '/get_userid': {
         'post': Role.USER
     },    
     '/feed': {
-        'get':    Role.USER,
+        'get':  Role.USER,
     },    
     '/groups': {
         'get':  Role.USER,

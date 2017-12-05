@@ -37,6 +37,7 @@ ACTIVITY_CONCISE_VIEW_FIELDS = ('images', 'recipe_name', 'likes_count', 'descrip
 RECIPE_VERY_CONCISE_VIEW_FIELDS = ('images', 'recipe_name', 'likes_count', 
                                    'saves_count', 'comments_count')
 # REDIS namespaces
+OTP           = 'otp:'
 RECIPE        = 'recipe:'
 ACTIVITY      = 'act:'
 GROUP         = 'grp:'
@@ -46,19 +47,19 @@ USER          = 'u:'
 USER_FEED     = 'u_feed:'
 USER_GROUPS   = 'u_grps:'
 USER_RECIPES  = 'u_recipes:'
-USER_PINNED   = 'u_pinned:'
-USER_LIKED    = 'u_liked:'
 USER_ACTIVITY = 'u_act:'
-SAVED_RECIPES = 's_recipes:'
 PUBLIC_RECIPES= 'p_recipes'
 GROUP_RECIPES = 'g_recipes'
+RECIPE_SAVED  = 'r_saved'
+RECIPE_LIKED  = 'r_liked'
+ACTIVITY_LIKED= 'a_liked'
 CONTACTS      = 'contacts:'
 FOLLOWING     = 'following:'
 FOLLOWERS     = 'followers:'
-OTP           = 'otp:'
+USER_SAVED_RECIPES  = 'usr:'
 RECIPE_COMMENTORS   = 'recipe_commentors:'
 ACTIVITY_COMMENTORS = 'act_commentors:'
-USER_NOTIFICATION_FEED = 'u_notify_feed:'
+USER_NOTIFICATION_FEED = 'unf:'
 
 # Google Cloud Storage stuff
 FILE_EXT_MAP = {'jpg': 'image/jpeg', 'jpe': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png'}

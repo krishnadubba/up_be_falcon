@@ -11,7 +11,8 @@ from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, Validation
                                LookUpError, InvalidQueryError 
 
 from uggipuggi.constants import GCS_RECIPE_BUCKET, PAGE_LIMIT, RECIPE, USER_RECIPES, USER,\
-                                GAE_IMG_SERVER, IMG_STORE_PATH, RECIPE_CONCISE_VIEW_FIELDS
+                                GAE_IMG_SERVER, IMG_STORE_PATH, RECIPE_CONCISE_VIEW_FIELDS,\
+                                RECIPE_SAVED, RECIPE_LIKED
 from uggipuggi.models import ExposeLevel
 from uggipuggi.controllers.image_store import ImageStore
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
@@ -78,10 +79,21 @@ class Collection(object):
         
         # Retrieve only a subset of fields using only(*list_of_required_fields)
         recipes_qset = Recipe.objects(**query_params).only(*RECIPE_CONCISE_VIEW_FIELDS)[start:end]
-                
-        recipes = [obj.to_mongo().to_dict() for obj in recipes_qset]        
+        result_count = recipes_qset.count()
+        recipes = [obj.to_mongo().to_dict() for obj in recipes_qset]
+        # Find out which recipes the user liked and saved, we need to highlight the like and save
+        # save icons in the app when we display this list in the app
+        pipeline = req.redis_conn.pipeline(True)
+        _ = [pipeline.sismember(RECIPE_SAVED+str(recipe.id), req.user_id) for recipe in recipes]
+        _ = [pipeline.sismember(RECIPE_LIKED+str(recipe.id), req.user_id) for recipe in recipes]
+        # We get all the results as one list: first part saved and second part liked
+        saved_liked_list = pipeline.execute()
+        saved = saved_liked_list[0:result_count]
+        liked = saved_liked_list[result_count:]
+        recipes = [recipe.update({"saved":s, "liked":l}) for recipe, s, l in zip(recipes, saved, liked)]
+        
         # No need to use json_util.dumps here (?)                                     
-        resp.body = {'items': recipes, 'count': recipes_qset.count()}        
+        resp.body = {'items': recipes, 'count': result_count}        
         resp.status = falcon.HTTP_FOUND
         
     #@falcon.before(deserialize_create)
@@ -162,6 +174,11 @@ class Item(object):
         recipe = self._try_get_recipe(id)
         # Converting MongoEngine recipe document to dictionary
         resp.body = recipe._data
+        pipeline = req.redis_conn.pipeline(True)
+        pipeline.sismember(RECIPE_SAVED+id, req.user_id)
+        pipeline.sismember(RECIPE_LIKED+id, req.user_id)
+        saved, liked = pipeline.execute()
+        resp.body.update({"saved": saved, "liked": liked})
         resp.status = falcon.HTTP_FOUND
         
     @falcon.before(deserialize)

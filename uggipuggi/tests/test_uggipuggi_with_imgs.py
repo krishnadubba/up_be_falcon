@@ -277,6 +277,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         
         header = {'Content-Type':'application/json'}
         header.update({'auth_token':some_login_token})
+        print (category_count)
         for category in range(total_categories):
             res = requests.get(self.rest_api + '/recipes?category=%d' %category, headers=header)
             self.assertEqual(302, res.status_code)
