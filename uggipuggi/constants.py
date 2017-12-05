@@ -29,16 +29,16 @@ MAX_USER_FEED_LENGTH = 150
 MAX_USER_FEED_LOAD   = 50
 
 RECIPE_CONCISE_VIEW_FIELDS = ('images', 'recipe_name', 'likes_count', 'description', 
-                              'saves_count', 'comments_count', 'cook_time',
+                              'saves_count', 'comments_count', 'cook_time', "id",
                               "author_avatar", "user_id", "author_display_name")
 ACTIVITY_CONCISE_VIEW_FIELDS = ('images', 'recipe_name', 'likes_count', 'description', 
-                                'comments_count', 'cook_time', 'recipe_id',
+                                'comments_count', 'cook_time', 'recipe_id', "id",
                                 "author_avatar", "user_id", "author_display_name")
-RECIPE_VERY_CONCISE_VIEW_FIELDS = ('images', 'recipe_name', 'likes_count', 
+RECIPE_VERY_CONCISE_VIEW_FIELDS = ('images', 'recipe_name', 'likes_count', "id",
                                    'saves_count', 'comments_count')
 # REDIS namespaces
 OTP           = 'otp:'
-RECIPE        = 'recipe:'
+RECIPE        = 'r:'
 ACTIVITY      = 'act:'
 GROUP         = 'grp:'
 GROUP_FEED    = 'grp_feed:'

@@ -16,7 +16,7 @@ from falcon_multipart.middleware import MultipartMiddleware
 from uggipuggi.controllers import recipe, tag, status, rating, user, user_feed, batch, activity,\
                                   redis_group, redis_contacts, redis_followers, redis_following,\
                                   user_recipes, user_activity, image_store, saved_recipes, Ping,\
-                                  group_recipes, reciped_saved, recipe_liked, activity_liked 
+                                  group_recipes, recipe_saved, recipe_liked, activity_liked 
 from uggipuggi.services.user import get_user  
 from uggipuggi.middlewares import auth_jwt
 from uggipuggi.constants import DATETIME_FORMAT, AUTH_SHARED_SECRET_ENV, \

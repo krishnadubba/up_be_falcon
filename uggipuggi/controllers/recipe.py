@@ -6,6 +6,7 @@ import falcon
 import logging
 import requests
 import mongoengine
+from copy import deepcopy
 from google.cloud import storage as gc_storage
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError, \
                                LookUpError, InvalidQueryError 
@@ -80,20 +81,27 @@ class Collection(object):
         # Retrieve only a subset of fields using only(*list_of_required_fields)
         recipes_qset = Recipe.objects(**query_params).only(*RECIPE_CONCISE_VIEW_FIELDS)[start:end]
         result_count = recipes_qset.count()
-        recipes = [obj.to_mongo().to_dict() for obj in recipes_qset]
         # Find out which recipes the user liked and saved, we need to highlight the like and save
         # save icons in the app when we display this list in the app
-        pipeline = req.redis_conn.pipeline(True)
-        _ = [pipeline.sismember(RECIPE_SAVED+str(recipe.id), req.user_id) for recipe in recipes]
-        _ = [pipeline.sismember(RECIPE_LIKED+str(recipe.id), req.user_id) for recipe in recipes]
-        # We get all the results as one list: first part saved and second part liked
-        saved_liked_list = pipeline.execute()
-        saved = saved_liked_list[0:result_count]
-        liked = saved_liked_list[result_count:]
-        recipes = [recipe.update({"saved":s, "liked":l}) for recipe, s, l in zip(recipes, saved, liked)]
-        
-        # No need to use json_util.dumps here (?)                                     
-        resp.body = {'items': recipes, 'count': result_count}        
+        if result_count > 0:
+            recipes = [dict(obj._data) for obj in recipes_qset]            
+            pipeline = req.redis_conn.pipeline(True)
+            _ = [pipeline.sismember(RECIPE_SAVED+str(recipe["id"]), req.user_id) for recipe in recipes]
+            _ = [pipeline.sismember(RECIPE_LIKED+str(recipe["id"]), req.user_id) for recipe in recipes]
+            # We get all the results as one list: first part saved and second part liked
+            saved_liked_list = pipeline.execute()
+            logger.debug("Saved Liked result:")
+            logger.debug(saved_liked_list)
+            saved = saved_liked_list[0:result_count]
+            liked = saved_liked_list[result_count:]
+            # Update recipe dictionary with additional key:values 
+            # whether the requesting user saved/liked the recipe or not
+            result_recipes = [dict({"saved":s, "liked":l},**recipe) for recipe, s, l in zip(recipes, saved, liked)]
+            logger.debug(result_recipes)
+            # No need to use json_util.dumps here (?)                                     
+            resp.body = {'items': result_recipes, 'count': result_count}
+        else:
+            resp.body = {'items': [], 'count': result_count}
         resp.status = falcon.HTTP_FOUND
         
     #@falcon.before(deserialize_create)
@@ -139,7 +147,11 @@ class Collection(object):
             resp.body = {"recipe_id": str(recipe.id)}
         
         # Create recipe concise view in Redis
-        concise_view_dict = {key:recipe[key] for key in RECIPE_CONCISE_VIEW_FIELDS}
+        #recipe_dict = recipe.to_mongo().to_dict()
+        recipe_dict = dict(recipe._data)
+        concise_view_dict = {key:recipe_dict[key] for key in RECIPE_CONCISE_VIEW_FIELDS}
+        # 'id' value is an obj , so we want a simple string id
+        concise_view_dict['id'] = str(concise_view_dict['id'])
         if len(concise_view_dict['images']) == 0 and img_url != "":
             # This happens for multipart, as recipe.update is not yet flushed 
             concise_view_dict['images'] = [img_url]
@@ -173,12 +185,15 @@ class Item(object):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         recipe = self._try_get_recipe(id)
         # Converting MongoEngine recipe document to dictionary
-        resp.body = recipe._data
+        logger.debug(type(recipe.to_mongo().to_dict()))
+        result_recipe = deepcopy(recipe.to_mongo().to_dict())
         pipeline = req.redis_conn.pipeline(True)
         pipeline.sismember(RECIPE_SAVED+id, req.user_id)
         pipeline.sismember(RECIPE_LIKED+id, req.user_id)
         saved, liked = pipeline.execute()
-        resp.body.update({"saved": saved, "liked": liked})
+        logger.debug("%s, %s" %(repr(saved), repr(liked)))
+        result_recipe.update({"saved": saved, "liked": liked})
+        resp.body = result_recipe
         resp.status = falcon.HTTP_FOUND
         
     @falcon.before(deserialize)

@@ -27,10 +27,8 @@ class Item(object):
         pipeline = req.redis_conn.pipeline(True)
         for recipe_id in recipe_ids:
             pipeline.hmget(RECIPE+recipe_id, *RECIPE_VERY_CONCISE_VIEW_FIELDS)
-        all_concise_recipes = [{k: v} for k, v in zip(recipe_ids, pipeline.execute())]
-        resp.body = {'items': all_concise_recipes, 
+        resp.body = {'items': pipeline.execute(), 
                      'fields': RECIPE_VERY_CONCISE_VIEW_FIELDS, 
-                     'count': len(all_concise_recipes)
                     }
         resp.status = falcon.HTTP_OK
         

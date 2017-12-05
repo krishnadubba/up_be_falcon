@@ -4,7 +4,7 @@ from __future__ import absolute_import
 import falcon
 import logging
 
-from uggipuggi.constants import ACTIVITY, USER_ACTIVITY
+from uggipuggi.constants import ACTIVITY, USER_ACTIVITY, ACTIVITY_CONCISE_VIEW_FIELDS
 from uggipuggi.controllers.hooks import serialize, supply_redis_conn
 from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.user_kafka_producers import user_activity_kafka_item_get_producer
@@ -26,8 +26,9 @@ class Item(object):
         activity_ids = req.redis_conn.zrange(USER_ACTIVITY+id, 0, -1)
         pipeline = req.redis_conn.pipeline(True)
         for activity_id in activity_ids:
-            pipeline.hgetall(ACTIVITY + activity_id)
-        all_concise_recipes = [{k: v} for k, v in zip(activity_ids, pipeline.execute())]
-        resp.body = {'items': all_concise_activities, 'count': len(all_concise_activities)}
+            pipeline.hmget(ACTIVITY + activity_id, *ACTIVITY_CONCISE_VIEW_FIELDS)
+        resp.body = {'items': pipeline.execute(),
+                     'fields': ACTIVITY_CONCISE_VIEW_FIELDS, 
+                    }
         resp.status = falcon.HTTP_OK
         

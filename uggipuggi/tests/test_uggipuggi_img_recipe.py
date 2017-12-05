@@ -126,14 +126,15 @@ class TestUggiPuggiRecipe(testing.TestBase):
         time.sleep(10)
         res = requests.get(self.rest_api + '/user_recipes/%s' %self.user_id, headers=header)
         res_json = json.loads(res.text)
-        self.assertTrue('count' in res_json)
-        self.assertTrue('items' in res_json)
         print (res_json)
         print(res.status_code)        
+        
+        self.assertTrue('fields' in res_json)
+        self.assertTrue('items' in res_json)
         self.assertEqual(1, len(res_json['items']))
         # This is not a list but a string
-        print(json.loads(res.content.decode('utf-8'))['items'][0][self.recipe_id])
-        self.assertTrue('http://lh3.googleusercontent.com' in json.loads(res.content.decode('utf-8'))['items'][0][self.recipe_id][0])
+        print(json.loads(res.content.decode('utf-8'))['items'][0])
+        self.assertTrue('http://lh3.googleusercontent.com' in json.loads(res.content.decode('utf-8'))['items'][0][0])
 
         # Delete recipe
         res = requests.delete(self.rest_api + '/recipes/%s' %self.recipe_id,
