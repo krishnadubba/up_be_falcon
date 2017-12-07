@@ -110,10 +110,51 @@ class TestUggiPuggiRecipe(testing.TestBase):
             
         header.update({'Content-Type':'application/json'})
         res = requests.get(self.rest_api + '/recipes/%s' %self.recipe_id, headers=header)
+        print (res.text)
         self.assertEqual(302, res.status_code)
+        
         # Wrong recipe id
         res = requests.get(self.rest_api + '/recipes/%s' %self.recipe_id+'0', headers=header)
         self.assertEqual(400, res.status_code)
+        
+        # Lets like the recipe
+        res = requests.post(self.rest_api + '/recipe_liked/%s' %self.recipe_id, 
+                            data=json.dumps({'liked':True}), 
+                            headers=header)
+        print (res.text)
+        self.assertTrue('likes_count' in json.loads(res.content.decode('utf-8')))
+        self.assertEqual(200, res.status_code)
+        self.assertEqual(1, int(json.loads(res.text)['likes_count']))
+        
+        # Lets save the recipe
+        res = requests.post(self.rest_api + '/recipe_saved/%s' %self.recipe_id, 
+                            data=json.dumps({'saved':True}), 
+                            headers=header)
+        print (res.text)
+        self.assertTrue('saves_count' in json.loads(res.content.decode('utf-8')))
+        self.assertEqual(200, res.status_code)
+        self.assertEqual(1, int(json.loads(res.text)['saves_count']))        
+        self.assertEqual(200, res.status_code)
+        
+        # Lets unlike the recipe
+        res = requests.post(self.rest_api + '/recipe_liked/%s' %self.recipe_id, 
+                            data=json.dumps({'liked':False}), 
+                            headers=header)
+        print (res.text)
+        self.assertTrue('likes_count' in json.loads(res.content.decode('utf-8')))
+        self.assertEqual(200, res.status_code)
+        self.assertEqual(0, int(json.loads(res.text)['likes_count']))        
+        self.assertEqual(200, res.status_code)
+        
+        # Lets unsave the recipe
+        res = requests.post(self.rest_api + '/recipe_saved/%s' %self.recipe_id, 
+                            data=json.dumps({'saved':False}), 
+                            headers=header)
+        print (res.text)
+        self.assertTrue('saves_count' in json.loads(res.content.decode('utf-8')))
+        self.assertEqual(200, res.status_code)
+        self.assertEqual(0, int(json.loads(res.text)['saves_count']))        
+        self.assertEqual(200, res.status_code)
         
         header = {'Content-Type':'application/json'}
         header.update({'auth_token':self.login_token})
