@@ -47,7 +47,8 @@ def get_n_uggipuggi_random_users(n, user_data_file=None, user_pics_dir=None):
                                      "phone": phone,
                                      "country": country
                                     })
-        pickle.dump(uggi_puggi_users, open(user_data_file, 'wb'))
+        with open(user_data_file, 'wb') as pickle_file:    
+            pickle.dump(uggi_puggi_users, pickle_file)
         return uggi_puggi_users
 
 if __name__ == "__main__":

@@ -38,7 +38,9 @@ class Recipe(Document):
     
     # This should be FRIENDS by default if profile is not public
     # otherwise it should be public
-    expose_level        = IntField(required=True, default=ExposeLevel.FRIENDS)
+    expose_level       = IntField(required=True, default=ExposeLevel.FRIENDS)
+    ack_category       = IntField(required=True, default=0)
+    ack_text           = StringField(required=False)
     
     video_url          = URLField(required=False)
     ingredients_imgs   = ListField(URLField()) # list of urls of ingredients images

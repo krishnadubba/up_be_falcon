@@ -13,6 +13,7 @@ from falcon import testing
 sys.path.append(os.path.dirname(os.path.dirname(sys.path[0])))
 
 from uggipuggi.tests import get_test_uggipuggi
+from uggipuggi.tests.restapi_utils import curl_request
 from uggipuggi.tests.utils.dummy_data import users_gcs_base, food_gcs_base, users as dummy_users,\
                                              groups as dummy_groups, contacts as dummy_contacts,\
                                              following as dummy_following, recipes as dummy_recipes, feeds as dummy_feeds
@@ -50,20 +51,31 @@ class TestUggiPuggiRecipe(testing.TestBase):
         res = requests.post(self.rest_api + '/verify', 
                             data=json.dumps({'code':DEBUG_OTP}), 
                             headers=header)
-    
+        
         print('=========================')
         print(res.content.decode('utf-8'))
         res_dict = json.loads(res.content.decode('utf-8'))
         self.login_token = res_dict['auth_token']
         self.user_id     = res_dict['user_identifier']
 
+        here = os.path.dirname(os.path.realpath(__file__))                        
+        filepath = os.path.join(os.path.dirname(os.path.dirname(here)), 'test_data', 'image.jpg')
+        user_image = open(filepath, 'rb')
+
+        header = {'auth_token':self.login_token}
+        res = requests.put(self.rest_api + '/users/%s' %self.user_id,
+                           files={'display_pic':('image.jpg', user_image, 'image/jpeg')}, 
+                           data={'display_name': 'random_name'},
+                           headers=header)
+        user_image.close()
+        self.assertEqual(200, res.status_code)
+    
     def get_recipe(self, recipe_index):    
         recipe = dummy_recipes[recipe_index]
         recipe_payload = {"recipe_name": recipe['name'],
-                          "user_id":self.user_id,
-                          "user_name": self.user_name,
                           "expose_level": 1,
                           "category": 1,
+                          "description": "This is a very easy and awesome dish. My family love this a lot!"
                          }
         steps = []
         for direction in recipe['direction'].split('\n'):
@@ -156,14 +168,16 @@ class TestUggiPuggiRecipe(testing.TestBase):
         self.assertEqual(0, int(json.loads(res.text)['saves_count']))        
         self.assertEqual(200, res.status_code)
         
+        print ("++++++++++++++++++++++++++++++++++")
         header = {'Content-Type':'application/json'}
         header.update({'auth_token':self.login_token})
         res = requests.get(self.rest_api + '/recipes?category=1', headers=header)
         self.assertEqual(302, res.status_code)
         print(res.text)
         items = json.loads(res.text)['items']        
-        self.assertEqual(1, len(items))        
-
+        self.assertEqual(1, len(items))
+        print ("++++++++++++++++++++++++++++++++++")
+        
         time.sleep(10)
         res = requests.get(self.rest_api + '/user_recipes/%s' %self.user_id, headers=header)
         res_json = json.loads(res.text)

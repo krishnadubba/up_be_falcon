@@ -222,7 +222,6 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                     category = random.choice(range(total_categories))
                     category_count[category] += 1
                     recipe_payload = {"recipe_name": recipe['name'],
-                                      "user_id": users_map[current_author_id]['user_id'],
                                       "expose_level": 1,
                                       "category": category,
                                       "description": "This is a very easy and awesome dish. My family love this a lot!"

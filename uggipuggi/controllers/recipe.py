@@ -79,6 +79,7 @@ class Collection(object):
         query_params.update(**updated_params)  # update modified params for filtering
         
         # Retrieve only a subset of fields using only(*list_of_required_fields)
+        # We still get all fields. but these other non-required fields are empty
         recipes_qset = Recipe.objects(**query_params).only(*RECIPE_CONCISE_VIEW_FIELDS)[start:end]
         result_count = recipes_qset.count()
         # Find out which recipes the user liked and saved, we need to highlight the like and save
@@ -99,9 +100,9 @@ class Collection(object):
             result_recipes = [dict({"saved":s, "liked":l},**recipe) for recipe, s, l in zip(recipes, saved, liked)]
             logger.debug(result_recipes)
             # No need to use json_util.dumps here (?)                                     
-            resp.body = {'items': result_recipes, 'count': result_count}
+            resp.body = {'items': result_recipes, 'fields': RECIPE_CONCISE_VIEW_FIELDS, 'count': result_count}
         else:
-            resp.body = {'items': [], 'count': result_count}
+            resp.body = {'items': [], 'count': 0}
         resp.status = falcon.HTTP_FOUND
         
     #@falcon.before(deserialize_create)
@@ -113,8 +114,9 @@ class Collection(object):
         # save to DB
         img_url = ""
         recipe_data = {}
-        user_display_pic, user_display_name = req.redis_conn.hmget(USER+req.user_id, "display_pic", 'display_name')        
-        recipe_data['author_avatar'] = user_display_pic        
+        user_display_pic, user_display_name = req.redis_conn.hmget(USER+req.user_id, "display_pic", 'display_name')
+        recipe_data['user_id'] = req.user_id
+        recipe_data['author_avatar'] = user_display_pic
         recipe_data['author_display_name'] = user_display_name
         if 'multipart/form-data' in req.content_type:
             img_data = req.get_param('images')            
