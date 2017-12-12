@@ -168,20 +168,16 @@ class CorsMiddleware():
         self.logger = logging.getLogger(__name__)
         self.allowed_origins = config['cors']['allowed_origins'].split(',')
         self.allowed_headers = config['cors']['allowed_headers']
-        self.allowed_methods = config['cors']['allowed_methods']             
+        self.allowed_methods = config['cors']['allowed_methods']
+        
     def process_request(self, req, res):
-        config = self.config['cors']        
-        allowed_origins = config['allowed_origins'].split(',')
-        allowed_headers = config['allowed_headers']
-        allowed_methods = config['allowed_methods']
-
         origin = req.get_header('Origin')
         self.logger.debug("Request origin URL:")
         self.logger.debug(origin)
-        header = {'Access-Control-Allow-Headers': allowed_headers}
+        header = {'Access-Control-Allow-Headers': self.allowed_headers}
         if ('*' in self.allowed_origins and origin != None) or origin in self.allowed_origins:
             self.logger.debug("This origin is allowed")
             header['Access-Control-Allow-Origin'] = origin
-        header['Access-Control-Allow-Methods'] = allowed_methods
-        header['Allow'] = allowed_methods
+        header['Access-Control-Allow-Methods'] = self.allowed_methods
+        header['Allow'] = self.allowed_methods
         res.set_headers(header)
