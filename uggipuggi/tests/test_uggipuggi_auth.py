@@ -168,7 +168,7 @@ class TestUggiPuggiAuthMiddleware(testing.TestBase):
                 print (res.text)                
                 self.assertEqual(test['expected']['status'], res.status_code)
                 
-        time.sleep(10)        
+        time.sleep(20)        
         header = {'auth_token':self.login_token}
         header.update({'Content-Type':'application/json'})
         for test in tests:

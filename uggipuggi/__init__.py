@@ -177,7 +177,8 @@ class CorsMiddleware():
         header = {'Access-Control-Allow-Headers': self.allowed_headers}
         if ('*' in self.allowed_origins and origin != None) or origin in self.allowed_origins:
             self.logger.debug("This origin is allowed")
-            header['Access-Control-Allow-Origin'] = origin
+        header['Access-Control-Allow-Origin'] = "*"
         header['Access-Control-Allow-Methods'] = self.allowed_methods
+        header['Access-Control-Allow-Credentials'] = "true"
         header['Allow'] = self.allowed_methods
         res.set_headers(header)

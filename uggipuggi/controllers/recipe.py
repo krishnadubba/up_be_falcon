@@ -146,11 +146,14 @@ class Collection(object):
         else:    
             recipe = Recipe(**recipe_data.update(req.params['body']))
             recipe.save()
+            
             resp.body = {"recipe_id": str(recipe.id)}
-        
+            
+        recipe.update(generation_time=recipe.id.generation_time.strftime("%Y-%m-%d %H:%M"))
         # Create recipe concise view in Redis
         #recipe_dict = recipe.to_mongo().to_dict()
         recipe_dict = dict(recipe._data)
+        recipe_dict['generation_time'] = recipe.id.generation_time.strftime("%Y-%m-%d %H:%M")
         concise_view_dict = {key:recipe_dict[key] for key in RECIPE_CONCISE_VIEW_FIELDS}
         # 'id' value is an obj , so we want a simple string id
         concise_view_dict['id'] = str(concise_view_dict['id'])

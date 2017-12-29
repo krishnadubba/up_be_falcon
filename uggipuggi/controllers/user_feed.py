@@ -34,5 +34,11 @@ class Item(object):
             pipeline.hgetall(feed_id)
         # Only here we supply the key as well because in feed we have both recipes and activities
         # and key starting with "r:" and activity starts with "act:"
-        resp.body = [{k: v} for k, v in zip(user_feed_item_ids, pipeline.execute())]
+        #resp.body = [{k: v} for k, v in zip(user_feed_item_ids, pipeline.execute())]
+        resp.body = pipeline.execute()
+        #resp.body = [dict(i, images=eval(i['images'])) for i in resp.body]
+        # Redis DB stores list as string, so convert back the string to list
+        for i in range(len(resp.body)):
+            resp.body[i]['images'] = eval(resp.body[i]['images'])
+            
         resp.status = falcon.HTTP_OK

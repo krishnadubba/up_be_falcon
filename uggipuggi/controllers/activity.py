@@ -133,8 +133,11 @@ class Collection(object):
             activity.save()
             resp.body = {"activity_id": str(activity.id)}
                     
+        activity.update(generation_time=activity.id.generation_time.strftime("%Y-%m-%d %H:%M"))                    
         # Create activity concise view in Redis
-        concise_view_dict = {key:activity[key] for key in ACTIVITY_CONCISE_VIEW_FIELDS}
+        activity_dict = dict(activity._data)
+        activity_dict['generation_time'] = activity.id.generation_time.strftime("%Y-%m-%d %H:%M")
+        concise_view_dict = {key:activity_dict[key] for key in ACTIVITY_CONCISE_VIEW_FIELDS}
         req.redis_conn.hmset(ACTIVITY+str(activity.id), concise_view_dict)
         
         req.redis_conn.zadd(USER_ACTIVITY+req.user_id, str(activity.id), int(time.time()))

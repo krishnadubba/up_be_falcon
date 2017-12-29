@@ -597,7 +597,7 @@ class AuthMiddleware(object):
             return
         
         challenges = ['Hello="World"']  # I think this is very irrelevant
-
+            
         if self.token_opts.get('location', 'cookie') == 'cookie':
             token = req.cookies.get(self.token_opts.get("name"))
         elif self.token_opts['location'] == 'header':

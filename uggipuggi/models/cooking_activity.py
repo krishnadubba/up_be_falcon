@@ -25,9 +25,11 @@ class CookingActivity(Document):
     comments_count = IntField(required=True, default=0)
     author_display_name = StringField(required=True)   
     description  = StringField(required=True, default="", max_length=TWEET_CHAR_LENGTH)
+    item_type    = StringField(required=True, default="activity")
     images       = ListField(StringField())  # list of urls
     expose_level = IntField(required=True, default=ExposeLevel.FRIENDS)
     # If the recipe id is private recipe, then we give warning when sharing activity involving it
+    generation_time = StringField(required=False)
     recipients   = ListField(StringField(default='*'))  # list of peolpe allowed to see
     tags         = ListField()
     category     = StringField()    
