@@ -39,7 +39,7 @@ class Collection(object):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         user_groups_id = USER_GROUPS + req.user_id
         resp.body['user_groups'] = list(req.redis_conn.smembers(user_groups_id))
-        resp.status = falcon.HTTP_FOUND
+        resp.status = falcon.HTTP_OK
         
     #@falcon.before(deserialize_create)
     @falcon.before(deserialize)
@@ -89,7 +89,7 @@ class Collection(object):
         
         pipeline.execute()
         resp.body = {"group_id": group_id}
-        resp.status = falcon.HTTP_CREATED
+        resp.status = falcon.HTTP_OK
         
     @falcon.before(deserialize)
     @falcon.after(group_kafka_collection_delete_producer)
@@ -145,7 +145,7 @@ class Item(object):
         if 'members' in req.params['query']:
             resp.body['members'] = list(req.redis_conn.smembers(group_members_id_name))
                 
-        resp.status = falcon.HTTP_FOUND
+        resp.status = falcon.HTTP_OK
         
     @falcon.before(deserialize)
     @falcon.after(group_kafka_item_delete_producer)    

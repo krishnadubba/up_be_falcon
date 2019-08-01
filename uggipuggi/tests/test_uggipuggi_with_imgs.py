@@ -31,6 +31,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
             uggipuggi_ip = re.findall(r".+ inet addr:([0-9.]+) .+", ip_config)[0]                        
             
         self.rest_api = 'http://%s/'%uggipuggi_ip
+        print (self.rest_api)
         
     def test_a_groups(self):
         count = 0
@@ -58,6 +59,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
             users_map[current_author_id]['display_name'] = users_data[count]['display_name']
             res = requests.post(self.rest_api + '/register', data=json.dumps(payload), 
                                 headers=header)
+            print (res.text)
             verify_token = json.loads(res.content.decode('utf-8'))['auth_token']
             
             header.update({'auth_token':verify_token})
@@ -157,7 +159,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                                     data=group_payload, 
                                     headers=header)
                 group_image.close()
-                self.assertEqual(201, res.status_code)
+                self.assertEqual(200, res.status_code)
                 self.assertTrue('group_id' in json.loads(res.content.decode('utf-8')))
                 
                 group_id = json.loads(res.content.decode('utf-8'))['group_id']
@@ -174,7 +176,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 self.assertEqual(200, res.status_code)
                 
                 res = requests.get(self.rest_api + '/groups/%s?members=True'%group_id, headers=header)
-                self.assertEqual(302, res.status_code)
+                self.assertEqual(200, res.status_code)
                 self.assertTrue('members' in json.loads(res.content.decode('utf-8')))
                 # We need num_group_mems + 1 as admin is added seperately to the group members
                 self.assertEqual(len(group['members']) + 1, len(json.loads(res.content.decode('utf-8'))['members']))                
@@ -260,7 +262,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                                         files={'images': ('pasta.jpg', recipe_image, 'image/jpeg')},
                                         headers=header)
                     recipe_image.close()
-                    self.assertEqual(201, res.status_code)
+                    self.assertEqual(200, res.status_code)
                     result_dict = json.loads(res.content.decode('utf-8')) 
                     self.assertTrue('recipe_id' in result_dict)
                     if 'recipe_id' in result_dict:
@@ -268,7 +270,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                     recipe_map[recipe['id']].update({'recipe_id':result_dict['recipe_id']})
                     
                     res = requests.get(self.rest_api + '/recipes/%s' %self.recipe_id, headers=header)
-                    self.assertEqual(302, res.status_code)
+                    self.assertEqual(200, res.status_code)
                     
                     # Wrong recipe id
                     res = requests.get(self.rest_api + '/recipes/%s' %self.recipe_id+'0', headers=header)
@@ -279,7 +281,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         print (category_count)
         for category in range(total_categories):
             res = requests.get(self.rest_api + '/recipes?category=%d' %category, headers=header)
-            self.assertEqual(302, res.status_code)
+            self.assertEqual(200, res.status_code)
             items = json.loads(res.text)['items']
             self.assertEqual(category_count[category], len(items))            
             
@@ -352,7 +354,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                                     headers=header)
                 activity_image.close()
                 
-                self.assertEqual(201, res.status_code)
+                self.assertEqual(200, res.status_code)
                 result_dict = json.loads(res.content.decode('utf-8')) 
                 self.assertTrue('activity_id' in result_dict)                
 
@@ -363,7 +365,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                 res = requests.get(self.rest_api + '/activity', 
                                    params=activity_Q_payload, 
                                    headers=header)
-                self.assertEqual(302, res.status_code)
+                self.assertEqual(200, res.status_code)
                 results = json.loads(res.content.decode('utf-8'))['items']   
                          
         print ("===============================================================")

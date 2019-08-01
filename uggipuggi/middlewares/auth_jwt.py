@@ -627,6 +627,7 @@ class AuthMiddleware(object):
         # we used user mongo object id as user identifier
         user_id = self.decoded.pop("user_identifier")
         req.user_id = user_id
+        logging.debug("User id decoded from auth_token: %s" %repr(user_id))
         phone_last_verified = self.decoded.pop("phone_last_verified")
         logging.debug("Password last changed recovered from auth_token:")
         logging.debug(phone_last_verified)

@@ -8,7 +8,7 @@ TWEET_CHAR_LENGTH = 1000
 DEFAULT_USER_STATUS = 'Hi, I am using UggiPuggi'
 INTEGER_MAX = sys.maxsize - 1
 
-PAGE_LIMIT = 20
+PAGE_LIMIT = 25
 
 MAX_TOKEN_AGE = 86400
 GCLOUD_SERVICE_CREDS='/home/krishna/gcloud_credentials/uggipuggi-a17b68a1ad89.json'

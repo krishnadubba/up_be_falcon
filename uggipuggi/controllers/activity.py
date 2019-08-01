@@ -90,7 +90,7 @@ class Collection(object):
         resp.body = {'items': [res.to_dict() for res in activities],
                      'count': activities_qset.count()}
                                     
-        resp.status = falcon.HTTP_FOUND
+        resp.status = falcon.HTTP_OK
         
     #@falcon.before(deserialize_create)
     @falcon.before(deserialize)    
@@ -142,7 +142,7 @@ class Collection(object):
         
         req.redis_conn.zadd(USER_ACTIVITY+req.user_id, str(activity.id), int(time.time()))
         logger.debug("Cooking Activity created with id: %s" %str(activity.id))
-        resp.status = falcon.HTTP_CREATED
+        resp.status = falcon.HTTP_OK
 
 
 @falcon.before(supply_redis_conn)
@@ -163,7 +163,7 @@ class Item(object):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         activity    = self._try_get_activity(id)
         resp.body   = activity._data
-        resp.status = falcon.HTTP_FOUND
+        resp.status = falcon.HTTP_OK
 
     @falcon.before(deserialize)
     def on_delete(self, req, resp, id):

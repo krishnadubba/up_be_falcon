@@ -20,7 +20,6 @@ class CookingActivity(Document):
     user_id      = StringField(required=True)
     author_avatar= StringField(required=True)
     recipe_name  = StringField(required=True)
-    recipe_id    = StringField(required=True)
     likes_count  = IntField(required=True, default=0)
     comments_count = IntField(required=True, default=0)
     author_display_name = StringField(required=True)   
@@ -29,6 +28,7 @@ class CookingActivity(Document):
     images       = ListField(StringField())  # list of urls
     expose_level = IntField(required=True, default=ExposeLevel.FRIENDS)
     # If the recipe id is private recipe, then we give warning when sharing activity involving it
+    recipe_id    = StringField(required=False)    
     generation_time = StringField(required=False)
     recipients   = ListField(StringField(default='*'))  # list of peolpe allowed to see
     tags         = ListField()

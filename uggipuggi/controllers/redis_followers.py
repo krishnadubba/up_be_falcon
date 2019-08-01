@@ -28,7 +28,7 @@ class Item(object):
             req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
             followers_list = FOLLOWERS + id
             resp.body = req.redis_conn.smembers(followers_list)
-            resp.status = falcon.HTTP_FOUND
+            resp.status = falcon.HTTP_OK
         
     @falcon.before(deserialize)    
     @falcon.after(followers_kafka_item_post_producer)

@@ -30,7 +30,7 @@ class Item(object):
             req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
             contacts_id_name = CONTACTS + id
             resp.body = req.redis_conn.smembers(contacts_id_name)
-            resp.status = falcon.HTTP_FOUND
+            resp.status = falcon.HTTP_OK
         
     @falcon.before(deserialize)
     @falcon.after(contacts_kafka_item_post_producer)

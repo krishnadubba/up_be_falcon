@@ -23,10 +23,12 @@ class Item(object):
         user_feed_id = USER_FEED + req.user_id
         try:
             start = req.params['query'].get('start', 0)
-            end   = req.params['query'].get('end', 50)
+            limit = req.params['query'].get('limit', MAX_USER_FEED_LOAD)
+            end = start + limit
         except KeyError:
             start = 0
-            end   = MAX_USER_FEED_LOAD
+            limit = MAX_USER_FEED_LOAD
+            end = start + limit
         # For the time being get all the feed
         user_feed_item_ids = req.redis_conn.zrevrange(user_feed_id, start, end)
         pipeline = req.redis_conn.pipeline(True)

@@ -103,7 +103,7 @@ class Collection(object):
             resp.body = {'items': result_recipes, 'fields': RECIPE_CONCISE_VIEW_FIELDS, 'count': result_count}
         else:
             resp.body = {'items': [], 'count': 0}
-        resp.status = falcon.HTTP_FOUND
+        resp.status = falcon.HTTP_OK
         
     #@falcon.before(deserialize_create)
     @falcon.before(deserialize)
@@ -168,7 +168,7 @@ class Collection(object):
         pipeline.zadd(USER_RECIPES+req.user_id, str(recipe.id), int(time.time()))
         pipeline.execute()
         logger.info("Recipe created with id: %s" %str(recipe.id))
-        resp.status = falcon.HTTP_CREATED
+        resp.status = falcon.HTTP_OK
 
 
 @falcon.after(serialize)
@@ -199,7 +199,7 @@ class Item(object):
         logger.debug("%s, %s" %(repr(saved), repr(liked)))
         result_recipe.update({"saved": saved, "liked": liked})
         resp.body = result_recipe
-        resp.status = falcon.HTTP_FOUND
+        resp.status = falcon.HTTP_OK
         
     @falcon.before(deserialize)
     def on_delete(self, req, resp, id):
