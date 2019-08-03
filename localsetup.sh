@@ -1,5 +1,5 @@
 #!/bin/bash
-docker swarm init
+docker swarm init --advertise-addr 192.168.1.69
 docker network create -d overlay proxy
 ./build/generate_build_info.sh
 docker build -t kr .

@@ -4,8 +4,8 @@ networks:
 services:
   backend:
     command: gunicorn -b 0.0.0.0:8000 "manage:uggipuggi_app.app"
-    depends_on: [redis, mongo, celery, kafka, zookeeper, kafka_consumer, kafka_consumer_activity]
-    environment: {GOOGLE_APPLICATION_CREDENTIALS: '/.config/gcloud/uggipuggi-991a56026e46.json'}
+    depends_on: [redis, mongo, celery, kafka, zookeeper, kafka_consumer, kafka_subscriber_activity]
+    environment: {GOOGLE_APPLICATION_CREDENTIALS: '/.config/gcloud/uggi_puggi-a962c9256b2a.json'}
     deploy:
       labels: [com.df.notify=true, com.df.distribute=true, com.df.servicePath=/,
         com.df.port=8000]

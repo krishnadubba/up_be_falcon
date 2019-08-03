@@ -11,7 +11,7 @@ INTEGER_MAX = sys.maxsize - 1
 PAGE_LIMIT = 25
 
 MAX_TOKEN_AGE = 86400
-GCLOUD_SERVICE_CREDS='/home/krishna/gcloud_credentials/uggipuggi-a17b68a1ad89.json'
+GCLOUD_SERVICE_CREDS='/home/kdubba/gcloud_credentials/uggi_puggi-a962c9256b2a.json'
 FCM_SERVER_KEY = 'AAAAzPk-Tf4:APA91bGwttdFLH671-48ekIwFNW2htVppUH0qorLPxNEUNAQC_XtOcTDG2I2hzqn3p6JQ0wySadD_AV32agw35xYVXukCYsUQAv6gnf5xvdJhnQRZS_uZJq65V4hQv8jpI3Hp57FPCnu'
 
 # Token valid for 90 days
@@ -65,9 +65,9 @@ USER_NOTIFICATION_FEED = 'unf:'
 FILE_EXT_MAP = {'jpg': 'image/jpeg', 'jpe': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png'}
 IMG_STORE_PATH = '/images/'
 GAE_IMG_SERVER = 'https://uggipuggi-dev.appspot.com/img_post'
-GCS_USER_BUCKET = 'gcs_user_public_server_bucket_dev'
-GCS_GROUP_BUCKET = 'gcs_group_public_server_bucket_dev'
-GCS_RECIPE_BUCKET = 'gcs_recipe_public_server_bucket_dev'
-GCS_ACTIVITY_BUCKET = 'gcs_activity_public_server_bucket_dev'
+GCS_USER_BUCKET = 'up_user_public_server_bucket_dev'
+GCS_GROUP_BUCKET = 'up_group_public_server_bucket_dev'
+GCS_RECIPE_BUCKET = 'up_recipe_public_server_bucket_dev'
+GCS_ACTIVITY_BUCKET = 'up_activity_public_server_bucket_dev'
 BACKEND_ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'bmp']
 GCS_ALLOWED_EXTENSION = 'image/jpeg'
