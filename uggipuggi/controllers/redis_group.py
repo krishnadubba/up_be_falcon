@@ -8,7 +8,7 @@ import requests
 from bson import json_util, ObjectId
 from google.cloud import storage as gc_storage
 
-from uggipuggi.libs.error import HTTPBadRequest
+from uggipuggi.libs.error import HTTPBadRequest, HTTPInternalServerError
 from uggipuggi.constants import GROUP, GROUP_MEMBERS, USER_GROUPS, GCS_GROUP_BUCKET, \
                                 GAE_IMG_SERVER, IMG_STORE_PATH
 from uggipuggi.controllers.image_store import ImageStore
@@ -150,9 +150,10 @@ class Item(object):
     @falcon.before(deserialize)
     @falcon.after(group_kafka_item_delete_producer)    
     def on_delete(self, req, resp, id):
-        # Delete a member
+        # Delete a member of a group. For deleting group use collection 
+        # delete request with group_id in the body
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
-        logger.debug("Deleting member from group data in database ...")
+       
         group_id_name = GROUP + id
         admin = req.redis_conn.hget(group_id_name, 'admin')
         if admin != req.user_id:
@@ -160,8 +161,9 @@ class Item(object):
             resp.status = falcon.HTTP_UNAUTHORIZED
             return
         else:
-            group_members_id_name = GROUP_MEMBERS + group_id            
-            pipeline = req.redis_conn.pipeline(True)
+            group_members_id_name = GROUP_MEMBERS + group_id
+            logger.debug("Deleting member from group data in database ...")
+            pipeline = req.redis_conn.pipeline(True)                
             pipeline.srem(group_members_id_name, *req.params['query']['member_id'])
             # Remove this group from this member's group list
             for group_member in req.params['query']['member_id']:
@@ -174,7 +176,8 @@ class Item(object):
     #@falcon.before(deserialize_update)
     @falcon.before(deserialize)
     @falcon.after(group_kafka_item_put_producer)
-    def on_put(self, req, resp, id):        
+    def on_put(self, req, resp, id):
+        # Update group profile like pic
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Finding group in database ... %s" %repr(id))
         group_id_name = GROUP + id
@@ -192,8 +195,8 @@ class Item(object):
                     img_url = self.img_store.save(img_data.file, image_name, img_data.type)
                     pipeline.hset(group_id_name, 'group_pic', img_url)
                 except IOError:
-                    raise HTTPBadRequest(title='Group_pic upload failed', 
-                                         description='Group_pic upload to cloud storage failed!')                  
+                    raise HTTPInternalServerError(title='Group_pic upload failed', 
+                                                  description='Group_pic upload to cloud storage failed!')                  
 
             else:    
                 for key in req.params['body']:

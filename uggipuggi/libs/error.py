@@ -34,3 +34,10 @@ class HTTPServiceUnavailable(falcon.HTTPServiceUnavailable):
     status code: 503
     """
     pass
+
+class HTTPInternalServerError(falcon.HTTPInternalServerError):
+    """
+    wrapper for HTTP Internal Server Error response
+    status code: 500
+    """
+    pass

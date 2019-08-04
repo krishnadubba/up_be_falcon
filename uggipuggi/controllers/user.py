@@ -17,7 +17,7 @@ from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, Validation
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.controllers.image_store import ImageStore
 from uggipuggi.models.user import User, Role
-from uggipuggi.libs.error import HTTPBadRequest, HTTPUnauthorized
+from uggipuggi.libs.error import HTTPBadRequest, HTTPUnauthorized, HTTPInternalServerError
 from uggipuggi.messaging.user_kafka_producers import user_kafka_item_get_producer,\
                                                      user_kafka_item_put_producer
 from uggipuggi.tasks.user_tasks import user_display_pic_task
@@ -126,8 +126,8 @@ class Item(object):
                 # Call Celery background task to upload image to GCS
                 user_display_pic_task.delay(str(user.id), image_path)
             except IOError:
-                raise HTTPBadRequest(title='Failed to store display pic to file system!',
-                                     description='IOError')
+                raise HTTPInternalServerError(title='Failed to store display pic to file system!',
+                                              description='IOError')
             
             user_data.update({'display_pic':image_name})
             logger.debug(user_data)
@@ -142,7 +142,7 @@ class Item(object):
             user.update(**user_data)
         
         # Update concise view in Redis database
-        concise_view_dict   = {key:user_data[key] for key in self.concise_view_fields if key in user_data}
+        concise_view_dict = {key:user_data[key] for key in self.concise_view_fields if key in user_data}
         if len(concise_view_dict) > 0:
             req.redis_conn.hmset(USER+str(user.id), concise_view_dict)
         

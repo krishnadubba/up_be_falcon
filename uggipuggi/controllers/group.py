@@ -59,7 +59,7 @@ class Collection(object):
         # No need to use json_util.dumps here (?)                             
         resp.body = {'items': [res.to_dict() for res in groups],
                      'count': len(groups)}
-        resp.status = falcon.HTTP_FOUND
+        resp.status = falcon.HTTP_OK
         
     #@falcon.before(deserialize_create)
     @falcon.before(deserialize)

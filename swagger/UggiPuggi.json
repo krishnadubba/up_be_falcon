@@ -5,7 +5,7 @@
     "version": "0.1.0",
     "title": "UggiPuggi"
   },
-  "host": "139.59.33.69",
+  "host": "0.0.0.0",
   "basePath": "/v1",
   "tags": [
     {
@@ -546,7 +546,7 @@
       }
     },
     "/users": {
-      "post": {
+      "get": {
         "tags": [
           "user"
         ],
@@ -566,7 +566,7 @@
           }
         ],
         "responses": {
-          "302": {
+          "200": {
             "description": "User Found",
             "schema": {
               "type": "string",
@@ -576,10 +576,7 @@
             }
           },
           "400": {
-            "description": "Bad Request, user not found"
-          },
-          "401": {
-            "description": "Unauthorized request"
+            "description": "Bad Request, invalid values in request"
           }
         }
       }
@@ -589,8 +586,8 @@
         "tags": [
           "user"
         ],
-        "summary": "Get user by userId",
-        "description": "",
+        "summary": "Get user profile by userId",
+        "description": "Get user profile by userId",
         "operationId": "getUserById",
         "produces": [
           "application/json"
@@ -599,17 +596,89 @@
           {
             "name": "userId",
             "in": "path",
-            "description": "The userId that needs to be fetched.",
+            "description": "The userId of user to be fetched.",
             "required": true,
             "type": "string"
           }
         ],
         "responses": {
-          "302": {
+          "200": {
             "description": "User Found",
             "schema": {
               "$ref": "#/definitions/User"
             }
+          },
+          "400": {
+            "description": "Bad Request, user not found"
+          },
+          "401": {
+            "description": "Unauthorized request"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Update user profile by userId",
+        "description": "Update user profile by userId",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "The userId of user to be updated.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "profile_data",
+            "in": "body",
+            "description": "The profile fields to be updated.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/User"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile updated successfully"
+          },
+          "400": {
+            "description": "Bad Request, user not found"
+          },
+          "401": {
+            "description": "Unauthorized request"
+          },
+          "500": {
+            "description": "IO Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Delete user profile",
+        "description": "Delete user profile",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "The userId of user to be deleted.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile deleted successfully"
           },
           "400": {
             "description": "Bad Request, user not found"
@@ -639,8 +708,8 @@
           }
         ],
         "responses": {
-          "302": {
-            "description": "Found"
+          "200": {
+            "description": "Group found"
           }
         }
       },
@@ -664,8 +733,156 @@
           }
         ],
         "responses": {
-          "302": {
-            "description": "Found"
+          "200": {
+            "description": "New group created"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Delete a group",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "group_id",
+            "description": "group_id of group to be deleted",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Group deleted"
+          },
+          "401": {
+            "description": "Unauthorized request"
+          }
+        }
+      }
+    },
+    "/groups/{groupId}": {
+      "get": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Get group information",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "description": "groupId for which we need info",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Group found"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Add new member to group",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "description": "groupId of the group to which to add member",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "memberId",
+            "description": "memberId to add to the group",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Group"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member added successfully"
+          },
+          "401": {
+            "description": "Unauthorized request"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Change group pic or profile info",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groupId",
+            "description": "groupId for which we need to change profile",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "new_profile",
+            "description": "new profile data",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Group"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "group updated successfully"
+          },
+          "401": {
+            "description": "Unauthorized request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Delete a member in a group",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "member_id",
+            "description": "member_id of member to be deleted from group",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member in the group deleted"
+          },
+          "401": {
+            "description": "Unauthorized request"
           }
         }
       }
@@ -674,7 +891,7 @@
   "securityDefinitions": {
     "recipe_auth": {
       "type": "oauth2",
-      "authorizationUrl": "http://petstore.swagger.io/oauth/dialog",
+      "authorizationUrl": "http://uggipuggi.com/oauth/dialog",
       "flow": "implicit",
       "scopes": {
         "write:recipes": "modify recipes in your account",
@@ -697,7 +914,7 @@
       "properties": {
         "_id": {
           "type": "string",
-          "description": "Automatically assigned by database"
+          "description": "Automatically assigned by database (groupID)"
         },
         "group_name": {
           "type": "string"
