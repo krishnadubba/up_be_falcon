@@ -724,8 +724,8 @@
         "parameters": [
           {
             "in": "body",
-            "name": "new_group",
-            "description": "new group name",
+            "name": "new_group_data",
+            "description": "new group data",
             "required": true,
             "schema": {
               "$ref": "#/definitions/Group"
@@ -806,8 +806,8 @@
           },
           {
             "in": "body",
-            "name": "memberId",
-            "description": "memberId to add to the group",
+            "name": "member_id",
+            "description": "list of member_ids to add to the group",
             "required": true,
             "schema": {
               "$ref": "#/definitions/Group"
@@ -841,7 +841,7 @@
           },
           {
             "in": "body",
-            "name": "new_profile",
+            "name": "new_profile_data",
             "description": "new profile data",
             "required": true,
             "schema": {
@@ -871,9 +871,16 @@
         ],
         "parameters": [
           {
+            "in": "path",
+            "name": "groupId",
+            "description": "groupId from which member has to be deleted",
+            "required": true,
+            "type": "string"
+          },
+          {
             "in": "body",
             "name": "member_id",
-            "description": "member_id of member to be deleted from group",
+            "description": "list of member_ids to be deleted from the group",
             "required": true
           }
         ],
