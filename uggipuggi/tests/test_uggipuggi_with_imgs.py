@@ -27,10 +27,11 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
             uggipuggi_ip = os.environ['UGGIPUGGI_BACKEND_IP']
         except KeyError:
             ip_config = subprocess.run(["ifconfig", "docker_gwbridge"], stdout=subprocess.PIPE)
+            #ip_config = subprocess.run(["ifconfig", "docker0"], stdout=subprocess.PIPE)
             ip_config = ip_config.stdout.decode('utf-8').split('\n')[1]
-            uggipuggi_ip = re.findall(r".+ inet addr:([0-9.]+) .+", ip_config)[0]                        
+            uggipuggi_ip = re.findall(r".+ inet ([0-9.]+) .+", ip_config)[0]                        
             
-        self.rest_api = 'http://%s/'%uggipuggi_ip
+        self.rest_api = 'http://%s'%uggipuggi_ip
         print (self.rest_api)
         
     def test_a_groups(self):
@@ -257,7 +258,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                     filepath = os.path.join(os.path.dirname(os.path.dirname(here)), 'test_data', 'pasta.jpg')
                     recipe_image = open(filepath, 'rb')
                     
-                    res = requests.post(self.rest_api + 'recipes', 
+                    res = requests.post(self.rest_api + '/recipes', 
                                         data=recipe_payload,
                                         files={'images': ('pasta.jpg', recipe_image, 'image/jpeg')},
                                         headers=header)
@@ -304,11 +305,11 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                     comment['comment']['user_id']   = user_id
                     comment['comment']['user_name'] = user_name
                     comment['comment']['content']   = com['content'] 
-                    res = requests.put(self.rest_api + 'recipes/%s'%recipe_id, data=json.dumps(comment), 
+                    res = requests.put(self.rest_api + '/recipes/%s'%recipe_id, data=json.dumps(comment), 
                                        headers=header)
                     self.assertEqual(200, res.status_code)
                     
-                    res = requests.put(self.rest_api + 'recipes/%s'%recipe_id+'0', data=json.dumps(comment), 
+                    res = requests.put(self.rest_api + '/recipes/%s'%recipe_id+'0', data=json.dumps(comment), 
                                        headers=header)
                     self.assertEqual(400, res.status_code)
                     
@@ -317,7 +318,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                     comment['wrong_key']['user_id']   = user_id
                     comment['wrong_key']['user_name'] = user_name
                     comment['wrong_key']['content']   = com['content'] 
-                    res = requests.put(self.rest_api + 'recipes/%s'%recipe_id, data=json.dumps(comment), 
+                    res = requests.put(self.rest_api + '/recipes/%s'%recipe_id, data=json.dumps(comment), 
                                        headers=header)
                     self.assertEqual(400, res.status_code)                    
                     
@@ -326,7 +327,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                     comment['comment']['wrong_key_user_id'] = user_id
                     comment['comment']['user_name'] = user_name
                     comment['comment']['content']   = com['content'] 
-                    res = requests.put(self.rest_api + 'recipes/%s'%recipe_id, data=json.dumps(comment), 
+                    res = requests.put(self.rest_api + '/recipes/%s'%recipe_id, data=json.dumps(comment), 
                                        headers=header)
                     self.assertEqual(400, res.status_code)                    
    

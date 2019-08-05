@@ -47,7 +47,7 @@ def user_feed_add_recipe(message):
     elif int(expose_level) == ExposeLevel.PUBLIC:
         followers_id_name = FOLLOWERS + user_id        
         recipients = redis_conn.sunion(contacts_id_name, followers_id_name)
-        pipeline.zadd(PUBLIC_RECIPES, recipe_id_name, int(time.time()))
+        pipeline.zadd(PUBLIC_RECIPES, {recipe_id_name: int(time.time())})
             
     # Add the author to recipe commentor list, so we can notify 
     # him when others comments on this recipe
@@ -59,7 +59,7 @@ def user_feed_add_recipe(message):
     for recipient in recipients:
         # Use the count of this user feed bucket for notification
         user_feed = USER_FEED + recipient
-        pipeline.zadd(user_feed, recipe_id_name, time.time())
+        pipeline.zadd(user_feed, {recipe_id_name: time.time()})
         # Remove old feed if the feed is bigger than MAX_USER_FEED_LENGTH posts
         pipeline.zremrangebyrank(user_feed, 0, -MAX_USER_FEED_LENGTH+1)
         #logger.info(redis_conn.zrange(user_feed, 0, -1, withscores=True))
@@ -87,8 +87,8 @@ def user_feed_put_comment(message):
     for recipient in recipients:
         # Use the count of this user feed bucket for notification
         user_notification_feed = USER_NOTIFICATION_FEED + recipient
-        pipeline.zadd(user_notification_feed, '__'.join([recipe_id, commenter_id, commenter_name, comment]), 
-                      time.time())
+        comment_str = '__'.join([recipe_id, commenter_id, commenter_name, comment])
+        pipeline.zadd(user_notification_feed, {comment_str: time.time()})
         # Send cloud message from here
     pipeline.execute()
     logger.debug('################# I am executed in celery worker ###################')
@@ -123,7 +123,7 @@ def user_feed_add_activity(message):
     for recipient in recipients:
         # Use the count of this user feed bucket for notification
         user_feed = USER_FEED + recipient
-        pipeline.zadd(user_feed, activity_id_name, time.time())
+        pipeline.zadd(user_feed, {activity_id_name: time.time()})
         # Remove old feed if the feed is bigger than MAX_USER_FEED_LENGTH posts
         pipeline.zremrangebyrank(user_feed, 0, -MAX_USER_FEED_LENGTH+1)
     pipeline.execute()

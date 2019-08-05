@@ -28,7 +28,7 @@ class Item(object):
         pipeline = req.redis_conn.pipeline(True)
         if req.params['body']['saved']:
             pipeline.sadd(RECIPE_SAVED+id, req.user_id)
-            pipeline.zadd(USER_SAVED_RECIPES+req.user_id, RECIPE+id, int(time.time()))
+            pipeline.zadd(USER_SAVED_RECIPES+req.user_id, {RECIPE+id: int(time.time())})
             pipeline.hincrby(RECIPE+id, "saves_count", amount=1)
         else:
             pipeline.srem(RECIPE_SAVED+id, req.user_id)

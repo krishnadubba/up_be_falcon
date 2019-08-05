@@ -140,7 +140,7 @@ class Collection(object):
         concise_view_dict = {key:activity_dict[key] for key in ACTIVITY_CONCISE_VIEW_FIELDS}
         req.redis_conn.hmset(ACTIVITY+str(activity.id), concise_view_dict)
         
-        req.redis_conn.zadd(USER_ACTIVITY+req.user_id, str(activity.id), int(time.time()))
+        req.redis_conn.zadd(USER_ACTIVITY+req.user_id, {str(activity.id): int(time.time())})
         logger.debug("Cooking Activity created with id: %s" %str(activity.id))
         resp.status = falcon.HTTP_OK
 

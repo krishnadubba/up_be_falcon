@@ -165,7 +165,7 @@ class Collection(object):
         logger.debug('======================================')
         pipeline = req.redis_conn.pipeline(True)
         pipeline.hmset(RECIPE+str(recipe.id), concise_view_dict)            
-        pipeline.zadd(USER_RECIPES+req.user_id, str(recipe.id), int(time.time()))
+        pipeline.zadd(USER_RECIPES+req.user_id, {str(recipe.id): int(time.time())})
         pipeline.execute()
         logger.info("Recipe created with id: %s" %str(recipe.id))
         resp.status = falcon.HTTP_OK

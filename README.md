@@ -31,7 +31,11 @@ to HTTP requests. The second tab should show the following where it shows the st
 
 Now you are good to go :-)
 
-## API docs: https://dksr.github.io
+```
+$ spectacle -d your_swagger_api.json
+```
+
+## API docs: https://krishnadubba.github.io
 
 To try a POST request, you can do the following via the Terminal:
 
