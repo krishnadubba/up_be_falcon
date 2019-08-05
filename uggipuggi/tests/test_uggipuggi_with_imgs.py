@@ -308,7 +308,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                     res = requests.put(self.rest_api + '/recipes/%s'%recipe_id, data=json.dumps(comment), 
                                        headers=header)
                     self.assertEqual(200, res.status_code)
-                    
+                     
                     res = requests.put(self.rest_api + '/recipes/%s'%recipe_id+'0', data=json.dumps(comment), 
                                        headers=header)
                     self.assertEqual(400, res.status_code)
@@ -330,7 +330,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                     res = requests.put(self.rest_api + '/recipes/%s'%recipe_id, data=json.dumps(comment), 
                                        headers=header)
                     self.assertEqual(400, res.status_code)                    
-   
+  
         print ("===============================================================")
         print ()   
         print ('Starting social network tests: Adding Activity ...')

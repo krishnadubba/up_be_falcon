@@ -159,7 +159,9 @@ class Collection(object):
         concise_view_dict['id'] = str(concise_view_dict['id'])
         if len(concise_view_dict['images']) == 0 and img_url != "":
             # This happens for multipart, as recipe.update is not yet flushed 
-            concise_view_dict['images'] = [img_url]
+            concise_view_dict['images'] = str([img_url])
+        else:
+            concise_view_dict['images'] = str(recipe_dict['images'])
         logger.debug('======================================')
         logger.debug(concise_view_dict)
         logger.debug('======================================')
@@ -190,7 +192,7 @@ class Item(object):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         recipe = self._try_get_recipe(id)
         # Converting MongoEngine recipe document to dictionary
-        logger.debug(type(recipe.to_mongo().to_dict()))
+        logger.debug(recipe.to_mongo().to_dict())
         result_recipe = deepcopy(recipe.to_mongo().to_dict())
         pipeline = req.redis_conn.pipeline(True)
         pipeline.sismember(RECIPE_SAVED+id, req.user_id)
@@ -267,6 +269,9 @@ class Item(object):
 
             # Updating recipe concise view in Redis
             concise_view_dict = {key:recipe_data[key] for key in RECIPE_CONCISE_VIEW_FIELDS if key in recipe_data}
+            # redis does not accept list, so convert to strings
+            if 'images' in concise_view_dict:
+                concise_view_dict['images'] = str(recipe_data['images'])
             if len(concise_view_dict) > 0:
                 req.redis_conn.hmset(RECIPE+id, concise_view_dict)
 
