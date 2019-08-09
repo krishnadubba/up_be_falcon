@@ -13,6 +13,7 @@ services:
     networks: [proxy]
     ports: ['8000:8000']
     volumes: ['~/.config/gcloud:/.config/gcloud', '~/images:/images']
+    
   celery:
     command: celery worker -l debug -A uggipuggi.celery.celery -n worker.high -Q high
     depends_on: [redis, mongo]
@@ -22,6 +23,7 @@ services:
     networks: [proxy]
     ports: ['8002:8000']
     volumes: ['~/images:/images']
+    
   kafka:
     depends_on: [zookeeper]
     environment: {KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092', KAFKA_BROKER_ID: 1,
@@ -30,6 +32,7 @@ services:
     image: confluentinc/cp-kafka:latest
     networks: [proxy]
     ports: ['9092:9092']
+    
   kafka_consumer:
     command: python3 uggipuggi/messaging/subscriber/recipe_kafka_collection_post_subscriber.py
     depends_on: [kafka, redis, zookeeper]
@@ -37,18 +40,21 @@ services:
     image: kr:latest
     networks: [proxy]
     ports: ['8001:8000']
+    
   kafka_subscriber_activity:
     command: python3 uggipuggi/messaging/subscriber/activity_kafka_collection_post_subscriber.py
     depends_on: [kafka, redis, zookeeper]
     environment: {KAFKA_BOOTSTRAP_SERVERS: 'kafka:9092'}
     image: kr:latest
     networks: [proxy]
-    ports: ['8003:8000']    
+    ports: ['8003:8000']
+    
   mongo:
     environment: {MONGO_DATA_DIR: /data/db, MONGO_LOG_DIR: /dev/null}
     image: mongo:latest
     networks: [proxy]
     ports: ['27017:27017']
+    
   proxy:
     deploy:
       mode: global
@@ -58,10 +64,12 @@ services:
     image: vfarcic/docker-flow-proxy:${TAG:-latest}
     networks: [proxy]
     ports: ['80:80']
+    
   redis:
     image: redis:latest
     networks: [proxy]
     ports: ['6379:6379']
+    
   swarm-listener:
     deploy:
       mode: global
@@ -72,6 +80,7 @@ services:
     image: vfarcic/docker-flow-swarm-listener
     networks: [proxy]
     volumes: ['/var/run/docker.sock:/var/run/docker.sock']
+    
   visualizer:
     deploy:
       labels: [com.df.notify=true, com.df.distribute=true, com.df.servicePath=/visualizer,
@@ -84,8 +93,86 @@ services:
     networks: [proxy]
     stop_grace_period: 1m30s
     volumes: ['/var/run/docker.sock:/var/run/docker.sock']
+    
   zookeeper:
     environment: {ZOOKEEPER_CLIENT_PORT: 2181, ZOOKEEPER_SERVER_ID: 1, ZOOKEEPER_TICK_TIME: 2000}
     image: confluentinc/cp-zookeeper:latest
     networks: [proxy]
     ports: ['2181:2181']
+
+  rabbitmq:
+    container_name: uggipuggi-rabbitmq
+    image: deadtrickster/rabbitmq_prometheus
+    ports:
+      - ['5673:5672']
+      - ['15673:15672']
+      
+  statsd-exporter:
+    image: prom/statsd-exporter:v0.12.2
+    command: "-statsd.mapping-config=/tmp/statsd_mapping.conf"
+    ports:
+      - ['9102:9102']
+      - ['9125:9125/udp']
+    volumes:
+      - ['./metrics/statsd_mapping.conf:/tmp/statsd_mapping.conf"
+
+  prometheus:
+    image: prom/prometheus
+    command: "--config.file=/tmp/prometheus.yml --web.listen-address '0.0.0.0:9090'"
+    ports:
+      - ['9090:9090']
+    volumes:
+      - ['./metrics/prometheus.yml:/tmp/prometheus.yml']
+
+  statsd:
+    image: dockerana/statsd
+    ports:
+      - ['8125:8125/udp']
+      - ['8126:8126']
+    volumes:
+      - ['./metrics/statsd_config.js:/src/statsd/config.js']
+
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - ['./grafana/grafana.ini:/etc/grafana/grafana.ini']
+    ports:
+      - ['3900:3000']
+      
+  kibana:
+    image: kibana
+    links:
+      - "elasticsearch"
+    ports:
+      - ['5601:5601']
+      
+  elasticsearch:
+    image: elasticsearch
+    expose:
+      - 9200
+    ports:
+      - ['9200:9200']
+      
+  fluentd:
+    build: ./fluentd
+    volumes:
+      - ['./fluentd/conf:/fluentd/etc']
+    links:
+      - "elasticsearch"
+    ports:
+      - ['24224:24224']
+      - ['24224:24224/udp']
+      
+  jaeger:    
+    container_name: jaeger
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - ['5775:5775/udp']
+      - ['6831:6831/udp']
+      - ['6832:6832/udp']
+      - ['5778:5778']
+      - ['16686:16686']
+      - ['14268:14268']
+      - ['9411:9411']
+    environment:
+      COLLECTOR_ZIPKIN_HTTP_PORT: "9411"      
