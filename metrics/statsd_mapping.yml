@@ -1,0 +1,30 @@
+mappings:
+- match: up.controllers.recipe.get_recipes_collection_get
+  name: "get_recipes_collection_get"
+  labels:
+    app: "controllers.recipe"
+    job: "up"
+    
+- match: up.controllers.recipe.add_recipe_post
+  name: "add_recipe_post"
+  labels:
+    app: "controllers.recipe"
+    job: "up"
+    
+- match: up.controllers.recipe.get_recipe_get
+  name: "get_recipe_get"
+  labels:
+    app: "controllers.recipe"
+    job: "up"
+    
+- match: up.controllers.recipe.delete_recipe_delete
+  name: "delete_recipe_delete"
+  labels:
+    app: "controllers.recipe"
+    job: "up"
+    
+- match: up.controllers.recipe.update_recipe_put
+  name: "update_recipe_put"
+  labels:
+    app: "controllers.recipe"
+    job: "up"       

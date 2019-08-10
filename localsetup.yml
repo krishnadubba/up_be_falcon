@@ -1,4 +1,4 @@
-version: '3.1'
+version: '3.2'
 networks:
   proxy: {external: true}
 services:
@@ -89,7 +89,7 @@ services:
         constraints: [node.role == manager]
       replicas: 1
     environment: [CTX_ROOT=/visualizer]
-    image: dockersamples/visualizer:stable
+    image: dockersamples/visualizer:latest
     networks: [proxy]
     stop_grace_period: 1m30s
     volumes: ['/var/run/docker.sock:/var/run/docker.sock']
@@ -101,78 +101,77 @@ services:
     ports: ['2181:2181']
 
   rabbitmq:
-    container_name: uggipuggi-rabbitmq
     image: deadtrickster/rabbitmq_prometheus
     ports:
-      - ['5673:5672']
-      - ['15673:15672']
+      - "5673:5672"
+      - "15673:15672"
       
   statsd-exporter:
-    image: prom/statsd-exporter:v0.12.2
-    command: "-statsd.mapping-config=/tmp/statsd_mapping.conf"
+    image: prom/statsd-exporter:latest
+    command: "--statsd.mapping-config=/tmp/statsd_mapping.yml"
     ports:
-      - ['9102:9102']
-      - ['9125:9125/udp']
+      - "9102:9102"
+      - "9125:9125/udp"
     volumes:
-      - ['./metrics/statsd_mapping.conf:/tmp/statsd_mapping.conf"
+      - "./metrics/statsd_mapping.yml:/tmp/statsd_mapping.yml"
 
   prometheus:
     image: prom/prometheus
     command: "--config.file=/tmp/prometheus.yml --web.listen-address '0.0.0.0:9090'"
     ports:
-      - ['9090:9090']
+      - "9090:9090"
     volumes:
-      - ['./metrics/prometheus.yml:/tmp/prometheus.yml']
+      - "./metrics/prometheus.yml:/tmp/prometheus.yml"
 
   statsd:
     image: dockerana/statsd
     ports:
-      - ['8125:8125/udp']
-      - ['8126:8126']
+      - "8125:8125/udp"
+      - "8126:8126"
     volumes:
-      - ['./metrics/statsd_config.js:/src/statsd/config.js']
+      - "./metrics/statsd_config.js:/src/statsd/config.js"
 
-  grafana:
-    image: grafana/grafana
-    volumes:
-      - ['./grafana/grafana.ini:/etc/grafana/grafana.ini']
-    ports:
-      - ['3900:3000']
-      
   kibana:
     image: kibana
     links:
       - "elasticsearch"
     ports:
-      - ['5601:5601']
+      - "5601:5601"      
+
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - "./grafana/grafana.ini:/etc/grafana/grafana.ini"
+    ports:
+      - "3900:3000"
       
   elasticsearch:
     image: elasticsearch
     expose:
       - 9200
     ports:
-      - ['9200:9200']
+      - "9200:9200"
       
   fluentd:
-    build: ./fluentd
+    image: up_fluentd:latest
     volumes:
-      - ['./fluentd/conf:/fluentd/etc']
+      - "./fluentd/conf:/fluentd/etc"
     links:
       - "elasticsearch"
     ports:
-      - ['24224:24224']
-      - ['24224:24224/udp']
+      - "24224:24224"
+      - "24224:24224/udp"
       
   jaeger:    
     container_name: jaeger
     image: jaegertracing/all-in-one:latest
     ports:
-      - ['5775:5775/udp']
-      - ['6831:6831/udp']
-      - ['6832:6832/udp']
-      - ['5778:5778']
-      - ['16686:16686']
-      - ['14268:14268']
-      - ['9411:9411']
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "14268:14268"
+      - "9411:9411"
     environment:
       COLLECTOR_ZIPKIN_HTTP_PORT: "9411"      

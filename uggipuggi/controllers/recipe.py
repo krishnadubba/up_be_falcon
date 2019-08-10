@@ -18,6 +18,7 @@ from uggipuggi.models import ExposeLevel
 from uggipuggi.controllers.image_store import ImageStore
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.controllers.schema.recipe import RecipeSchema, RecipeCreateSchema
+from uggipuggi.helpers.logs_metrics import init_logger, init_statsd, init_tracer
 from uggipuggi.models.recipe import Comment, Recipe 
 from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.recipe_kafka_producers import recipe_kafka_collection_post_producer,\
@@ -37,7 +38,9 @@ def deserialize_update(req, res, resource, params):
 
 # -------- END functions
 
-logger = logging.getLogger(__name__)
+#logger = logging.getLogger(__name__)
+logger = init_logger()
+statsd = init_statsd('up.controllers.recipe', 'statsd')
 
 @falcon.before(supply_redis_conn)    
 @falcon.after(serialize)
@@ -53,6 +56,7 @@ class Collection(object):
             self.gcs_bucket.create()
 
     @falcon.before(deserialize)
+    @statsd.timer('get_recipes_collection_get')
     def on_get(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         query_params = req.params.get('query')
@@ -108,6 +112,7 @@ class Collection(object):
     #@falcon.before(deserialize_create)
     @falcon.before(deserialize)
     @falcon.after(recipe_kafka_collection_post_producer)
+    @statsd.timer('add_recipe_post')
     def on_post(self, req, resp):
         # Add recipe
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
@@ -188,6 +193,7 @@ class Item(object):
             raise HTTPBadRequest(title='Invalid Value', description='Invalid recipe ID provided. {}'.format(e))
 
     @falcon.before(deserialize)
+    @statsd.timer('get_recipe_get')
     def on_get(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         recipe = self._try_get_recipe(id)
@@ -204,6 +210,7 @@ class Item(object):
         resp.status = falcon.HTTP_OK
         
     @falcon.before(deserialize)
+    @statsd.timer('delete_recipe_delete')
     def on_delete(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Deleting recipe data in database ...")
@@ -217,6 +224,7 @@ class Item(object):
     #@falcon.before(deserialize_update)
     @falcon.before(deserialize)
     @falcon.after(recipe_kafka_item_put_producer)
+    @statsd.timer('update_recipe_put')
     def on_put(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Finding recipe in database ... %s" %repr(id))
