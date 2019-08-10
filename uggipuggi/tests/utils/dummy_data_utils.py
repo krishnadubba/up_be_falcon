@@ -2,9 +2,7 @@ import os, sys
 import builtins
 
 ROOT_DIR = os.path.dirname(sys.path[0])
-sys.path.append(ROOT_DIR)
 
-from conf import get_config
 import traceback
 import logging
 import jwt
@@ -19,7 +17,7 @@ from random import randint
 from bson import json_util
 from datetime import datetime, timedelta
 from passlib.hash import bcrypt as crypt
-from uggipuggi.tests.utils.dummy_data import feeds, materials, users, recipes, groups, contacts, following
+from utils.dummy_data import feeds, materials, users, recipes, groups, contacts, following
 
 def curl_request(url, method, headers, payloads=None):
     # construct the curl command from request

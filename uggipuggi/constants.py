@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
-
+import os
 import sys
 
+try:
+    SERVER_RUN_MODE = os.environ['RUN_MODE']
+except KeyError:
+    SERVER_RUN_MODE = 'DEBUG'
+    
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 TWEET_CHAR_LENGTH = 1000

@@ -3,12 +3,12 @@ import os
 import re
 import uuid
 import falcon
-import logging
 import mimetypes
 
 from uggipuggi.constants import IMG_STORE_PATH
+from uggipuggi.helpers.logs_metrics import init_logger
 
-logger = logging.getLogger(__name__)
+logger = init_logger()
 
 mimetypes.init()
 ALLOWED_IMAGE_TYPES = (

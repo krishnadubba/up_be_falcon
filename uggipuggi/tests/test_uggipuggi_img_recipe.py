@@ -12,7 +12,7 @@ from falcon import testing
 
 sys.path.append(os.path.dirname(os.path.dirname(sys.path[0])))
 
-from uggipuggi.tests import get_test_uggipuggi
+#from uggipuggi.tests import get_test_uggipuggi
 from uggipuggi.tests.restapi_utils import curl_request
 from uggipuggi.tests.utils.dummy_data import users_gcs_base, food_gcs_base, users as dummy_users,\
                                              groups as dummy_groups, contacts as dummy_contacts,\

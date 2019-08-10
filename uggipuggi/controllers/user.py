@@ -6,7 +6,6 @@ import six
 import sys
 import time
 import falcon
-import logging
 import requests
 import mongoengine
 from google.cloud import storage as gc_storage
@@ -17,6 +16,7 @@ from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, Validation
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.controllers.image_store import ImageStore
 from uggipuggi.models.user import User, Role
+from uggipuggi.helpers.logs_metrics import init_logger, init_statsd, init_tracer
 from uggipuggi.libs.error import HTTPBadRequest, HTTPUnauthorized, HTTPInternalServerError
 from uggipuggi.messaging.user_kafka_producers import user_kafka_item_get_producer,\
                                                      user_kafka_item_put_producer
@@ -27,7 +27,7 @@ from uggipuggi.constants import USER, GCS_ALLOWED_EXTENSION, GCS_USER_BUCKET, IM
 # -------- BEFORE_HOOK functions
 # -------- END functions
 
-logger = logging.getLogger(__name__)
+logger = init_logger()
 
 @falcon.before(supply_redis_conn)
 class ID(object):

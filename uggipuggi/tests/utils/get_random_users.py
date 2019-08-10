@@ -6,8 +6,7 @@ import requests
 import random
 
 ROOT_DIR = os.path.dirname(os.path.dirname(sys.path[0]))
-print (ROOT_DIR)
-sys.path.append(ROOT_DIR)
+
 
 def get_n_random_users(n):
     random_users_url = 'https://randomuser.me/api/?results=%d' %n

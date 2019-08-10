@@ -12,13 +12,14 @@ from uggipuggi.libs.error import HTTPBadRequest, HTTPInternalServerError
 from uggipuggi.constants import GROUP, GROUP_MEMBERS, USER_GROUPS, GCS_GROUP_BUCKET, \
                                 GAE_IMG_SERVER, IMG_STORE_PATH
 from uggipuggi.controllers.image_store import ImageStore
+from uggipuggi.helpers.logs_metrics import init_logger
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.messaging.group_kafka_producers import group_kafka_item_put_producer, \
                    group_kafka_item_post_producer, group_kafka_item_delete_producer, \
           group_kafka_collection_post_producer, group_kafka_collection_delete_producer 
 
 
-logger = logging.getLogger(__name__)
+logger = init_logger()
 
 @falcon.before(supply_redis_conn)
 @falcon.after(serialize)

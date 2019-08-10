@@ -7,12 +7,13 @@ import logging
 from bson import json_util, ObjectId
 from uggipuggi.constants import CONTACTS
 from uggipuggi.services.user import get_user
+from uggipuggi.helpers.logs_metrics import init_logger
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.messaging.contacts_kafka_producers import contacts_kafka_item_post_producer,\
                                                          contacts_kafka_item_put_producer
 
 
-logger = logging.getLogger(__name__)
+logger = init_logger()
 
 @falcon.before(supply_redis_conn)
 @falcon.after(serialize)

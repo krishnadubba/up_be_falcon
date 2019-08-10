@@ -162,6 +162,9 @@ services:
       - "24224:24224"
       - "24224:24224/udp"
       
+  statsd_agent:
+    image: up_statsd_agent:latest
+      
   jaeger:    
     container_name: jaeger
     image: jaegertracing/all-in-one:latest

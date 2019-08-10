@@ -9,16 +9,14 @@ import unittest
 import requests
 import subprocess
 from falcon import testing
-
-sys.path.append(os.path.dirname(os.path.dirname(sys.path[0])))
-
-from uggipuggi.tests import get_test_uggipuggi
-from uggipuggi.tests.utils.get_random_users import get_n_uggipuggi_random_users
-from uggipuggi.tests.utils.dummy_data import users_gcs_base, food_gcs_base, users as dummy_users,\
-                                             groups as dummy_groups, contacts as dummy_contacts,\
-                                             following as dummy_following, recipes as dummy_recipes, feeds as dummy_feeds
-from uggipuggi.tests.utils.dummy_data_utils import get_dummy_email, get_dummy_password,\
-                                                   get_dummy_phone, get_dummy_display_name     
+   
+from utils.get_random_users import get_n_uggipuggi_random_users
+from utils.dummy_data import users_gcs_base, food_gcs_base, users as dummy_users,\
+                             groups as dummy_groups, contacts as dummy_contacts,\
+                             following as dummy_following, recipes as dummy_recipes,\
+                             feeds as dummy_feeds
+from utils.dummy_data_utils import get_dummy_email, get_dummy_password,\
+                                   get_dummy_phone, get_dummy_display_name     
 
 DEBUG_OTP = '999999'
 class TestUggiPuggiSocialNetwork(testing.TestBase):

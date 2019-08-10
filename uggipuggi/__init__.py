@@ -19,8 +19,10 @@ from uggipuggi.controllers import recipe, tag, status, rating, user, user_feed, 
                                   group_recipes, recipe_saved, recipe_liked, activity_liked 
 from uggipuggi.services.user import get_user  
 from uggipuggi.middlewares import auth_jwt
+from uggipuggi.helpers.logs_metrics import init_logger, init_statsd, init_tracer
 from uggipuggi.constants import DATETIME_FORMAT, AUTH_SHARED_SECRET_ENV, \
-                                MAX_TOKEN_AGE, TOKEN_EXPIRATION_SECS, VERIFY_PHONE_TOKEN_EXPIRATION_SECS
+                                MAX_TOKEN_AGE, TOKEN_EXPIRATION_SECS,\
+                                VERIFY_PHONE_TOKEN_EXPIRATION_SECS, SERVER_RUN_MODE
 
        
 class UggiPuggi(object):
@@ -50,7 +52,10 @@ class UggiPuggi(object):
                                           MultipartMiddleware(),
                                           self.auth_middleware])
 
-        self.logger = self._set_logging()
+        #if SERVER_RUN_MODE == 'DEBUG':
+            #self.logger = self._set_logging()
+        #else:
+        self.logger = init_logger() 
         self.logger.info("")
         self.logger.info("===========")
         self.logger.info(time.strftime("%c"))
@@ -165,7 +170,7 @@ class UggiPuggi(object):
         
 class CorsMiddleware():
     def __init__(self,config):
-        self.logger = logging.getLogger(__name__)
+        self.logger = init_logger()
         self.allowed_origins = config['cors']['allowed_origins'].split(',')
         self.allowed_headers = config['cors']['allowed_headers']
         self.allowed_methods = config['cors']['allowed_methods']

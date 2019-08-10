@@ -4,19 +4,23 @@ from jaeger_client import Config
 from logstash_formatter import LogstashFormatterV1
 from statsd import StatsClient
 
+from uggipuggi.constants import SERVER_RUN_MODE
 
 def init_statsd(prefix=None, host=None, port=8125):
     statsd = StatsClient(host, port, prefix=prefix)
     return statsd
 
 
-def init_logger():
+def init_logger(log_level=logging.INFO):
     logger = logging.getLogger()
     handler = logging.StreamHandler()
     formatter = LogstashFormatterV1()
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-
+    if SERVER_RUN_MODE == 'DEBUG':
+        logger.setLevel(logging.DEBUG)
+    else:     
+        logger.setLevel(log_level)
     return logger
 
 
