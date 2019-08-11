@@ -12,7 +12,7 @@ from uggipuggi.libs.error import HTTPBadRequest, HTTPInternalServerError
 from uggipuggi.constants import GROUP, GROUP_MEMBERS, USER_GROUPS, GCS_GROUP_BUCKET, \
                                 GAE_IMG_SERVER, IMG_STORE_PATH
 from uggipuggi.controllers.image_store import ImageStore
-from uggipuggi.helpers.logs_metrics import init_logger
+from uggipuggi.helpers.logs_metrics import init_logger, init_statsd
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.messaging.group_kafka_producers import group_kafka_item_put_producer, \
                    group_kafka_item_post_producer, group_kafka_item_delete_producer, \
@@ -20,6 +20,7 @@ from uggipuggi.messaging.group_kafka_producers import group_kafka_item_put_produ
 
 
 logger = init_logger()
+statsd = init_statsd('up.controllers.group')
 
 @falcon.before(supply_redis_conn)
 @falcon.after(serialize)
@@ -35,6 +36,7 @@ class Collection(object):
             self.gcs_bucket.create()
 
     @falcon.before(deserialize)
+    @statsd.timer('get_groups_get')
     def on_get(self, req, resp):
         # Get all groups of user
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
@@ -45,6 +47,7 @@ class Collection(object):
     #@falcon.before(deserialize_create)
     @falcon.before(deserialize)
     @falcon.after(group_kafka_collection_post_producer)
+    @statsd.timer('create_groups_post')
     def on_post(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         # Get new group ID
@@ -94,6 +97,7 @@ class Collection(object):
         
     @falcon.before(deserialize)
     @falcon.after(group_kafka_collection_delete_producer)
+    @statsd.timer('delete_groups_delete')
     def on_delete(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Deleting group data in database ...")
@@ -136,6 +140,7 @@ class Item(object):
 
     @falcon.before(deserialize)
     #@falcon.after(group_kafka_item_get_producer)
+    @statsd.timer('get_group_info_get')
     def on_get(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         group_id_name = GROUP + id
@@ -149,7 +154,8 @@ class Item(object):
         resp.status = falcon.HTTP_OK
         
     @falcon.before(deserialize)
-    @falcon.after(group_kafka_item_delete_producer)    
+    @falcon.after(group_kafka_item_delete_producer)
+    @statsd.timer('delete_group_member_get')
     def on_delete(self, req, resp, id):
         # Delete a member of a group. For deleting group use collection 
         # delete request with group_id in the body
@@ -177,6 +183,7 @@ class Item(object):
     #@falcon.before(deserialize_update)
     @falcon.before(deserialize)
     @falcon.after(group_kafka_item_put_producer)
+    @statsd.timer('update_group_put')
     def on_put(self, req, resp, id):
         # Update group profile like pic
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
@@ -208,6 +215,7 @@ class Item(object):
 
     @falcon.before(deserialize)
     @falcon.after(group_kafka_item_post_producer)
+    @statsd.timer('add_group_member_post')
     def on_post(self, req, resp, id):
         # Add a member to group
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])

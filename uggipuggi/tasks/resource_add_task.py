@@ -11,6 +11,7 @@ from uggipuggi.services.activity import get_activity
 from uggipuggi.models.recipe import Comment, Recipe
 from uggipuggi.models.cooking_activity import CookingActivity
 from uggipuggi.controllers.hooks import get_redis_conn
+from uggipuggi.helpers.logs_metrics import init_logger
  
 from uggipuggi.services.db_service import get_mongodb_connection
 from uggipuggi.controllers.utils.gcloud_utils import upload_image_to_gcs

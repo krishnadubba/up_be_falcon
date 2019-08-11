@@ -40,7 +40,7 @@ def deserialize_update(req, res, resource, params):
 
 #logger = logging.getLogger(__name__)
 logger = init_logger()
-statsd = init_statsd('up.controllers.recipe', 'statsd')
+statsd = init_statsd('up.controllers.recipe')
 
 @falcon.before(supply_redis_conn)    
 @falcon.after(serialize)

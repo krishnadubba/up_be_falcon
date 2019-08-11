@@ -28,6 +28,7 @@ from uggipuggi.constants import USER, GCS_ALLOWED_EXTENSION, GCS_USER_BUCKET, IM
 # -------- END functions
 
 logger = init_logger()
+statsd = init_statsd('up.controllers.user')
 
 @falcon.before(supply_redis_conn)
 class ID(object):
@@ -50,6 +51,7 @@ class Collection(object):
 
     @falcon.before(deserialize)
     @falcon.after(serialize)
+    @statsd.timer('get_users_collection_get')
     def on_get(self, req, resp):
         query_params = req.params.get('query')
 
@@ -97,6 +99,7 @@ class Item(object):
     @falcon.before(deserialize)
     @falcon.before(supply_redis_conn)
     @falcon.after(user_kafka_item_put_producer)
+    @statsd.timer('update_user_put')
     def on_put(self, req, resp, id):
         if req.user_id != id and not User.objects.get(id=req.user_id).role_satisfy(Role.ADMIN):
             raise HTTPUnauthorized(title='Unauthorized Request',
@@ -150,7 +153,8 @@ class Item(object):
         
         resp.status = falcon.HTTP_OK
         
-    @falcon.before(deserialize)        
+    @falcon.before(deserialize)
+    @statsd.timer('delete_user_delete')
     def on_delete(self, req, resp, id):
         logger.debug("Checking if user is authorized to request profile delete ...")
         # ensure requested user profile delete is request from user him/herself or admin        
@@ -168,7 +172,8 @@ class Item(object):
         
     @falcon.before(deserialize)    
     @falcon.before(supply_redis_conn)    
-    @falcon.after(serialize)    
+    @falcon.after(serialize)
+    @statsd.timer('get_user_get')
     def on_get(self, req, resp, id):
         # ensure requested user full profile request is from user him/herself or admin                
         if req.user_id != id and not User.objects.get(id=req.user_id).role_satisfy(Role.ADMIN):
