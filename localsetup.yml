@@ -161,12 +161,14 @@ services:
       - "24224:24224/udp"
     networks: [proxy]  
       
-  statsd_agent:
-    image: up_statsd_agent:latest
+  statsd:
+    image: dockerana/statsd
     ports:
       - "8125:8125/udp"
       - "8126:8126"
-    networks: [proxy]  
+    networks: [proxy]
+    volumes:
+      - "./metrics/statsd_config.js:/src/statsd/config.js"
       
   jaeger:    
     container_name: jaeger
