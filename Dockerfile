@@ -1,4 +1,4 @@
-FROM ubuntu:xenial
+FROM ubuntu:bionic
 MAINTAINER Krishna Dubba <krishna.dubba@gmail.com>
 
 RUN sed -i 's/archive.ubuntu.com/mirror.us.leaseweb.net/' /etc/apt/sources.list \
@@ -24,8 +24,8 @@ RUN sed -i 's/archive.ubuntu.com/mirror.us.leaseweb.net/' /etc/apt/sources.list 
         && apt-get autoremove -y \ 
         && apt-get clean
         
-RUN wget -qO - http://packages.confluent.io/deb/3.3/archive.key | apt-key add -
-RUN add-apt-repository "deb [arch=amd64] http://packages.confluent.io/deb/3.3 stable main"
+RUN wget -qO - http://packages.confluent.io/deb/5.3/archive.key | apt-key add -
+RUN add-apt-repository "deb [arch=amd64] http://packages.confluent.io/deb/5.3 stable main"
 RUN apt-get update
 RUN apt-get install -y librdkafka1 librdkafka-dev
 

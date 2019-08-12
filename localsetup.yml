@@ -128,8 +128,6 @@ services:
 
   kibana:
     image: kibana
-    links:
-      - "elasticsearch"
     networks: [proxy]  
     ports:
       - "5601:5601"      
@@ -144,8 +142,6 @@ services:
       
   elasticsearch:
     image: elasticsearch
-    expose:
-      - 9200
     ports:
       - "9200:9200"
     networks: [proxy]  
@@ -154,8 +150,6 @@ services:
     image: up_fluentd:latest
     volumes:
       - "./fluentd/conf:/fluentd/etc"
-    links:
-      - "elasticsearch"
     ports:
       - "24224:24224"
       - "24224:24224/udp"
@@ -171,7 +165,6 @@ services:
       - "./metrics/statsd_config.js:/src/statsd/config.js"
       
   jaeger:    
-    container_name: jaeger
     image: jaegertracing/all-in-one:latest
     ports:
       - "5775:5775/udp"
