@@ -4,7 +4,7 @@ networks:
 services:
   backend:
     command: gunicorn -b 0.0.0.0:8000 "manage:uggipuggi_app.app"
-    depends_on: [redis, mongo, celery, kafka, zookeeper, kafka_consumer, kafka_subscriber_activity]
+    depends_on: [fluentd, statsd, redis, mongo, celery, kafka, zookeeper, kafka_consumer, kafka_subscriber_activity]
     environment: {GOOGLE_APPLICATION_CREDENTIALS: '/.config/gcloud/uggi_puggi-a962c9256b2a.json'}
     deploy:
       labels: [com.df.notify=true, com.df.distribute=true, com.df.servicePath=/,
@@ -16,18 +16,25 @@ services:
     logging:
       driver: "fluentd"
       options:
+        fluentd-async-connect: "true"
         fluentd-address: fluentd:24224
         tag: uggi_backend
         
   celery:
-    command: celery worker -l debug -A uggipuggi.celery.celery -n worker.high -Q high
-    depends_on: [redis, mongo]
+    command: celery worker -l debug -A uggipuggi.celery.celery -n worker.high -Q high 
+    depends_on: [fluentd, redis, mongo]
     environment: {CELERY_BROKER_URL: 'redis://redis:6379/0', CELERY_RESULT_BACKEND: 'redis://redis:6379/0',
       KAFKA_BOOTSTRAP_SERVERS: 'kafka:9092'}
     image: kr:latest
     networks: [proxy]
     ports: ['8002:8000']
-    volumes: ['~/images:/images']
+    volumes: ['~/images:/images', './logs:/fluentd/log']
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-async-connect: "true"
+        fluentd-address: fluentd:24224
+        tag: celery
     
   kafka:
     depends_on: [zookeeper]
@@ -107,6 +114,7 @@ services:
 
   rabbitmq:
     image: deadtrickster/rabbitmq_prometheus
+    depends_on: [prometheus]
     ports:
       - "5673:5672"
       - "15673:15672"
@@ -132,7 +140,7 @@ services:
       - "./metrics/prometheus.yml:/tmp/prometheus.yml"
 
   kibana:
-    image: kibana:7.3.0
+    image: docker.elastic.co/kibana/kibana-oss:6.3.0
     depends_on: [elasticsearch]
     networks: [proxy]  
     ports:
@@ -140,6 +148,7 @@ services:
 
   grafana:
     image: grafana/grafana
+    depends_on: [prometheus]
     volumes:
       - "./grafana/grafana.ini:/etc/grafana/grafana.ini"
     ports:
@@ -147,21 +156,29 @@ services:
     networks: [proxy]   
       
   elasticsearch:
-    image: elasticsearch:7.3.0
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.3.0
     ports:
       - "9200:9200"
     networks: [proxy]
+    volumes:
+      - ./elasticsearch:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1    
     environment:
       - 'discovery.type=single-node'
       - 'bootstrap.memory_lock=true'
       - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
       
   fluentd:
-    image: up_fluentd:latest
+    image: qqbuby/fluentd:v1.2-es
+    depends_on: [elasticsearch]
     volumes:
-      - "./fluentd/conf:/fluentd/etc"
+      - ./fluentd/conf:/fluentd/etc
     ports:
       - "24224:24224"
+      - "24220:24220"
       - "24224:24224/udp"
     networks: [proxy]  
       
