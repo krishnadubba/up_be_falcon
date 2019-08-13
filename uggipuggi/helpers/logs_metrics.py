@@ -1,6 +1,5 @@
 import logging
-import graypy
-
+import logstash
 from jaeger_client import Config
 from statsd import StatsClient
 
@@ -14,8 +13,7 @@ def init_statsd(prefix=None, host='statsd', port=8125):
 
 def init_logger(log_level=logging.INFO):
     logger = logging.getLogger()
-    gray_handler = graypy.GELFUDPHandler('graylog', 12201)
-    logger.addHandler(gray_handler)
+    logger.addHandler(logstash.TCPLogstashHandler('logstash', 5000, version=1))
     if SERVER_RUN_MODE == 'DEBUG':
         logger.setLevel(logging.DEBUG)
     else:

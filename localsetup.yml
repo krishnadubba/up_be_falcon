@@ -4,7 +4,7 @@ networks:
 services:       
   backend:
     command: gunicorn -b 0.0.0.0:8000 "manage:uggipuggi_app.app"
-    depends_on: [graylog, statsd, redis, mongo, celery, kafka, zookeeper, kafka_consumer, kafka_subscriber_activity]
+    depends_on: [logstash, statsd, redis, mongo, celery, kafka, zookeeper, kafka_consumer, kafka_subscriber_activity]
     environment: {GOOGLE_APPLICATION_CREDENTIALS: '/.config/gcloud/uggi_puggi-a962c9256b2a.json'}
     deploy:
       labels: [com.df.notify=true, com.df.distribute=true, com.df.servicePath=/,
@@ -135,15 +135,26 @@ services:
     ports:
       - "3900:3000"
     networks: [proxy]   
+
+  kibana:
+    image: up_kibana:latest
+    volumes:
+      - ./kibana/config/:/usr/share/kibana/config:ro
+    ports:
+      - "5601:5601"
+    networks: [proxy]
+    depends_on:
+      - elasticsearch
       
+  # localhost:9200/_cat/indices?v
   elasticsearch:
-    # localhost:9200/_cat/indices?v
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.3.0
+    image: up_es:latest
+    volumes:
+      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
     ports:
       - "9200:9200"
+      - "9300:9300"
     networks: [proxy]
-    volumes:
-      - ./elasticsearch_data:/usr/share/elasticsearch/data
     ulimits:
       memlock:
         soft: -1
@@ -153,24 +164,18 @@ services:
       - 'bootstrap.memory_lock=true'
       - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
 
-  graylog:
-    image: graylog/graylog:3.0
-    environment:
-      # CHANGE ME (must be at least 16 characters)!
-      - GRAYLOG_PASSWORD_SECRET=somepasswordpepper
-      # Password: admin
-      - GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
-    depends_on: [mongo, elasticsearch]
-    networks: [proxy]
+  logstash:
+    image: up_ls:latest
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
     ports:
-      # Graylog web interface and REST API
-      - 9000:9000
-      # Syslog TCP
-      - 1514:1514
-      # Syslog UDP
-      - 1514:1514/udp
-      # GELF UDP
-      - 12201:12201/udp
+      - "5000:5000"
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    networks: [proxy]
+    depends_on:
+      - elasticsearch
       
   statsd:
     image: dockerana/statsd

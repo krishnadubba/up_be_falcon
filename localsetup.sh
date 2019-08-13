@@ -3,7 +3,9 @@ docker swarm init --advertise-addr 192.168.1.69
 docker network create -d overlay proxy
 ./build/generate_build_info.sh
 docker build -t kr .
-docker build -t up_fluentd ./fluentd
+docker build -t up_ls ./logstash
+docker build -t up_es ./elasticsearch
+docker build -t up_kibana ./kibana
 docker build -t up_statsd_agent ./statsd_agent
 docker stack deploy -c localsetup.yml uggi
 DOCKER_GWBRIDGE_IP=`ifconfig docker_gwbridge | awk '/inet / {gsub("", "", $2); print $2}'`
