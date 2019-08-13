@@ -1,10 +1,10 @@
 version: '3.2'
 networks:
   proxy: {external: true}
-services:
+services:       
   backend:
     command: gunicorn -b 0.0.0.0:8000 "manage:uggipuggi_app.app"
-    depends_on: [fluentd, statsd, redis, mongo, celery, kafka, zookeeper, kafka_consumer, kafka_subscriber_activity]
+    depends_on: [graylog, statsd, redis, mongo, celery, kafka, zookeeper, kafka_consumer, kafka_subscriber_activity]
     environment: {GOOGLE_APPLICATION_CREDENTIALS: '/.config/gcloud/uggi_puggi-a962c9256b2a.json'}
     deploy:
       labels: [com.df.notify=true, com.df.distribute=true, com.df.servicePath=/,
@@ -13,28 +13,16 @@ services:
     networks: [proxy]
     ports: ['8000:8000']
     volumes: ['~/.config/gcloud:/.config/gcloud', '~/images:/images']
-    logging:
-      driver: "fluentd"
-      options:
-        fluentd-async-connect: "true"
-        fluentd-address: fluentd:24224
-        tag: uggi_backend
         
   celery:
     command: celery worker -l debug -A uggipuggi.celery.celery -n worker.high -Q high 
-    depends_on: [fluentd, redis, mongo]
+    depends_on: [redis, mongo]
     environment: {CELERY_BROKER_URL: 'redis://redis:6379/0', CELERY_RESULT_BACKEND: 'redis://redis:6379/0',
       KAFKA_BOOTSTRAP_SERVERS: 'kafka:9092'}
     image: kr:latest
     networks: [proxy]
     ports: ['8002:8000']
-    volumes: ['~/images:/images', './logs:/fluentd/log']
-    logging:
-      driver: "fluentd"
-      options:
-        fluentd-async-connect: "true"
-        fluentd-address: fluentd:24224
-        tag: celery
+    volumes: ['~/images:/images']
     
   kafka:
     depends_on: [zookeeper]
@@ -137,14 +125,7 @@ services:
       - "9090:9090"
     networks: [proxy]  
     volumes:
-      - "./metrics/prometheus.yml:/tmp/prometheus.yml"
-
-  kibana:
-    image: docker.elastic.co/kibana/kibana-oss:6.3.0
-    depends_on: [elasticsearch]
-    networks: [proxy]  
-    ports:
-      - "5601:5601"      
+      - "./metrics/prometheus.yml:/tmp/prometheus.yml"    
 
   grafana:
     image: grafana/grafana
@@ -156,12 +137,13 @@ services:
     networks: [proxy]   
       
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.3.0
+    # localhost:9200/_cat/indices?v
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.3.0
     ports:
       - "9200:9200"
     networks: [proxy]
     volumes:
-      - ./elasticsearch:/usr/share/elasticsearch/data
+      - ./elasticsearch_data:/usr/share/elasticsearch/data
     ulimits:
       memlock:
         soft: -1
@@ -170,17 +152,25 @@ services:
       - 'discovery.type=single-node'
       - 'bootstrap.memory_lock=true'
       - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
-      
-  fluentd:
-    image: qqbuby/fluentd:v1.2-es
-    depends_on: [elasticsearch]
-    volumes:
-      - ./fluentd/conf:/fluentd/etc
+
+  graylog:
+    image: graylog/graylog:3.0
+    environment:
+      # CHANGE ME (must be at least 16 characters)!
+      - GRAYLOG_PASSWORD_SECRET=somepasswordpepper
+      # Password: admin
+      - GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
+    depends_on: [mongo, elasticsearch]
+    networks: [proxy]
     ports:
-      - "24224:24224"
-      - "24220:24220"
-      - "24224:24224/udp"
-    networks: [proxy]  
+      # Graylog web interface and REST API
+      - 9000:9000
+      # Syslog TCP
+      - 1514:1514
+      # Syslog UDP
+      - 1514:1514/udp
+      # GELF UDP
+      - 12201:12201/udp
       
   statsd:
     image: dockerana/statsd

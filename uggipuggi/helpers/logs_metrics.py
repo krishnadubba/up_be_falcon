@@ -1,10 +1,11 @@
 import logging
+import graypy
 
 from jaeger_client import Config
-from logstash_formatter import LogstashFormatterV1
 from statsd import StatsClient
 
 from uggipuggi.constants import SERVER_RUN_MODE
+
 
 def init_statsd(prefix=None, host='statsd', port=8125):
     statsd = StatsClient(host, port, prefix=prefix)
@@ -13,13 +14,11 @@ def init_statsd(prefix=None, host='statsd', port=8125):
 
 def init_logger(log_level=logging.INFO):
     logger = logging.getLogger()
-    handler = logging.StreamHandler()
-    formatter = LogstashFormatterV1()
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    gray_handler = graypy.GELFUDPHandler('graylog', 12201)
+    logger.addHandler(gray_handler)
     if SERVER_RUN_MODE == 'DEBUG':
         logger.setLevel(logging.DEBUG)
-    else:     
+    else:
         logger.setLevel(log_level)
     return logger
 

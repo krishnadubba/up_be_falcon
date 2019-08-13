@@ -7,6 +7,7 @@ Cython
 falcon==1.4.1
 falcon-multipart
 google-cloud-storage==1.17.0
+graypy==1.2.0
 gunicorn==19.9.0
 hiredis==0.3.1
 jaeger-client==4.0.0
