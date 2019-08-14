@@ -109,6 +109,8 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
                                    headers=header)
                 self.assertEqual(200, res.status_code)
                 
+                # Add delete contacts test
+                
                 phone_numbers = []
                 for cont in contact[1:]:        
                     phone_numbers.append(users_map[cont]['phone'])

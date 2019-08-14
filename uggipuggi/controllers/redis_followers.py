@@ -6,11 +6,13 @@ import falcon
 import logging
 from bson import json_util, ObjectId
 from uggipuggi.constants import FOLLOWERS, USER
+from uggipuggi.helpers.logs_metrics import init_logger, init_statsd
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.messaging.followers_kafka_producers import followers_kafka_item_post_producer
 
 
-logger = logging.getLogger(__name__)
+logger = init_logger()
+statsd = init_statsd('up.controllers.followers')
 
 @falcon.before(supply_redis_conn)
 @falcon.after(serialize)
@@ -20,6 +22,7 @@ class Item(object):
 
     @falcon.before(deserialize)
     #@falcon.after(group_kafka_item_get_producer)
+    @statsd.timer('get_followers_get')
     def on_get(self, req, resp, id):
         # Get all followers of user
         if id != req.user_id:
@@ -32,7 +35,8 @@ class Item(object):
         
     @falcon.before(deserialize)    
     @falcon.after(followers_kafka_item_post_producer)
-    def on_post(self, req, resp, id):
+    @statsd.timer('delete_followers_delete')
+    def on_delete(self, req, resp, id):
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:    

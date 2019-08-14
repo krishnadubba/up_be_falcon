@@ -7,13 +7,14 @@ import logging
 from bson import json_util, ObjectId
 from uggipuggi.constants import CONTACTS
 from uggipuggi.services.user import get_user
-from uggipuggi.helpers.logs_metrics import init_logger
+from uggipuggi.helpers.logs_metrics import init_logger, init_statsd
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.messaging.contacts_kafka_producers import contacts_kafka_item_post_producer,\
                                                          contacts_kafka_item_put_producer
 
 
 logger = init_logger()
+statsd = init_statsd('up.controllers.contacts')
 
 @falcon.before(supply_redis_conn)
 @falcon.after(serialize)
@@ -23,6 +24,7 @@ class Item(object):
 
     @falcon.before(deserialize)
     #@falcon.after(contacts_kafka_item_get_producer)
+    @statsd.timer('get_contacts_get')
     def on_get(self, req, resp, id):
         # Get all contacts of user
         if id != req.user_id:
@@ -35,7 +37,8 @@ class Item(object):
         
     @falcon.before(deserialize)
     @falcon.after(contacts_kafka_item_post_producer)
-    def on_post(self, req, resp, id):
+    @statsd.timer('delete_contacts_delete')
+    def on_delete(self, req, resp, id):
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:    
@@ -54,6 +57,7 @@ class Item(object):
 
     @falcon.before(deserialize)
     @falcon.after(contacts_kafka_item_put_producer)
+    @statsd.timer('add_contacts_put')
     def on_put(self, req, resp, id):
         # Note that, here we get contacts phone numbers, not their user_ids
         if id != req.user_id:

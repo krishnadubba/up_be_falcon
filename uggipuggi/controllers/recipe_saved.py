@@ -8,10 +8,12 @@ import logging
 from uggipuggi.constants import RECIPE, USER_SAVED_RECIPES, RECIPE_SAVED
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.libs.error import HTTPBadRequest, HTTPUnauthorized
+from uggipuggi.helpers.logs_metrics import init_logger, init_statsd, init_tracer
 from uggipuggi.messaging.recipe_kafka_producers import recipe_saved_kafka_item_post_producer
 
 
-logger = logging.getLogger(__name__)
+logger = init_logger()
+statsd = init_statsd('up.controllers.recipe_saved')
 
 @falcon.before(supply_redis_conn)
 class Item(object):
@@ -23,6 +25,7 @@ class Item(object):
     @falcon.before(supply_redis_conn)
     @falcon.after(serialize)
     @falcon.after(recipe_saved_kafka_item_post_producer)
+    @statsd.timer('post_recipes_post')
     def on_post(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         pipeline = req.redis_conn.pipeline(True)

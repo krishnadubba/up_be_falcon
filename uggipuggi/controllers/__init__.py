@@ -3,6 +3,9 @@
 import falcon
 import json
 from uggipuggi.helpers.build_info import BuildInfo
+from uggipuggi.helpers.logs_metrics import init_statsd
+
+statsd = init_statsd('up.ping')
 
 class Ping(object):
     """
@@ -11,6 +14,7 @@ class Ping(object):
     Return 200 OK if we got this far, framework will fail or not respond
     otherwise
     """
+    @statsd.timer('get_ping_get')
     def on_get(self, _: falcon.Request, resp: falcon.Response):
         info = BuildInfo()
         result = dict(id=0,

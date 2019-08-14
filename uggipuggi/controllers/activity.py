@@ -17,6 +17,7 @@ from uggipuggi.controllers.image_store import ImageStore
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 #from uggipuggi.controllers.schema.activity import CookingActivitySchema, CookingActivityCreateSchema
 from uggipuggi.models.cooking_activity import CookingActivity
+from uggipuggi.helpers.logs_metrics import init_logger, init_statsd, init_tracer
 from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.messaging.activity_kafka_producers import activity_kafka_collection_post_producer,\
                                                          activity_kafka_item_put_producer
@@ -31,7 +32,8 @@ from uggipuggi.messaging.activity_kafka_producers import activity_kafka_collecti
 
 # -------- END functions
 
-logger = logging.getLogger(__name__)
+logger = init_logger()
+statsd = init_statsd('up.controllers.activity')
 
 @falcon.before(supply_redis_conn)
 @falcon.after(serialize)
@@ -47,6 +49,7 @@ class Collection(object):
             self.gcs_bucket.create()
 
     @falcon.before(deserialize)
+    @statsd.timer('get_activity_collection_get')
     def on_get(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         query_params = req.params.get('query')
@@ -95,6 +98,7 @@ class Collection(object):
     #@falcon.before(deserialize_create)
     @falcon.before(deserialize)    
     @falcon.after(activity_kafka_collection_post_producer)
+    @statsd.timer('post_activity_collection_post')
     def on_post(self, req, resp):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         
@@ -161,7 +165,8 @@ class Item(object):
             logger.error('Invalid cooking actibity ID provided. {}'.format(e))
             raise HTTPBadRequest(title='Invalid Value', description='Invalid CookingActivity ID provided. {}'.format(e))
     
-    @falcon.before(deserialize)    
+    @falcon.before(deserialize)
+    @statsd.timer('get_activity_get')
     def on_get(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         activity    = self._try_get_activity(id)
@@ -169,6 +174,7 @@ class Item(object):
         resp.status = falcon.HTTP_OK
 
     @falcon.before(deserialize)
+    @statsd.timer('delete_activity_delete')
     def on_delete(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Deleting activity item in database ...")
@@ -183,6 +189,7 @@ class Item(object):
     #@falcon.before(deserialize_update)
     @falcon.before(deserialize)
     @falcon.after(activity_kafka_item_put_producer)
+    @statsd.timer('update_activity_put')
     def on_put(self, req, resp, id):
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Finding activity in database ... %s" %repr(id))
