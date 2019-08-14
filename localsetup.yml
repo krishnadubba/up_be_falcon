@@ -111,6 +111,7 @@ services:
   statsd-exporter:
     image: prom/statsd-exporter:latest
     command: "--statsd.mapping-config=/tmp/statsd_mapping.yml"
+    depends_on: [prometheus]
     ports:
       - "9102:9102"
       - "9125:9125/udp"
@@ -179,6 +180,7 @@ services:
       
   statsd:
     image: dockerana/statsd
+    depends_on: [statsd-exporter]
     ports:
       - "8125:8125/udp"
       - "8126:8126"
