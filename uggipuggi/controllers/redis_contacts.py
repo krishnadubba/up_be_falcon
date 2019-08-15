@@ -50,6 +50,7 @@ class Item(object):
                 req.redis_conn.srem(contacts_id_name, *req.params['body']['contact_user_id'])
                 logger.debug("Deleted member from user contacts in database")
                 resp.status = falcon.HTTP_OK
+                statsd.incr('delete_contact.invocations')
             except KeyError:
                 logger.warn("Please provide contact_user_id to delete from users contact")
                 resp.status = falcon.HTTP_BAD_REQUEST
@@ -75,6 +76,7 @@ class Item(object):
                 logger.debug("Added member to user contacts in database: %s"  %repr(req.params['body']['contact_user_id']))
                 resp.status = falcon.HTTP_OK
                 resp.body = contact_user_ids
+                statsd.incr('add_contact.invocations')
             else:
                 logger.warn("Please provide contact_user_id to add to users contacts")
                 resp.status = falcon.HTTP_BAD_REQUEST

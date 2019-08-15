@@ -58,6 +58,7 @@ class Collection(object):
     @falcon.before(deserialize)
     @statsd.timer('get_recipes_collection_get')
     def on_get(self, req, resp):
+        statsd.incr('get_recipe_collection.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         query_params = req.params.get('query')
 
@@ -115,6 +116,7 @@ class Collection(object):
     @statsd.timer('add_recipe_post')
     def on_post(self, req, resp):
         # Add recipe
+        statsd.incr('add_recipe.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         # save to DB
         img_url = ""
@@ -176,7 +178,7 @@ class Collection(object):
         pipeline.execute()
         logger.info("Recipe created with id: %s" %str(recipe.id))
         resp.status = falcon.HTTP_OK
-
+        
 
 @falcon.after(serialize)
 @falcon.before(supply_redis_conn)
@@ -195,6 +197,7 @@ class Item(object):
     @falcon.before(deserialize)
     @statsd.timer('get_recipe_get')
     def on_get(self, req, resp, id):
+        statsd.incr('get_recipe.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         recipe = self._try_get_recipe(id)
         # Converting MongoEngine recipe document to dictionary
@@ -212,6 +215,7 @@ class Item(object):
     @falcon.before(deserialize)
     @statsd.timer('delete_recipe_delete')
     def on_delete(self, req, resp, id):
+        statsd.incr('delete_recipe.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Deleting recipe data in database ...")
         recipe = self._try_get_recipe(id)
@@ -226,6 +230,7 @@ class Item(object):
     @falcon.after(recipe_kafka_item_put_producer)
     @statsd.timer('update_recipe_put')
     def on_put(self, req, resp, id):
+        statsd.incr('update_recipe.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Finding recipe in database ... %s" %repr(id))
         recipe = self._try_get_recipe(id)

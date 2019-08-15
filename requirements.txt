@@ -4,7 +4,7 @@ colander==1.7.0
 confluent-kafka==1.1.0
 confluent-kafka[avro]==1.1.0
 Cython
-falcon==1.4.1
+falcon==2.0.0
 falcon-multipart
 google-cloud-storage==1.17.0
 gunicorn==19.9.0

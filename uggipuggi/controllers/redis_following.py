@@ -27,6 +27,7 @@ class Item(object):
     @statsd.timer('get_following_get')
     def on_get(self, req, resp, id):
         # Get all following of user
+        statsd.incr('get_following.invocations')
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:    
@@ -37,8 +38,9 @@ class Item(object):
         
     @falcon.before(deserialize)
     @falcon.after(following_kafka_item_post_producer)
-    @statsd.timer('delete_following_delete')
-    def on_delete(self, req, resp, id):
+    @statsd.timer('delete_following_post')
+    def on_post(self, req, resp, id):
+        statsd.incr('delete_following.invocations')
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:    
@@ -82,6 +84,7 @@ class Item(object):
     def on_put(self, req, resp, id):
         # No need for authorization, anyone can follow anyone
         # We need to call this when user follows someone
+        statsd.incr('add_following.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
             
         logger.debug("Adding member to user following list in database ... %s" %repr(id))

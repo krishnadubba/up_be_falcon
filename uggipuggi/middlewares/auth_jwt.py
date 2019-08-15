@@ -23,7 +23,9 @@ from uggipuggi.messaging.authentication_kafka_producers import kafka_verify_prod
                      kafka_register_producer, kafka_login_producer, kafka_logout_producer,\
                      kafka_forgotpassword_producer, kafka_passwordchange_producer
 
+
 logger = init_logger()
+statsd = init_statsd('up.middlewares.auth')
 
 def random_with_N_digits(n):
     range_start = 10**(n-1)
@@ -150,8 +152,10 @@ class VerifyPhoneResource(object):
         logger.debug(token_opts)
         
     @falcon.after(kafka_verify_producer)
+    @statsd.timer('user_verification_post')
     def on_post(self, req, resp):
         # Used to send the OTP for verificiation
+        statsd.incr('verification.invocations')
         challenges = ['Hello="World"']
         logger.debug("Reached on_post() in VerifyPhone")
         req.kafka_topic_name = 'verify_phone'
@@ -286,9 +290,11 @@ class RegisterResource(object):
         self.verify_phone_token_expiration_seconds = verify_phone_token_expiration_seconds        
        
     @falcon.after(kafka_register_producer)
+    @statsd.timer('user_registration_post')
     def on_post(self, req, resp):
         # Should we check if the number supplied is same as the number verified?
         # Can we do this in client instead of server?
+        statsd.incr('registration.invocations')
         logger.debug("Reached on_post() in Register")
         req.kafka_topic_name = 'register'
         resp.body = {}
@@ -379,7 +385,9 @@ class LoginResource(object):
         logger.debug(token_opts)
 
     @falcon.after(kafka_login_producer)
+    @statsd.timer('user_login_post')
     def on_post(self, req, resp):
+        statsd.incr('login.invocations')
         logger.debug("Reached on_post() in Login")
         req.kafka_topic_name = 'login'
         resp.body = {}
@@ -447,7 +455,9 @@ class LogoutResource(object):
         self.kafka_topic_name = 'logout'
 
     @falcon.after(kafka_logout_producer)
+    @statsd.timer('user_logout_post')
     def on_post(self, req, resp):
+        statsd.incr('logout.invocations')
         logger.debug("Reached on_post() in Logout")
         req.kafka_topic_name = 'logout'
         
@@ -474,9 +484,11 @@ class ForgotPasswordResource(object):
         self.get_user = get_user
 
     @falcon.after(kafka_forgotpassword_producer)
+    @statsd.timer('user_forgot_password_post')
     def on_post(self, req, resp):
         # Should we check if the number supplied is same as the number verified?
         # Can we do this in client instead of server?
+        statsd.incr('forgot_password.invocations')
         logger.debug("Reached on_post() in ForgotPassword")
         req.kafka_topic_name = 'forgotpassword'
 
@@ -515,8 +527,10 @@ class PasswordChangeResource(object):
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
         logger.debug(token_opts)
         
-    @falcon.after(kafka_passwordchange_producer)        
+    @falcon.after(kafka_passwordchange_producer)
+    @statsd.timer('user_password_change_post')
     def on_post(self, req, resp):
+        statsd.incr('password_change.invocations')
         logger.debug("Reached on_post() in PasswordChange")
         req.kafka_topic_name = 'passwordchange'
         

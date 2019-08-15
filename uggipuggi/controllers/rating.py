@@ -9,8 +9,12 @@ from uggipuggi.models.recipe import Recipe
 from uggipuggi.models.rating import RecipeRating
 from uggipuggi.models.user import User
 from uggipuggi.libs.error import HTTPBadRequest
+from uggipuggi.helpers.logs_metrics import init_logger, init_statsd
 from mongoengine.errors import DoesNotExist, MultipleObjectsReturned, ValidationError
 
+
+logger = init_logger()
+statsd = init_statsd('up.controllers.rating')
 
 # -------- BEFORE_HOOK functions
 def deserialize_create(req, res, resource):
@@ -25,11 +29,13 @@ class Collection(object):
 
     @falcon.before(deserialize)
     @falcon.after(serialize)
+    @statsd.timer('get_user_given_ratings_get')
     def on_get(self, req, res):
         """
         Search for user's Recipe ratings based on supplied user
         Only allows for searching by user
         """
+        statsd.incr('get_user_given_rating.invocations')
         query_params = req.params.get('query')
 
         try:
@@ -52,6 +58,7 @@ class Collection(object):
 
         ratings = RecipeRating.objects(**updated_params)[start:end]
         res.body = {'items': ratings, 'count': len(ratings)}
+        statsd.incr('user_given_ratings.invocations')                
 
 
 class Item(object):
@@ -66,14 +73,19 @@ class Item(object):
 
     @falcon.before(deserialize)
     @falcon.after(serialize)
+    @statsd.timer('get_recipe_ratings_get')             
     def on_get(self, req, res, id):
+        statsd.incr('recipe_rating.invocations')
         recipe = self._try_get_recipe(id)
         ratings = RecipeRating.objects(recipe=recipe)
         res.body = {'items': ratings, 'count': len(ratings)}
-
+        statsd.incr('get_recipe_ratings.invocations')
+        
     @falcon.before(deserialize_create)
     @falcon.after(serialize)
+    @statsd.timer('give_rating_get')            
     def on_post(self, req, res, id):
+        statsd.incr('post_recipe_rating.invocations')
         recipe = self._try_get_recipe(id)
 
         data = req.params.get('body')
@@ -94,10 +106,13 @@ class Item(object):
 
         rating = RecipeRating.objects.get(id=rating.id)
         res.body = rating
+        statsd.incr('give_rating.invocations')
 
     @falcon.before(deserialize)
     @falcon.after(serialize)
+    @statsd.timer('delete_rating_delete')
     def on_delete(self, req, res, id):
+        statsd.incr('delete_recipe_rating.invocations')
         recipe = self._try_get_recipe(id)
         query_params = req.params.get('query')
         user_id = query_params.get('user_id')
@@ -109,6 +124,7 @@ class Item(object):
         try:
             user = User.objects.get(id=user_id)
             RecipeRating.objects(recipe=recipe, user=user).delete()
+            statsd.incr('delete_rating.invocations')
 
         except (ValidationError, DoesNotExist):
             raise HTTPBadRequest(title='Invalid Value', description='Invalid user or menu ID provided')

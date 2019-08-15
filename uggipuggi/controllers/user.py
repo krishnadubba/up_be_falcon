@@ -101,6 +101,7 @@ class Item(object):
     @falcon.after(user_kafka_item_put_producer)
     @statsd.timer('update_user_put')
     def on_put(self, req, resp, id):
+        statsd.incr('user_update.invocations')
         if req.user_id != id and not User.objects.get(id=req.user_id).role_satisfy(Role.ADMIN):
             raise HTTPUnauthorized(title='Unauthorized Request',
                                    description='Not allowed to alter user resource: {}'.format(id))
@@ -156,6 +157,7 @@ class Item(object):
     @falcon.before(deserialize)
     @statsd.timer('delete_user_delete')
     def on_delete(self, req, resp, id):
+        statsd.incr('user_delete.invocations')
         logger.debug("Checking if user is authorized to request profile delete ...")
         # ensure requested user profile delete is request from user him/herself or admin        
         if req.user_id != id and not User.objects.get(id=req.user_id).role_satisfy(Role.ADMIN):
@@ -175,6 +177,7 @@ class Item(object):
     @falcon.after(serialize)
     @statsd.timer('get_user_get')
     def on_get(self, req, resp, id):
+        statsd.incr('get_user_info.invocations')
         # ensure requested user full profile request is from user him/herself or admin                
         if req.user_id != id and not User.objects.get(id=req.user_id).role_satisfy(Role.ADMIN):
             resp.body = req.redis_conn.hgetall(USER+id)

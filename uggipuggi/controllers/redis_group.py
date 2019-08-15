@@ -49,6 +49,7 @@ class Collection(object):
     @falcon.after(group_kafka_collection_post_producer)
     @statsd.timer('create_groups_post')
     def on_post(self, req, resp):
+        statsd.incr('create_group.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         # Get new group ID
         group_id = str(req.redis_conn.incr(GROUP))
@@ -99,6 +100,7 @@ class Collection(object):
     @falcon.after(group_kafka_collection_delete_producer)
     @statsd.timer('delete_groups_delete')
     def on_delete(self, req, resp):
+        statsd.incr('delete_group.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Deleting group data in database ...")
         group_id_name = GROUP + req.params['query']['group_id']
@@ -123,7 +125,7 @@ class Collection(object):
             pipeline.srem(group_members_id_name, *group_members)
             pipeline.execute()
             logger.debug("Deleted group data in database")
-            resp.status = falcon.HTTP_OK        
+            resp.status = falcon.HTTP_OK
 
 
 @falcon.before(supply_redis_conn)
@@ -155,10 +157,11 @@ class Item(object):
         
     @falcon.before(deserialize)
     @falcon.after(group_kafka_item_delete_producer)
-    @statsd.timer('delete_group_member_get')
+    @statsd.timer('delete_group_member_delete')
     def on_delete(self, req, resp, id):
         # Delete a member of a group. For deleting group use collection 
         # delete request with group_id in the body
+        statsd.incr('delete_group_member.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
        
         group_id_name = GROUP + id
@@ -186,6 +189,7 @@ class Item(object):
     @statsd.timer('update_group_put')
     def on_put(self, req, resp, id):
         # Update group profile like pic
+        statsd.incr('update_group.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Finding group in database ... %s" %repr(id))
         group_id_name = GROUP + id
@@ -218,6 +222,7 @@ class Item(object):
     @statsd.timer('add_group_member_post')
     def on_post(self, req, resp, id):
         # Add a member to group
+        statsd.incr('add_group_member.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Adding member to group in database ... %s" %repr(id))
         group_id_name = GROUP + id

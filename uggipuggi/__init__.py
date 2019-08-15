@@ -52,10 +52,10 @@ class UggiPuggi(object):
                                           MultipartMiddleware(),
                                           self.auth_middleware])
 
-        #if SERVER_RUN_MODE == 'DEBUG':
-        #    self.logger = self._set_logging()
-        #else:
-        self.logger = init_logger() 
+        if SERVER_RUN_MODE == 'DEBUG':
+            self.logger = self._set_logging()
+        else:
+            self.logger = init_logger() 
         self.logger.info("")
         self.logger.info("===========")
         self.logger.info(time.strftime("%c"))

@@ -51,6 +51,7 @@ class Collection(object):
     @falcon.before(deserialize)
     @statsd.timer('get_activity_collection_get')
     def on_get(self, req, resp):
+        statsd.incr('get_activity_collection.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         query_params = req.params.get('query')
         logger.debug("Get query params:")
@@ -100,6 +101,7 @@ class Collection(object):
     @falcon.after(activity_kafka_collection_post_producer)
     @statsd.timer('post_activity_collection_post')
     def on_post(self, req, resp):
+        statsd.incr('post_activity.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         
         # save to DB
@@ -168,6 +170,7 @@ class Item(object):
     @falcon.before(deserialize)
     @statsd.timer('get_activity_get')
     def on_get(self, req, resp, id):
+        statsd.incr('get_activity.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         activity    = self._try_get_activity(id)
         resp.body   = activity._data
@@ -176,6 +179,7 @@ class Item(object):
     @falcon.before(deserialize)
     @statsd.timer('delete_activity_delete')
     def on_delete(self, req, resp, id):
+        statsd.incr('delete_activity.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Deleting activity item in database ...")
         activity = self._try_get_activity(id)
@@ -191,6 +195,7 @@ class Item(object):
     @falcon.after(activity_kafka_item_put_producer)
     @statsd.timer('update_activity_put')
     def on_put(self, req, resp, id):
+        statsd.incr('update_activity.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         logger.debug("Finding activity in database ... %s" %repr(id))
         activity = self._try_get_activity(id)

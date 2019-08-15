@@ -6,10 +6,12 @@ import falcon
 import logging
 from uggipuggi.constants import USER_FEED, MAX_USER_FEED_LOAD
 from uggipuggi.libs.error import HTTPBadRequest
+from uggipuggi.helpers.logs_metrics import init_logger, init_statsd
 from uggipuggi.controllers.hooks import serialize, supply_redis_conn
 
 
-logger = logging.getLogger(__name__)
+logger = init_logger()
+statsd = init_statsd('up.controllers.user_feed')
 
 @falcon.before(supply_redis_conn)
 @falcon.after(serialize)
@@ -18,9 +20,12 @@ class Item(object):
         self.kafka_topic_name = 'user_feed_item'
 
     #@falcon.after(group_kafka_item_get_producer)
-    def on_get(self, req, resp):        
+    @statsd.timer('get_user_feed_get')
+    def on_get(self, req, resp):
+        statsd.incr('user_feed.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         user_feed_id = USER_FEED + req.user_id
+        logger.debug("Getting user feed: %s" %req.user_id)
         try:
             start = req.params['query'].get('start', 0)
             limit = req.params['query'].get('limit', MAX_USER_FEED_LOAD)
@@ -31,6 +36,7 @@ class Item(object):
             end = start + limit
         # For the time being get all the feed
         user_feed_item_ids = req.redis_conn.zrevrange(user_feed_id, start, end)
+        logger.debug("Length of feed: %d" %len(user_feed_item_ids))
         pipeline = req.redis_conn.pipeline(True)
         for feed_id in user_feed_item_ids:
             pipeline.hgetall(feed_id)

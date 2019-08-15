@@ -25,18 +25,20 @@ class Item(object):
     @statsd.timer('get_followers_get')
     def on_get(self, req, resp, id):
         # Get all followers of user
+        statsd.incr('get_followers.invocations')
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:    
             req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
             followers_list = FOLLOWERS + id
             resp.body = req.redis_conn.smembers(followers_list)
-            resp.status = falcon.HTTP_OK
+            resp.status = falcon.HTTP_OK            
         
     @falcon.before(deserialize)    
     @falcon.after(followers_kafka_item_post_producer)
-    @statsd.timer('delete_followers_delete')
-    def on_delete(self, req, resp, id):
+    @statsd.timer('delete_followers_post')
+    def on_post(self, req, resp, id):
+        statsd.incr('delete_follower.invocations')
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:    
@@ -51,7 +53,7 @@ class Item(object):
                 req.redis_conn.hmset(USER + id, {'num_followers':req.redis_conn.scard(followers_list)})
                 
                 logger.debug("Deleted member from user followers in database")
-                resp.status = falcon.HTTP_OK
+                resp.status = falcon.HTTP_OK                
             except KeyError:
                 logger.warn("Please provide follower_user_id to delete from users contact")
                 resp.status = falcon.HTTP_BAD_REQUEST

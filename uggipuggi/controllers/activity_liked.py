@@ -25,8 +25,9 @@ class Item(object):
     @falcon.before(supply_redis_conn)
     @falcon.after(serialize)
     @falcon.after(activity_liked_kafka_item_post_producer)
-    @statsd.timer('post_activity_post')
+    @statsd.timer('post_activity_like_post')
     def on_post(self, req, resp, id):
+        statsd.incr('activity_like.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         pipeline = req.redis_conn.pipeline(True)
         if req.params['body']['liked']:

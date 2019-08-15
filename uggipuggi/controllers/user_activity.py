@@ -7,10 +7,12 @@ import logging
 from uggipuggi.constants import ACTIVITY, USER_ACTIVITY, ACTIVITY_CONCISE_VIEW_FIELDS
 from uggipuggi.controllers.hooks import serialize, supply_redis_conn
 from uggipuggi.libs.error import HTTPBadRequest
+from uggipuggi.helpers.logs_metrics import init_logger, init_statsd, init_tracer
 from uggipuggi.messaging.user_kafka_producers import user_activity_kafka_item_get_producer
 
 
-logger = logging.getLogger(__name__)
+logger = init_logger()
+statsd = init_statsd('up.controllers.user_activity')
 
 @falcon.before(supply_redis_conn)
 class Item(object):
@@ -21,7 +23,9 @@ class Item(object):
     @falcon.before(supply_redis_conn)
     @falcon.after(serialize)
     @falcon.after(user_activity_kafka_item_get_producer)
+    @statsd.timer('get_user_activities_get')
     def on_get(self, req, resp, id):
+        statsd.incr('get_user_activity.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         activity_ids = req.redis_conn.zrange(USER_ACTIVITY+id, 0, -1)
         pipeline = req.redis_conn.pipeline(True)

@@ -27,6 +27,7 @@ class Item(object):
     @falcon.after(recipe_saved_kafka_item_post_producer)
     @statsd.timer('post_recipes_post')
     def on_post(self, req, resp, id):
+        statsd.incr('recipe_saved.invocations')
         req.kafka_topic_name = '_'.join([self.kafka_topic_name, req.method.lower()])
         pipeline = req.redis_conn.pipeline(True)
         if req.params['body']['saved']:
