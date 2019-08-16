@@ -17,6 +17,7 @@ from uggipuggi.constants import OTP, OTP_LENGTH, USER, USER_RECIPES, USER_FEED,\
                                 PUBLIC_RECIPES, SERVER_RUN_MODE
 from uggipuggi.models.user import Role, User, VerifyPhone
 from uggipuggi.controllers import Ping
+from falcon_prometheus import PrometheusMiddleware
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.helpers.logs_metrics import init_logger, init_statsd, init_tracer
 from uggipuggi.messaging.authentication_kafka_producers import kafka_verify_producer,\
@@ -607,6 +608,7 @@ class AuthMiddleware(object):
            isinstance(resource, VerifyPhoneResource) or \
            isinstance(resource, PasswordChangeResource) or \
            isinstance(resource, ForgotPasswordResource) or \
+           isinstance(resource, PrometheusMiddleware) or \
            isinstance(resource, Ping) or ("/images/" in req.url and req.method.lower()=='get'):
             logger.debug("DON'T NEED TOKEN")
             return

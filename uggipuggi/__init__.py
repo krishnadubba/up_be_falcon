@@ -13,6 +13,7 @@ import logging.handlers
 from bson import json_util
 from mongoengine import connection
 from falcon_multipart.middleware import MultipartMiddleware
+from falcon_prometheus import PrometheusMiddleware
 from uggipuggi.controllers import recipe, tag, status, rating, user, user_feed, batch, activity,\
                                   redis_group, redis_contacts, redis_followers, redis_following,\
                                   user_recipes, user_activity, image_store, saved_recipes, Ping,\
@@ -48,9 +49,11 @@ class UggiPuggi(object):
             token_opts=COOKIE_OPTS
         )
         
+        self.prometheus_metrics = PrometheusMiddleware()
         self.app = falcon.API(middleware=[CorsMiddleware(config),
                                           MultipartMiddleware(),
-                                          self.auth_middleware])
+                                          self.auth_middleware,
+                                          self.prometheus_metrics])
 
         if SERVER_RUN_MODE == 'DEBUG':
             self.logger = self._set_logging()
@@ -66,6 +69,8 @@ class UggiPuggi(object):
     def _load_routes(self):
         self.logger.info('Loading routes ...')
         self.app.add_route('/ping', Ping())
+        self.app.add_route('/metrics', self.prometheus_metrics)
+        
         self.app.add_route('/recipes', recipe.Collection())
         self.app.add_route('/recipes/{id}', recipe.Item())
         
