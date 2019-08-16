@@ -29,7 +29,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
             ip_config = ip_config.stdout.decode('utf-8').split('\n')[1]
             uggipuggi_ip = re.findall(r".+ inet ([0-9.]+) .+", ip_config)[0]                        
             
-        self.rest_api = 'http://%s'%uggipuggi_ip
+        self.rest_api = 'http://%s:8000'%uggipuggi_ip
         print (self.rest_api)
         
     def test_a_groups(self):

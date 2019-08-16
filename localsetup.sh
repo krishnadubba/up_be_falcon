@@ -9,8 +9,8 @@ docker build -t up_kibana ./kibana
 docker build -t up_statsd_agent ./statsd_agent
 docker stack deploy -c localsetup.yml uggi
 DOCKER_GWBRIDGE_IP=`ifconfig docker_gwbridge | awk '/inet / {gsub("", "", $2); print $2}'`
-xdg-open http://$DOCKER_GWBRIDGE_IP/ping
-xdg-open http://$DOCKER_GWBRIDGE_IP/visualizer
+xdg-open http://$DOCKER_GWBRIDGE_IP:8000/ping
+xdg-open http://$DOCKER_GWBRIDGE_IP:8000/visualizer
 echo '======================================================'
 echo 'For logs: docker service logs -f stackname_servicename'
 echo 'Docker Overlay Network:'

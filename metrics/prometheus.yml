@@ -48,3 +48,15 @@ scrape_configs:
           exporter: 'rabbitmq'
 
     metrics_path: '/metrics'
+
+  - job_name: 'api_metrics'
+
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+      - targets: ['backend:8000']
+        labels:
+          exporter: 'backend'
+
+    metrics_path: '/metrics'

@@ -11,15 +11,15 @@ import logging.config as logging_config
 import logging.handlers
 
 from bson import json_util
-from mongoengine import connection
+from mongoengine import connection as mongo_connection
 from falcon_multipart.middleware import MultipartMiddleware
-from falcon_prometheus import PrometheusMiddleware
 from uggipuggi.controllers import recipe, tag, status, rating, user, user_feed, batch, activity,\
                                   redis_group, redis_contacts, redis_followers, redis_following,\
                                   user_recipes, user_activity, image_store, saved_recipes, Ping,\
                                   group_recipes, recipe_saved, recipe_liked, activity_liked 
 from uggipuggi.services.user import get_user  
 from uggipuggi.middlewares import auth_jwt
+from uggipuggi.middlewares.prometheus_middleware import PrometheusMiddleware
 from uggipuggi.helpers.logs_metrics import init_logger, init_statsd, init_tracer
 from uggipuggi.constants import DATETIME_FORMAT, AUTH_SHARED_SECRET_ENV, \
                                 MAX_TOKEN_AGE, TOKEN_EXPIRATION_SECS,\
@@ -126,9 +126,9 @@ class UggiPuggi(object):
             # cast the value from db_config accordingly if key-value pair exists
             kwargs[key] = typecast_fn(db_config.get(key)) if db_config.get(key) else None
 
-        connection.disconnect('default')  # disconnect previous default connection if any
+        mongo_connection.disconnect('default')  # disconnect previous default connection if any
 
-        self.db = connection.connect(db_name, **kwargs)
+        self.db = mongo_connection.connect(db_name, **kwargs)
 
         self.logger.info('connected to Database: {}'.format(self.db))
         
