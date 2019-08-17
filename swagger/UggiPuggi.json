@@ -9,285 +9,42 @@
   "basePath": "/v1",
   "tags": [
     {
-      "name": "recipes",
-      "description": "Everything about your Recipes"
-    },
-    {
       "name": "user",
       "description": "Operations about user"
     },
     {
+      "name": "recipes",
+      "description": "Everything about your Recipes"
+    },
+    {
       "name": "groups",
       "description": "Operations about groups"
+    },
+    {
+      "name": "activity",
+      "description": "Operations about activities"
+    },
+    {
+      "name": "contacts",
+      "description": "Operations on contacts"
+    },
+    {
+      "name": "followers",
+      "description": "Operations on followers"
+    },
+    {
+      "name": "following",
+      "description": "Operations on following"
+    },
+    {
+      "name": "feed",
+      "description": "Operations on user feed"
     }
   ],
   "schemes": [
     "http"
   ],
   "paths": {
-    "/recipes": {
-      "post": {
-        "tags": [
-          "recipes"
-        ],
-        "summary": "Add a new recipe",
-        "description": "",
-        "operationId": "addRecipe",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "in": "body",
-            "name": "body",
-            "description": "Recipe object that needs to be added to the store",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/Recipe"
-            }
-          }
-        ],
-        "responses": {
-          "405": {
-            "description": "Invalid input"
-          }
-        },
-        "security": [
-          {
-            "recipe_auth": [
-              "write:recipes",
-              "read:recipes"
-            ]
-          }
-        ]
-      },
-      "get": {
-        "tags": [
-          "recipes"
-        ],
-        "summary": "search a recipe by query",
-        "description": "",
-        "operationId": "searchRecipe",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "in": "query",
-            "name": "name",
-            "description": "Recipe name to search for",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "302": {
-            "description": "Recipes Found",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Recipe"
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request"
-          }
-        },
-        "security": [
-          {
-            "recipe_auth": [
-              "write:recipes",
-              "read:recipes"
-            ]
-          }
-        ]
-      }
-    },
-    "/recipes/findByTags": {
-      "get": {
-        "tags": [
-          "recipes"
-        ],
-        "summary": "Finds recipes by tags",
-        "description": "Muliple tags can be provided with comma separated strings. Use         tag1, tag2, tag3 for testing.",
-        "operationId": "findRecipeByTags",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "name": "tags",
-            "in": "query",
-            "description": "Tags to filter by",
-            "required": true,
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "collectionFormat": "multi"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "successful operation",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Recipe"
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid tag value"
-          }
-        },
-        "security": [
-          {
-            "recipe_auth": [
-              "write:recipes",
-              "read:recipes"
-            ]
-          }
-        ],
-        "deprecated": true
-      }
-    },
-    "/recipes/{recipeId}": {
-      "get": {
-        "tags": [
-          "recipes"
-        ],
-        "summary": "Find recipe by ID",
-        "description": "Returns a single recipe",
-        "operationId": "getRecipeById",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "name": "recipeId",
-            "in": "path",
-            "description": "ID of recipe to return",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "successful operation",
-            "schema": {
-              "$ref": "#/definitions/Recipe"
-            }
-          },
-          "400": {
-            "description": "Invalid ID supplied"
-          },
-          "401": {
-            "description": "Authentication token provided not valid"
-          },
-          "404": {
-            "description": "Recipe not found"
-          },
-          "428": {
-            "description": "Authentication token not supplied"
-          }
-        },
-        "security": [
-          {
-            "api_key": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "recipes"
-        ],
-        "summary": "Updates a recipe in the store with form data",
-        "description": "",
-        "operationId": "updateRecipeWithForm",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "name": "recipeId",
-            "in": "path",
-            "description": "ID of recipe that needs to be updated",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "401": {
-            "description": "Authentication token provided not valid"
-          },
-          "405": {
-            "description": "Invalid input"
-          }
-        },
-        "security": [
-          {
-            "recipe_auth": [
-              "write:recipes",
-              "read:recipes"
-            ]
-          }
-        ]
-      },
-      "delete": {
-        "tags": [
-          "recipes"
-        ],
-        "summary": "Deletes a recipe",
-        "description": "",
-        "operationId": "deleteRecipe",
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "name": "api_key",
-            "in": "header",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "recipeId",
-            "in": "path",
-            "description": "Recipe id to delete",
-            "required": true,
-            "type": "integer",
-            "format": "int64"
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Invalid ID supplied"
-          },
-          "401": {
-            "description": "Authentication token provided not valid"
-          },
-          "404": {
-            "description": "Recipe not found"
-          }
-        },
-        "security": [
-          {
-            "recipe_auth": [
-              "write:recipes",
-              "read:recipes"
-            ]
-          }
-        ]
-      }
-    },
     "/verify": {
       "post": {
         "tags": [
@@ -689,6 +446,492 @@
         }
       }
     },
+    "/recipes": {
+      "post": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Add a new recipe",
+        "description": "",
+        "operationId": "addRecipe",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Recipe object that needs to be added to the store",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Recipe"
+            }
+          }
+        ],
+        "responses": {
+          "405": {
+            "description": "Invalid input"
+          }
+        },
+        "security": [
+          {
+            "recipe_auth": [
+              "write:recipes",
+              "read:recipes"
+            ]
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "search a recipe by query",
+        "description": "",
+        "operationId": "searchRecipe",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "name",
+            "description": "Recipe name to search for",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Recipes Found",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Recipe"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        },
+        "security": [
+          {
+            "recipe_auth": [
+              "write:recipes",
+              "read:recipes"
+            ]
+          }
+        ]
+      }
+    },
+    "/recipes/findByTags": {
+      "get": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Finds recipes by tags",
+        "description": "Muliple tags can be provided with comma separated strings. Use         tag1, tag2, tag3 for testing.",
+        "operationId": "findRecipeByTags",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "Tags to filter by",
+            "required": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Recipe"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid tag value"
+          }
+        },
+        "security": [
+          {
+            "recipe_auth": [
+              "write:recipes",
+              "read:recipes"
+            ]
+          }
+        ],
+        "deprecated": true
+      }
+    },
+    "/recipes/{recipeId}": {
+      "get": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Find recipe by ID",
+        "description": "Returns a single recipe",
+        "operationId": "getRecipeById",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "recipeId",
+            "in": "path",
+            "description": "ID of recipe to return",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/Recipe"
+            }
+          },
+          "400": {
+            "description": "Invalid ID supplied"
+          },
+          "401": {
+            "description": "Authentication token provided not valid"
+          },
+          "404": {
+            "description": "Recipe not found"
+          },
+          "428": {
+            "description": "Authentication token not supplied"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Updates a recipe in the store with form data",
+        "description": "",
+        "operationId": "updateRecipeWithForm",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "recipeId",
+            "in": "path",
+            "description": "ID of recipe that needs to be updated",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Authentication token provided not valid"
+          },
+          "405": {
+            "description": "Invalid input"
+          }
+        },
+        "security": [
+          {
+            "recipe_auth": [
+              "write:recipes",
+              "read:recipes"
+            ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Deletes a recipe",
+        "description": "",
+        "operationId": "deleteRecipe",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "api_key",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "recipeId",
+            "in": "path",
+            "description": "Recipe id to delete",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Invalid ID supplied"
+          },
+          "401": {
+            "description": "Authentication token provided not valid"
+          },
+          "404": {
+            "description": "Recipe not found"
+          }
+        },
+        "security": [
+          {
+            "recipe_auth": [
+              "write:recipes",
+              "read:recipes"
+            ]
+          }
+        ]
+      }
+    },
+    "/saved_recipes/{userId}": {
+      "get": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Get all saved recipes by this user",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "description": "get all saved recipes by user with this userId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation Successful"
+          }
+        }
+      }
+    },
+    "/user_recipes/{userId}": {
+      "get": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Get all recipes by this user",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "description": "get all recipes for user with this userId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation Successful"
+          }
+        }
+      }
+    },
+    "/recipe_liked/{recipeId}": {
+      "post": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Like or remove like for this recipe",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "recipeId",
+            "description": "to like or remove like recipe with this id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "liked",
+            "description": "like or remove like for this recipe",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Recipe_Liked"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful"
+          }
+        }
+      }
+    },
+    "/recipe_saved/{recipeId}": {
+      "post": {
+        "tags": [
+          "recipes"
+        ],
+        "summary": "Save or remove recipe in user saved recipes",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "recipeId",
+            "description": "to save or remove recipe with this id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "saved",
+            "description": "save or remove this recipe from user's saved recipes",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Recipe_Saved"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful"
+          }
+        }
+      }
+    },
+    "/contacts/{userId}": {
+      "get": {
+        "tags": [
+          "contacts"
+        ],
+        "summary": "Get all groups ids where user is member",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "description": "get all groups for userId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Group found"
+          }
+        }
+      }
+    },
+    "/followers/{userId}": {
+      "get": {
+        "tags": [
+          "followers"
+        ],
+        "summary": "Get all groups ids where user is member",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "description": "get all groups for userId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Group found"
+          }
+        }
+      }
+    },
+    "/following/{userId}": {
+      "get": {
+        "tags": [
+          "following"
+        ],
+        "summary": "Get all groups ids where user is member",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "description": "get all groups for userId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Group found"
+          }
+        }
+      }
+    },
+    "/feed": {
+      "get": {
+        "tags": [
+          "feed"
+        ],
+        "summary": "Get items to populate user feed",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "start",
+            "description": "start index of feed",
+            "type": "integer"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "description": "number of items in the feed",
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feed returned"
+          }
+        }
+      }
+    },
     "/groups": {
       "get": {
         "tags": [
@@ -701,7 +944,7 @@
         "parameters": [
           {
             "in": "query",
-            "name": "userID",
+            "name": "userId",
             "description": "get all groups for userID",
             "required": true,
             "type": "string"
@@ -748,10 +991,11 @@
         ],
         "parameters": [
           {
-            "in": "body",
+            "in": "query",
             "name": "group_id",
             "description": "group_id of group to be deleted",
-            "required": true
+            "required": true,
+            "type": "string"
           }
         ],
         "responses": {
@@ -878,10 +1122,11 @@
             "type": "string"
           },
           {
-            "in": "body",
+            "in": "query",
             "name": "member_id",
             "description": "list of member_ids to be deleted from the group",
-            "required": true
+            "required": true,
+            "type": "string"
           }
         ],
         "responses": {
@@ -890,6 +1135,232 @@
           },
           "401": {
             "description": "Unauthorized request"
+          }
+        }
+      }
+    },
+    "/activity": {
+      "get": {
+        "tags": [
+          "activity"
+        ],
+        "summary": "Search cooking activities",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "user_name",
+            "description": "user name of user's activities we are interested in",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "recipe_name",
+            "description": "recipe_name for searching activities",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "description",
+            "description": "description of recipe for searching activities",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "start",
+            "description": "index of start item in search results",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "description": "number of items in the search results required",
+            "required": false,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search operation successful"
+          },
+          "400": {
+            "description": "Invalid search query parameters"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "activity"
+        ],
+        "summary": "Create cooking activity",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "cooking activity data",
+            "description": "cooking activity data",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CookingActivity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity creation successful"
+          },
+          "500": {
+            "description": "Activity_pic storing failed"
+          }
+        }
+      }
+    },
+    "/activity/{activityId}": {
+      "get": {
+        "tags": [
+          "activity"
+        ],
+        "summary": "Get activity item with this id",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activityId",
+            "description": "get info of activity item with this id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "activity"
+        ],
+        "summary": "Update activity item with this id",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activityId",
+            "description": "activity id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "new activity info",
+            "description": "update activity item with this id",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CookingActivity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity item update with new info"
+          },
+          "400": {
+            "description": "Invalid items in activity data"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "activity"
+        ],
+        "summary": "Delete activity item with this id",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activityId",
+            "description": "Delete activity item with this id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity deleted"
+          }
+        }
+      }
+    },
+    "/activity_liked/{activityId}": {
+      "post": {
+        "tags": [
+          "activity"
+        ],
+        "summary": "Like or remove like for this activity",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "activityId",
+            "description": "to like or remove like activity with this id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "liked",
+            "description": "like or remove like for this activity",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Recipe_Liked"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful"
+          }
+        }
+      }
+    },
+    "/user_activity/{userId}": {
+      "get": {
+        "tags": [
+          "activity"
+        ],
+        "summary": "Get all activities posted by this user",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "description": "get all activities posted by user with this userId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful"
           }
         }
       }
@@ -912,6 +1383,28 @@
     }
   },
   "definitions": {
+    "Recipe_Liked": {
+      "type": "object",
+      "required": [
+        "liked"
+      ],
+      "properties": {
+        "liked": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Recipe_Saved": {
+      "type": "object",
+      "required": [
+        "saved"
+      ],
+      "properties": {
+        "saved": {
+          "type": "boolean"
+        }
+      }
+    },
     "Group": {
       "type": "object",
       "required": [
