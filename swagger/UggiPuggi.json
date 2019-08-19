@@ -832,7 +832,7 @@
         "tags": [
           "contacts"
         ],
-        "summary": "Get all groups ids where user is member",
+        "summary": "Get all contacts for this user",
         "produces": [
           "application/json"
         ],
@@ -840,14 +840,87 @@
           {
             "in": "path",
             "name": "userId",
-            "description": "get all groups for userId",
+            "description": "get all contacts for this user with this userId",
             "required": true,
             "type": "string"
           }
         ],
         "responses": {
           "200": {
-            "description": "Group found"
+            "description": "Operation Successful"
+          },
+          "401": {
+            "description": "Unauthorized request"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "contacts"
+        ],
+        "summary": "Add a member to the contacts list of this user",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "description": "user id to whose contacts list we have to add an item",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "member info",
+            "description": "member info (contact id) to add to contacts list",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Contacts_Add_Delete"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful"
+          },
+          "400": {
+            "description": "contact_user_id to add to user's contacts list not provided"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "contacts"
+        ],
+        "summary": "Delete a member from the contacts list of this user",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "description": "user id from whose contacts list we have to delete an item",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "member info",
+            "description": "member info (contact id) to delete from contacts list",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Contacts_Add_Delete"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful"
+          },
+          "400": {
+            "description": "contact_user_id to delete from user's contacts list not provided"
           }
         }
       }
@@ -875,14 +948,12 @@
             "description": "Group found"
           }
         }
-      }
-    },
-    "/following/{userId}": {
-      "get": {
+      },
+      "post": {
         "tags": [
-          "following"
+          "followers"
         ],
-        "summary": "Get all groups ids where user is member",
+        "summary": "Delete a member from followers list of this user",
         "produces": [
           "application/json"
         ],
@@ -890,14 +961,121 @@
           {
             "in": "path",
             "name": "userId",
-            "description": "get all groups for userId",
+            "description": "user id from whose followers list we have to delete an item",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "member info",
+            "description": "member info (follower id) to delete from followers list",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Following_Add_Delete"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful"
+          },
+          "400": {
+            "description": "public_user_id to delete from users followers list not provided"
+          }
+        }
+      }
+    },
+    "/following/{userId}": {
+      "get": {
+        "tags": [
+          "following"
+        ],
+        "summary": "Get list of people following this user",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "description": "user id whose following we want",
             "required": true,
             "type": "string"
           }
         ],
         "responses": {
           "200": {
-            "description": "Group found"
+            "description": "Operation successful"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "following"
+        ],
+        "summary": "Delete a member from following list of this user",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "description": "user id from whose following list we have to delete an item",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "member info",
+            "description": "member info (following id) to delete from following list",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Following_Add_Delete"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful"
+          },
+          "400": {
+            "description": "public_user_id to delete from users following list not provided"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "following"
+        ],
+        "summary": "Add a member to the following list of this user",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "description": "user id to whose following list we have to add an item",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "member info",
+            "description": "member info (following id) to add to following list",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Following_Add_Delete"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation successful"
+          },
+          "400": {
+            "description": "public_user_id to add to users following list not provided"
           }
         }
       }
@@ -1383,6 +1561,28 @@
     }
   },
   "definitions": {
+    "Contacts_Add_Delete": {
+      "type": "object",
+      "required": [
+        "contact_user_id"
+      ],
+      "properties": {
+        "contact_user_id": {
+          "type": "string"
+        }
+      }
+    },
+    "Following_Add_Delete": {
+      "type": "object",
+      "required": [
+        "public_user_id"
+      ],
+      "properties": {
+        "public_user_id": {
+          "type": "string"
+        }
+      }
+    },
     "Recipe_Liked": {
       "type": "object",
       "required": [

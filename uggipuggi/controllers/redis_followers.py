@@ -36,6 +36,8 @@ class Item(object):
     @falcon.after(followers_kafka_item_post_producer)
     @statsd.timer('delete_followers_post')
     def on_post(self, req, resp, id):
+        # Delete a member from followers list. Note there is no "add" member to 
+        # followers list as you can't make somebody follow you by yourself 
         statsd.incr('delete_follower.invocations')
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED

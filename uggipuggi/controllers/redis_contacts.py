@@ -37,8 +37,8 @@ class Item(object):
         
     @falcon.before(deserialize)
     @falcon.after(contacts_kafka_item_post_producer)
-    @statsd.timer('delete_contacts_delete')
-    def on_delete(self, req, resp, id):
+    @statsd.timer('delete_contacts_post')
+    def on_post(self, req, resp, id):
         if id != req.user_id:
             resp.status = falcon.HTTP_UNAUTHORIZED
         else:    
