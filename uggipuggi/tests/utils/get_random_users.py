@@ -5,7 +5,7 @@ import pickle
 import requests
 import random
 
-ROOT_DIR = os.path.dirname(os.path.dirname(sys.path[0]))
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(sys.path[0])))
 
 
 def get_n_random_users(n):
@@ -20,7 +20,7 @@ def get_n_uggipuggi_random_users(n, user_data_file=None, user_pics_dir=None):
         assert len(uggi_puggi_users) >= n
         return uggi_puggi_users[:n]
     else:    
-        if not os.path.isdir(user_data_file):
+        if not os.path.isdir(user_pics_dir):
             user_pics_dir = os.path.join(ROOT_DIR, 'test_data', 'user_pics')
         
         uggi_puggi_users = []
@@ -53,5 +53,6 @@ def get_n_uggipuggi_random_users(n, user_data_file=None, user_pics_dir=None):
         return uggi_puggi_users
 
 if __name__ == "__main__":
-    users = get_n_uggipuggi_random_users(50, user_data_file='/tmp/uggipuggi_test_users.p')
+    users = get_n_uggipuggi_random_users(50,
+                                         user_data_file=os.path.join(ROOT_DIR, 'test_data', 'uggipuggi_test_users.p'))
     #print (users)
