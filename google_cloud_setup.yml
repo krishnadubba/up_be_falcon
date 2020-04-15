@@ -4,7 +4,7 @@ networks:
 services:
   backend:
     command: gunicorn -b 0.0.0.0:8000 "manage:uggipuggi_app.app"
-    depends_on: [redis, mongo, celery, kafka, zookeeper, kafka_consumer]
+    depends_on: [logstash, statsd, redis, mongo, celery, kafka, zookeeper, kafka_consumer, kafka_subscriber_activity]
     deploy:
       labels: [com.df.notify=true, com.df.distribute=true, com.df.servicePath=/,
         com.df.port=8000]
@@ -88,3 +88,102 @@ services:
     image: confluentinc/cp-zookeeper:latest
     networks: [proxy]
     ports: ['2181:2181']
+  rabbitmq:
+    image: deadtrickster/rabbitmq_prometheus
+    depends_on: [prometheus]
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    networks: [proxy]
+  statsd-exporter:
+    image: prom/statsd-exporter:latest
+    command: "--statsd.mapping-config=/tmp/statsd_mapping.yml"
+    depends_on: [prometheus]
+    ports:
+      - "9102:9102"
+      - "9125:9125/udp"
+    networks: [proxy]
+    volumes:
+      - "./metrics/statsd_mapping.yml:/tmp/statsd_mapping.yml"
+  prometheus:
+    image: prom/prometheus
+    command: "--config.file=/tmp/prometheus.yml --web.listen-address '0.0.0.0:9090'"
+    ports:
+      - "9090:9090"
+    networks: [proxy]
+    volumes:
+      - "./metrics/prometheus.yml:/tmp/prometheus.yml"
+
+  grafana:
+    image: grafana/grafana
+    depends_on: [prometheus]
+    volumes:
+      - "./grafana/grafana.ini:/etc/grafana/grafana.ini"
+    ports:
+      - "3900:3000"
+    networks: [proxy]
+
+  kibana:
+    image: up_kibana:latest
+    volumes:
+      - ./kibana/config/:/usr/share/kibana/config:ro
+    ports:
+      - "5601:5601"
+    networks: [proxy]
+    depends_on:
+      - elasticsearch
+
+  # localhost:9200/_cat/indices?v
+  elasticsearch:
+    image: up_es:latest
+    volumes:
+      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks: [proxy]
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    environment:
+      - 'discovery.type=single-node'
+      - 'bootstrap.memory_lock=true'
+      - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
+
+  logstash:
+    image: up_ls:latest
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+    ports:
+      - "5000:5000"
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    networks: [proxy]
+    depends_on:
+      - elasticsearch
+
+  statsd:
+    image: dockerana/statsd
+    depends_on: [statsd-exporter]
+    ports:
+      - "8125:8125/udp"
+      - "8126:8126"
+    networks: [proxy]
+    volumes:
+      - "./metrics/statsd_config.js:/src/statsd/config.js"
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "14268:14268"
+      - "9411:9411"
+    networks: [proxy]
+    environment:
+      COLLECTOR_ZIPKIN_HTTP_PORT: "9411"
