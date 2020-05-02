@@ -1,7 +1,7 @@
 # my global config
 global:
-  scrape_interval:     5s
-  evaluation_interval: 10s
+  scrape_interval:     1800s
+  evaluation_interval: 1800s
   # scrape_timeout is set to the global default (10s).
 
   # Attach these labels to any time series or alerts when communicating with
@@ -46,5 +46,17 @@ scrape_configs:
       - targets: ['rabbitmq:15672']
         labels:
           exporter: 'rabbitmq'
+
+    metrics_path: '/metrics'
+
+  - job_name: 'api_metrics'
+
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+      - targets: ['backend:8000']
+        labels:
+          exporter: 'backend'
 
     metrics_path: '/metrics'

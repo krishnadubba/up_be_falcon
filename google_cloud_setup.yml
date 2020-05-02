@@ -3,15 +3,16 @@ networks:
   proxy: {external: true}
 services:
   backend:
-    command: gunicorn -b 0.0.0.0:8000 "manage:uggipuggi_app.app"
+    command: gunicorn -b 0.0.0.0:8000 --timeout 150 "manage:uggipuggi_app.app"
     depends_on: [logstash, statsd, redis, mongo, celery, kafka, zookeeper, kafka_consumer, kafka_subscriber_activity]
+    environment: {GOOGLE_CLOUD_PROJECT: 'valid-cedar-274311'}
     deploy:
       labels: [com.df.notify=true, com.df.distribute=true, com.df.servicePath=/,
         com.df.port=8000]
     image: kr:latest
     networks: [proxy]
     ports: ['8000:8000']
-    volumes: ['/home/uggi_puggi/images:/images']
+    volumes: ['/home/uggi_puggi_krishna/images:/images']
   celery:
     command: celery worker -l debug -A uggipuggi.celery.celery -n worker.high -Q high
     depends_on: [redis, mongo]
@@ -20,7 +21,7 @@ services:
     image: kr:latest
     networks: [proxy]
     ports: ['8002:8000']
-    volumes: ['/home/uggi_puggi/images:/images']
+    volumes: ['/home/uggi_puggi_krishna/images:/images']
   kafka:
     depends_on: [zookeeper]
     environment: {KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092', KAFKA_BROKER_ID: 1,

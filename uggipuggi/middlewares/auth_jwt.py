@@ -17,6 +17,7 @@ from uggipuggi.constants import OTP, OTP_LENGTH, USER, USER_RECIPES, USER_FEED,\
                                 PUBLIC_RECIPES, SERVER_RUN_MODE
 from uggipuggi.models.user import Role, User, VerifyPhone
 from uggipuggi.controllers import Ping
+from uggipuggi.middlewares.prometheus_middleware import PrometheusMiddleware
 from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_conn
 from uggipuggi.helpers.logs_metrics import init_logger, init_statsd, init_tracer
 from uggipuggi.messaging.authentication_kafka_producers import kafka_verify_producer,\
@@ -601,12 +602,13 @@ class AuthMiddleware(object):
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
 
     def process_resource(self, req, resp, resource, params): # pylint: disable=unused-argument
-        logger.debug(req.url)
-        logger.debug(req.method.lower())
+        logger.debug("Req URL: " + req.url)
+        logger.debug("Req method: " + req.method.lower())
         if isinstance(resource, RegisterResource) or \
            isinstance(resource, VerifyPhoneResource) or \
            isinstance(resource, PasswordChangeResource) or \
            isinstance(resource, ForgotPasswordResource) or \
+           isinstance(resource, PrometheusMiddleware) or \
            isinstance(resource, Ping) or ("/images/" in req.url and req.method.lower()=='get'):
             logger.debug("DON'T NEED TOKEN")
             return
@@ -621,6 +623,7 @@ class AuthMiddleware(object):
             # Unrecognized token location
             token = None
 
+        logger.debug("Got hold of the token from request")
         if token is None:
             logger.error("Please provide an auth token as part of the request.")
             description = ('Please provide an auth token as part of the request.')
@@ -639,6 +642,7 @@ class AuthMiddleware(object):
                                           challenges,
                                           href='http://docs.example.com/auth')
         
+        logger.debug("Token looks fine")
         # we used user mongo object id as user identifier
         user_id = self.decoded.pop("user_identifier")
         req.user_id = user_id

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import os
 import falcon
 import json
 from uggipuggi.helpers.build_info import BuildInfo
@@ -17,6 +17,7 @@ class Ping(object):
     @statsd.timer('get_ping_get')
     def on_get(self, _: falcon.Request, resp: falcon.Response):
         info = BuildInfo()
+        run_env = os.environ.get('UGGIPUGGI_BACKEND_ENV', 'docker_compose')
         result = dict(id=0,
                       repoName=info.repo_name,
                       commitHash=info.commit_hash,
@@ -24,6 +25,7 @@ class Ping(object):
                       serviceName=info.service_name,
                       serviceVersion=info.version,
                       buildDate=info.build_date,
+                      runEnv=run_env,
                       buildEpochSec=info.build_epoch_sec
                      )
         resp.body = json.dumps(result)

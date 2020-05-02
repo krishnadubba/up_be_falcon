@@ -19,7 +19,7 @@ from utils.dummy_data_utils import get_dummy_email, get_dummy_password,\
                                    get_dummy_phone, get_dummy_display_name     
 
 DEBUG_OTP = '999999'
-class TestUggiPuggiSocialNetwork(testing.TestBase):
+class TestUggiPuggiSocialNetwork(testing.TestCase):
     def setUp(self):
         try:
             uggipuggi_ip = os.environ['UGGIPUGGI_BACKEND_IP']
@@ -29,7 +29,7 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
             ip_config = ip_config.stdout.decode('utf-8').split('\n')[1]
             uggipuggi_ip = re.findall(r".+ inet ([0-9.]+) .+", ip_config)[0]                        
             
-        self.rest_api = 'http://%s'%uggipuggi_ip
+        self.rest_api = 'http://%s:8000'%uggipuggi_ip
         print (self.rest_api)
         
     def test_a_groups(self):
@@ -37,7 +37,10 @@ class TestUggiPuggiSocialNetwork(testing.TestBase):
         users_map = {}
         recipe_map = {}
         activity_map = {}
-        users_data = get_n_uggipuggi_random_users(50, user_data_file='/tmp/uggipuggi_test_users.p')
+        ROOT_DIR = os.path.dirname(os.path.dirname(sys.path[0]))
+        user_data_file=os.path.join(ROOT_DIR, 'test_data', 'uggipuggi_test_users.p')
+        user_pics_dir = os.path.join(ROOT_DIR, 'test_data', 'user_pics')
+        users_data = get_n_uggipuggi_random_users(50, user_data_file=user_data_file, user_pics_dir=user_pics_dir)
         print ("===============================================================")
         print ()           
         print ('Starting social network tests: adding Users ...')

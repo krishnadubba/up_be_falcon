@@ -11,7 +11,7 @@ import logging.config as logging_config
 import logging.handlers
 
 from bson import json_util
-from mongoengine import connection
+from mongoengine import connection as mongo_connection
 from falcon_multipart.middleware import MultipartMiddleware
 from uggipuggi.controllers import recipe, tag, status, rating, user, user_feed, batch, activity,\
                                   redis_group, redis_contacts, redis_followers, redis_following,\
@@ -19,6 +19,7 @@ from uggipuggi.controllers import recipe, tag, status, rating, user, user_feed, 
                                   group_recipes, recipe_saved, recipe_liked, activity_liked 
 from uggipuggi.services.user import get_user  
 from uggipuggi.middlewares import auth_jwt
+from uggipuggi.middlewares.prometheus_middleware import PrometheusMiddleware
 from uggipuggi.helpers.logs_metrics import init_logger, init_statsd, init_tracer
 from uggipuggi.constants import DATETIME_FORMAT, AUTH_SHARED_SECRET_ENV, \
                                 MAX_TOKEN_AGE, TOKEN_EXPIRATION_SECS,\
@@ -48,9 +49,11 @@ class UggiPuggi(object):
             token_opts=COOKIE_OPTS
         )
         
+        self.prometheus_metrics = PrometheusMiddleware()
         self.app = falcon.API(middleware=[CorsMiddleware(config),
                                           MultipartMiddleware(),
-                                          self.auth_middleware])
+                                          self.auth_middleware,
+                                          self.prometheus_metrics])
 
         if SERVER_RUN_MODE == 'DEBUG':
             self.logger = self._set_logging()
@@ -66,6 +69,8 @@ class UggiPuggi(object):
     def _load_routes(self):
         self.logger.info('Loading routes ...')
         self.app.add_route('/ping', Ping())
+        self.app.add_route('/metrics', self.prometheus_metrics)
+        
         self.app.add_route('/recipes', recipe.Collection())
         self.app.add_route('/recipes/{id}', recipe.Item())
         
@@ -121,9 +126,9 @@ class UggiPuggi(object):
             # cast the value from db_config accordingly if key-value pair exists
             kwargs[key] = typecast_fn(db_config.get(key)) if db_config.get(key) else None
 
-        connection.disconnect('default')  # disconnect previous default connection if any
+        mongo_connection.disconnect('default')  # disconnect previous default connection if any
 
-        self.db = connection.connect(db_name, **kwargs)
+        self.db = mongo_connection.connect(db_name, **kwargs)
 
         self.logger.info('connected to Database: {}'.format(self.db))
         
@@ -182,6 +187,9 @@ class CorsMiddleware():
         header = {'Access-Control-Allow-Headers': self.allowed_headers}
         if ('*' in self.allowed_origins and origin != None) or origin in self.allowed_origins:
             self.logger.debug("This origin is allowed")
+        if req.method.lower() == 'options':
+            res.status = falcon.HTTP_OK
+            
         header['Access-Control-Allow-Origin'] = "*"
         header['Access-Control-Allow-Methods'] = self.allowed_methods
         header['Access-Control-Allow-Credentials'] = "true"

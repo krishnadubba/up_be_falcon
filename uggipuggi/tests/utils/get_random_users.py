@@ -20,7 +20,7 @@ def get_n_uggipuggi_random_users(n, user_data_file=None, user_pics_dir=None):
         assert len(uggi_puggi_users) >= n
         return uggi_puggi_users[:n]
     else:    
-        if not os.path.isdir(user_data_file):
+        if user_pics_dir is None or not os.path.isdir(user_pics_dir):
             user_pics_dir = os.path.join(ROOT_DIR, 'test_data', 'user_pics')
         
         uggi_puggi_users = []

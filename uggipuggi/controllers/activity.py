@@ -18,7 +18,7 @@ from uggipuggi.controllers.hooks import deserialize, serialize, supply_redis_con
 #from uggipuggi.controllers.schema.activity import CookingActivitySchema, CookingActivityCreateSchema
 from uggipuggi.models.cooking_activity import CookingActivity
 from uggipuggi.helpers.logs_metrics import init_logger, init_statsd, init_tracer
-from uggipuggi.libs.error import HTTPBadRequest
+from uggipuggi.libs.error import HTTPBadRequest, HTTPInternalServerError
 from uggipuggi.messaging.activity_kafka_producers import activity_kafka_collection_post_producer,\
                                                          activity_kafka_item_put_producer
 
@@ -129,7 +129,7 @@ class Collection(object):
             try:
                 img_url = self.img_store.save(img_data.file, image_name, img_data.type)                
             except IOError:
-                raise HTTPBadRequest(title='Activity_pic storing failed', 
+                raise HTTPInternalServerError(title='Activity_pic storing failed', 
                                      description='Activity_pic upload to cloud storage failed!') 
             activity.update(images=[img_url])
             resp.body.update({"images": [img_url]})                
