@@ -602,8 +602,8 @@ class AuthMiddleware(object):
         self.token_opts = token_opts or DEFAULT_TOKEN_OPTS
 
     def process_resource(self, req, resp, resource, params): # pylint: disable=unused-argument
-        logger.debug(req.url)
-        logger.debug(req.method.lower())
+        logger.debug("Req URL: " + req.url)
+        logger.debug("Req method: " + req.method.lower())
         if isinstance(resource, RegisterResource) or \
            isinstance(resource, VerifyPhoneResource) or \
            isinstance(resource, PasswordChangeResource) or \
@@ -623,6 +623,7 @@ class AuthMiddleware(object):
             # Unrecognized token location
             token = None
 
+        logger.debug("Got hold of the token from request")
         if token is None:
             logger.error("Please provide an auth token as part of the request.")
             description = ('Please provide an auth token as part of the request.')
@@ -641,6 +642,7 @@ class AuthMiddleware(object):
                                           challenges,
                                           href='http://docs.example.com/auth')
         
+        logger.debug("Token looks fine")
         # we used user mongo object id as user identifier
         user_id = self.decoded.pop("user_identifier")
         req.user_id = user_id

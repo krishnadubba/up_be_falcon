@@ -1,7 +1,7 @@
 # my global config
 global:
-  scrape_interval:     5s
-  evaluation_interval: 10s
+  scrape_interval:     1800s
+  evaluation_interval: 1800s
   # scrape_timeout is set to the global default (10s).
 
   # Attach these labels to any time series or alerts when communicating with

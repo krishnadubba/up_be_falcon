@@ -187,6 +187,9 @@ class CorsMiddleware():
         header = {'Access-Control-Allow-Headers': self.allowed_headers}
         if ('*' in self.allowed_origins and origin != None) or origin in self.allowed_origins:
             self.logger.debug("This origin is allowed")
+        if req.method.lower() == 'options':
+            res.status = falcon.HTTP_OK
+            
         header['Access-Control-Allow-Origin'] = "*"
         header['Access-Control-Allow-Methods'] = self.allowed_methods
         header['Access-Control-Allow-Credentials'] = "true"
