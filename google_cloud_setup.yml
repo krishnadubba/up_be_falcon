@@ -89,7 +89,6 @@ services:
     image: confluentinc/cp-zookeeper:latest
     networks: [proxy]
     ports: ['2181:2181']
-
   rabbitmq:
     image: deadtrickster/rabbitmq_prometheus
     depends_on: [prometheus]
@@ -97,7 +96,6 @@ services:
       - "5673:5672"
       - "15673:15672"
     networks: [proxy]
-
   statsd-exporter:
     image: prom/statsd-exporter:latest
     command: "--statsd.mapping-config=/tmp/statsd_mapping.yml"
@@ -108,7 +106,6 @@ services:
     networks: [proxy]
     volumes:
       - "./metrics/statsd_mapping.yml:/tmp/statsd_mapping.yml"
-
   prometheus:
     image: prom/prometheus
     command: "--config.file=/tmp/prometheus.yml --web.listen-address '0.0.0.0:9090'"
