@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import
 import re
+import time
 import json
 import random
 import os, sys
@@ -395,7 +396,8 @@ class TestUggiPuggiSocialNetwork(testing.TestCase):
                                             data=json.dumps(contact_payload), 
                                             headers=header)
                         self.assertEqual(200, res.status_code)                        
-         
+        
+        time.sleep(15) 
         print ("===============================================================")
         print ()   
         print ('Starting social network tests: Testing Feeds ...')
@@ -406,7 +408,7 @@ class TestUggiPuggiSocialNetwork(testing.TestCase):
         header = {'Content-Type':'application/json'}
         header.update({'auth_token':login_token})
     
-        res = requests.post(self.rest_api + '/feed', headers=header)
+        res = requests.get(self.rest_api + '/feed', headers=header)
         print('Response:')
         print(res.status_code)
         print(res.text)            

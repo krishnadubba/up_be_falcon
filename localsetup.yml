@@ -16,7 +16,7 @@ services:
         
   celery:
     command: celery worker -l debug -A uggipuggi.celery.celery -n worker.high -Q high 
-    depends_on: [redis, mongo]
+    depends_on: [redis, statsd, mongo]
     environment: {CELERY_BROKER_URL: 'redis://redis:6379/0', CELERY_RESULT_BACKEND: 'redis://redis:6379/0',
       KAFKA_BOOTSTRAP_SERVERS: 'kafka:9092'}
     image: kr:latest

@@ -6,6 +6,7 @@ confluent-kafka[avro]==1.1.0
 Cython
 falcon==2.0.0
 falcon-multipart
+falcon-cors
 google-cloud-storage==1.17.0
 gunicorn==19.9.0
 hiredis==0.3.1

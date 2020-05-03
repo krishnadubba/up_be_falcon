@@ -9,6 +9,7 @@ import falcon
 import logging
 import logging.config as logging_config
 import logging.handlers
+from falcon_cors import CORS
 
 from bson import json_util
 from mongoengine import connection as mongo_connection
@@ -49,8 +50,15 @@ class UggiPuggi(object):
             token_opts=COOKIE_OPTS
         )
         
+        cors = CORS(
+            allow_all_origins=True,
+            allow_all_headers=True,            
+            allow_all_methods=True,
+            allow_credentials_all_origins=True
+        )
+        
         self.prometheus_metrics = PrometheusMiddleware()
-        self.app = falcon.API(middleware=[CorsMiddleware(config),
+        self.app = falcon.API(middleware=[cors.middleware,
                                           MultipartMiddleware(),
                                           self.auth_middleware,
                                           self.prometheus_metrics])

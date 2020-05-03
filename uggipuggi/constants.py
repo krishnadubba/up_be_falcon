@@ -69,7 +69,7 @@ USER_NOTIFICATION_FEED = 'unf:'
 # Google Cloud Storage stuff
 FILE_EXT_MAP = {'jpg': 'image/jpeg', 'jpe': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png'}
 IMG_STORE_PATH = '/images/'
-GAE_IMG_SERVER = 'https://uggipuggi-dev.appspot.com/img_post'
+GAE_IMG_SERVER = 'https://valid-cedar-274311.el.r.appspot.com/img_post'
 GCS_USER_BUCKET = 'up_user_public_server_bucket_2020'
 GCS_GROUP_BUCKET = 'up_group_public_server_bucket_2020'
 GCS_RECIPE_BUCKET = 'up_recipe_public_server_bucket_2020'
