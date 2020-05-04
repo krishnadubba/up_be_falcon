@@ -4,7 +4,7 @@ from __future__ import absolute_import
 import time
 import falcon
 import logging
-from uggipuggi.constants import USER_FEED, MAX_USER_FEED_LOAD
+from uggipuggi.constants import USER_FEED, MAX_USER_FEED_LOAD, PUBLIC_RECIPES
 from uggipuggi.libs.error import HTTPBadRequest
 from uggipuggi.helpers.logs_metrics import init_logger, init_statsd
 from uggipuggi.controllers.hooks import serialize, supply_redis_conn
@@ -37,9 +37,19 @@ class Item(object):
         # For the time being get all the feed
         user_feed_item_ids = req.redis_conn.zrevrange(user_feed_id, start, end)
         logger.debug("Length of feed: %d" %len(user_feed_item_ids))
+        if len(user_feed_item_ids) < MAX_USER_FEED_LOAD:            
+            num_public_feed_len = MAX_USER_FEED_LOAD - len(user_feed_item_ids)
+            logger.debug("Getting feed from PUBLIC recipes: %d" %num_public_feed_len)
+            
         pipeline = req.redis_conn.pipeline(True)
         for feed_id in user_feed_item_ids:
             pipeline.hgetall(feed_id)
+            
+        start = 0    
+        public_recipe_item_ids = req.redis_conn.zrevrange(PUBLIC_RECIPES, start, num_public_feed_len)
+        for feed_id in public_recipe_item_ids:
+            pipeline.hgetall(feed_id)
+            
         # Only here we supply the key as well because in feed we have both recipes and activities
         # and key starting with "r:" and activity starts with "act:"
         #resp.body = [{k: v} for k, v in zip(user_feed_item_ids, pipeline.execute())]

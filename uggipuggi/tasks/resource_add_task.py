@@ -43,7 +43,8 @@ def user_feed_add_recipe(message):
         else:
             logger.error('Image upload to cloud server failed with status code: %s' % status_code)
 
-    pipeline.hmset(recipe_id_name, {'images': img_urls})
+    # Redis hmset can't store list, so convert list to string
+    pipeline.hmset(recipe_id_name, {'images': str(img_urls)})
 
     # Get all contacts and followers userids
     contacts_id_name = CONTACTS + user_id
@@ -121,7 +122,8 @@ def user_feed_add_activity(message):
         else:
             logger.error('Image upload to cloud server failed with status code: %s' % status_code)
 
-    pipeline.hmset(activity_id_name, {'images': img_urls})
+    # Redis hmset can't store list, so convert list to string
+    pipeline.hmset(activity_id_name, {'images': str(img_urls)})
     contacts_id_name = CONTACTS + user_id
 
     if int(expose_level) == ExposeLevel.FRIENDS:

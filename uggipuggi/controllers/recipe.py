@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
+import uuid
 import time
 import falcon
 import logging
@@ -25,6 +26,11 @@ from uggipuggi.messaging.recipe_kafka_producers import recipe_kafka_collection_p
                                                        recipe_kafka_item_put_producer
 
 
+
+#logger = logging.getLogger(__name__)
+logger = init_logger()
+statsd = init_statsd('up.controllers.recipe')
+    
 # -------- BEFORE_HOOK functions
 def deserialize_create(req, res, resource, params):
     deserialize(req, res, resource, params, schema=RecipeSchema())
@@ -37,10 +43,6 @@ def deserialize_update(req, res, resource, params):
     #deserialize(req, res, resource, schema=RecipeSchema())
 
 # -------- END functions
-
-#logger = logging.getLogger(__name__)
-logger = init_logger()
-statsd = init_statsd('up.controllers.recipe')
 
 @falcon.before(supply_redis_conn)    
 @falcon.after(serialize)
@@ -126,35 +128,42 @@ class Collection(object):
         recipe_data['author_avatar'] = user_display_pic
         recipe_data['author_display_name'] = user_display_name
         if 'multipart/form-data' in req.content_type:
-            img_data = req.get_param('images')            
             for key in req._params:
-                if key in Recipe._fields and key not in ['images']:
+                if 'recipe_img' not in key:
+                    continue
+            img_data = req.get_param('images')
+            logger.debug(img_data)
+            
+            img_urls = []
+            for key in req._params:
+                if key in Recipe._fields:
                     if isinstance(Recipe._fields[key], mongoengine.fields.ListField):
                         recipe_data[key] = req.get_param_as_list(key)
                     else:    
-                        recipe_data[key] = req.get_param(key)                    
-                                
+                        recipe_data[key] = req.get_param(key)
+                elif 'recipe_img' in key:
+                    img_data = req.get_param(key)
+                    img_url = ''
+                    image_name = str(uuid.uuid4())
+                    try:
+                        logger.debug(image_name)
+                        img_url = self.img_store.save(img_data.file, image_name, img_data.type)
+                        img_urls.append(img_url)
+                    except IOError:
+                        raise HTTPBadRequest(title='Recipe_pic storing failed', 
+                                             description='Recipe_pic upload to cloud storage failed!')
+            
+            if len(img_urls) > 0:
+                recipe_data['images'] = img_urls
+                
             recipe = Recipe(**recipe_data)
-            recipe.save()
-            resp.body = {"recipe_id": str(recipe.id)}
-            
-            img_url = ''
-            image_name = '_'.join([str(recipe.id), str(int(time.time())), 'recipe_images'])
-            try:
-                logger.debug(image_name)
-                img_url = self.img_store.save(img_data.file, image_name, img_data.type)                
-            except IOError:
-                raise HTTPBadRequest(title='Recipe_pic storing failed', 
-                                     description='Recipe_pic upload to cloud storage failed!')            
-
-            recipe.update(images=[img_url])
-            resp.body.update({"images": [img_url]})
-            
+            #recipe.update(images=img_urls)
+            #resp.body.update({"images": img_urls})            
         else:    
             recipe = Recipe(**recipe_data.update(req.params['body']))
-            recipe.save()
             
-            resp.body = {"recipe_id": str(recipe.id)}
+        recipe.save()            
+        resp.body = {"recipe_id": str(recipe.id)}
             
         recipe.update(generation_time=recipe.id.generation_time.strftime("%Y-%m-%d %H:%M"))
         # Create recipe concise view in Redis

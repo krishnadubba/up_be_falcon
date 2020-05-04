@@ -16,14 +16,14 @@ INTEGER_MAX = sys.maxsize - 1
 PAGE_LIMIT = 25
 
 MAX_TOKEN_AGE = 86400
-GCLOUD_SERVICE_CREDS='/home/kdubba/gcloud_credentials/uggi_puggi-a962c9256b2a.json'
+GCLOUD_SERVICE_CREDS='../conf/valid-cedar-274311-63d431d63cfe.json'
 FCM_SERVER_KEY = 'AAAAzPk-Tf4:APA91bGwttdFLH671-48ekIwFNW2htVppUH0qorLPxNEUNAQC_XtOcTDG2I2hzqn3p6JQ0wySadD_AV32agw35xYVXukCYsUQAv6gnf5xvdJhnQRZS_uZJq65V4hQv8jpI3Hp57FPCnu'
 
 # Token valid for 90 days
 
 OTP_LENGTH = 6
-TOKEN_EXPIRATION_SECS = 7776000
-VERIFY_PHONE_TOKEN_EXPIRATION_SECS = 3600
+TOKEN_EXPIRATION_SECS = 604800
+VERIFY_PHONE_TOKEN_EXPIRATION_SECS = 900
 
 AUTH_SERVER_NAME = "bouncer"
 AUTH_HEADER_USER_ID = "X-Gobbl-User-ID"
@@ -69,7 +69,7 @@ USER_NOTIFICATION_FEED = 'unf:'
 # Google Cloud Storage stuff
 FILE_EXT_MAP = {'jpg': 'image/jpeg', 'jpe': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png'}
 IMG_STORE_PATH = '/images/'
-GAE_IMG_SERVER = 'https://uggipuggi-dev.appspot.com/img_post'
+GAE_IMG_SERVER = 'https://valid-cedar-274311.el.r.appspot.com/img_post'
 GCS_USER_BUCKET = 'up_user_public_server_bucket_2020'
 GCS_GROUP_BUCKET = 'up_group_public_server_bucket_2020'
 GCS_RECIPE_BUCKET = 'up_recipe_public_server_bucket_2020'
