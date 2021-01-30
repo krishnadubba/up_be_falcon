@@ -35,7 +35,7 @@ Now you are good to go :-)
 $ spectacle -d your_swagger_api.json
 ```
 
-## API docs: https://krishnadubba.github.io
+## API docs: https://uggipuggi.github.io
 
 To try a POST request, you can do the following via the Terminal:
 
