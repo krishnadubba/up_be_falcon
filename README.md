@@ -1,5 +1,5 @@
-# UGGIPUGGI BACKEND 
-Built with Python, and more specifically with Falcon REST web framework, MongoEngine (python client for MongoDB), 
+# UGGIPUGGI (A recipes app backend with social networking features)
+Built with Python, with Falcon REST web framework, MongoEngine (python client for MongoDB), 
 REDIS, KAFKA and Celery.
 
 To get started, please follow instructions below on how to setup your environment to run uggipuggi backend.
@@ -50,8 +50,4 @@ See the wiki for more HTTP request examples.
 Of course, you may prefer to use POSTMAN.io (easy GUI) to make these POST request. That is fine too.
 Do note that Uggipuggi only accepts json [content-type](http://en.wikipedia.org/wiki/Internet_media_type) for POST requests.
 
-
-## API methods (under construction)
-
-A list of API methods can be found [here](endpoints.md)
 
