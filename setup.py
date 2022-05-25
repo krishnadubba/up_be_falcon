@@ -14,7 +14,7 @@ requires = [
     "pymongo==2.8",
     "mongoengine==0.8.7",
     "gunicorn==18.0",
-    "PyJWT==1.3.0",
+    "PyJWT==2.4.0",
 ]
 
 extras_require = {
